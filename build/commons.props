@@ -1,0 +1,9 @@
+<Project>
+	<PropertyGroup>
+		<ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<RootNamespace>Caxivitual.Lunacub</RootNamespace>
+		<Version>0.0.1-alpha</Version>
+	</PropertyGroup>
+</Project>
