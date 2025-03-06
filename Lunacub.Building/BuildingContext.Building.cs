@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Buffers.Binary;
+﻿using System.Buffers.Binary;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -35,8 +34,8 @@ partial class BuildingContext {
         if (!tempmark.Add(rid)) {
             throw new ArgumentException($"Cycle detected ({string.Join(" -> ", cyclePath.Reverse())}).");
         }
-        
-        string buildDestination = Path.Combine(OutputDirectory, $"{rid}.lccr");
+
+        string buildDestination = output.GetBuildDestination(rid);
 
         // If resource has been built before, and have old report, we can begin checking for caching.
         if (File.Exists(buildDestination) && _reportTracker.TryGetReport(rid, out var previousReport)) {
@@ -84,7 +83,7 @@ partial class BuildingContext {
             if (string.IsNullOrWhiteSpace(processorName)) {
                 report = new() {
                     Dependencies = imported.Dependencies,
-                    DestinationPath = Path.Combine(OutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"),
+                    DestinationPath = buildDestination,
                     Options = options,
                     SourceLastWriteTime = File.GetLastWriteTime(resourcePath!),
                 };
@@ -101,7 +100,7 @@ partial class BuildingContext {
                 
                 report = new() {
                     Dependencies = imported.Dependencies,
-                    DestinationPath = Path.Combine(OutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"),
+                    DestinationPath = buildDestination,
                     Options = options,
                     SourceLastWriteTime = File.GetLastWriteTime(resourcePath!),
                 };
@@ -141,7 +140,7 @@ partial class BuildingContext {
             throw new InvalidOperationException(string.Format(ExceptionMessages.NoSuitableSerializer, processed.GetType()));
         }
         
-        using FileStream outputStream = new(report.DestinationPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        using Stream outputStream = output.GetResourceOutputStream(report.DestinationPath);
         outputStream.SetLength(0);
         outputStream.Flush();
 

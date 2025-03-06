@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Tests.Building;
+﻿using System.IO.Abstractions;
+
+namespace Caxivitual.Lunacub.Tests.Building;
 
 public class BuildingContextTests : IDisposable {
     private readonly BuildingContext _context;
@@ -6,20 +8,9 @@ public class BuildingContextTests : IDisposable {
 
     public BuildingContextTests(ITestOutputHelper output) {
         _output = output;
-        AssertHelpers.RedirectConsoleOutput(output);        
-        
-        string outputDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output");
-        string reportDirectory = Path.Combine(outputDirectory, "Report");
-        string resultDirectory = Path.Combine(outputDirectory, "Results");
-        
-        if (Directory.Exists(outputDirectory)) {
-            Directory.Delete(outputDirectory, true);
-        };
-        
-        Directory.CreateDirectory(reportDirectory);
-        Directory.CreateDirectory(resultDirectory);
-        
-        _context = new(reportDirectory, resultDirectory);
+        AssertHelpers.RedirectConsoleOutput(output);
+
+        _context = new(new MockBuildOutput());
         
         _context.Importers.Add(nameof(SimpleResourceImporter), new SimpleResourceImporter());
         _context.Serializers.Add(new SimpleResourceSerializer());
@@ -45,7 +36,7 @@ public class BuildingContextTests : IDisposable {
         
         var report = result.Reports.Should().ContainKey(rid).WhoseValue;
         report.Dependencies.Should().BeEmpty();
-        File.Exists(report.DestinationPath).Should().BeTrue();
+        ((MockBuildOutput)_context.Output).FileSystem.File.Exists(report.DestinationPath).Should().BeTrue();
     }
 
     [Fact]
@@ -64,15 +55,17 @@ public class BuildingContextTests : IDisposable {
 
         var result = new Func<BuildingResult>(() => _context.BuildResources()).Should().NotThrow().Which;
         result.IsSuccess.Should().BeTrue();
+
+        IFile file = ((MockBuildOutput)_context.Output).FileSystem.File;
         
         var dependentReport = result.Reports.Should().ContainKey(dependentRid).WhoseValue;
         dependentReport.Dependencies.Should().HaveCount(1).And.Contain(dependencyRid);
-        File.Exists(dependentReport.DestinationPath).Should().BeTrue();
+        file.Exists(dependentReport.DestinationPath).Should().BeTrue();
         
         var dependencyReport = result.Reports.Should().ContainKey(dependencyRid).WhoseValue;
         dependencyReport.Dependencies.Should().BeEmpty();
-        File.Exists(dependencyReport.DestinationPath).Should().BeTrue();
+        file.Exists(dependencyReport.DestinationPath).Should().BeTrue();
         
-        File.GetLastWriteTime(dependencyReport.DestinationPath).Should().BeBefore(File.GetLastWriteTime(dependentReport.DestinationPath));
+        file.GetLastWriteTime(dependencyReport.DestinationPath).Should().BeBefore(file.GetLastWriteTime(dependentReport.DestinationPath));
     }
 }

@@ -3,33 +3,18 @@
 internal sealed class ReportTracker : IReadOnlyCollection<KeyValuePair<ResourceID, BuildingReport>> {
     private readonly Dictionary<ResourceID, BuildingReport> _reports;
     private readonly Dictionary<ResourceID, BuildingReport> _pendingReports;
-    
-    public string ReportDirectory { get; }
+
+    private readonly BuildOutput _output;
     
     public int Count => _reports.Count;
     public int PendingCount => _pendingReports.Count;
 
-    public ReportTracker(string reportDirectory) {
-        ReportDirectory = Path.GetFullPath(reportDirectory);
-        
-        if (!Directory.Exists(ReportDirectory)) {
-            throw new ArgumentException($"Report directory '{ReportDirectory}' does not exist.");
-        }
-        
+    public ReportTracker(BuildOutput output) {
         _reports = [];
         _pendingReports = [];
 
-        foreach (var file in Directory.EnumerateFiles(ReportDirectory, $"*{CompilingConstants.ReportExtension}", SearchOption.TopDirectoryOnly)) {
-            if (!ResourceID.TryParse(Path.GetFileNameWithoutExtension(file), out var rid)) continue;
-
-            try {
-                using FileStream reportFile = File.OpenRead(file);
-                
-                _reports.Add(rid, JsonSerializer.Deserialize<BuildingReport>(reportFile));
-            } catch {
-                // Ignore any failed attempt to deserialize report.
-            }
-        }
+        _output = output;
+        _output.CollectReports(_reports);
     }
 
     public void AddReport(ResourceID rid, BuildingReport report) {
@@ -49,12 +34,9 @@ internal sealed class ReportTracker : IReadOnlyCollection<KeyValuePair<ResourceI
     }
 
     public void FlushPendingReports() {
+        _output.FlushReports(_pendingReports);
+        
         foreach ((var rid, var report) in _pendingReports) {
-            using FileStream reportFile = File.OpenWrite(Path.Combine(ReportDirectory, $"{rid}{CompilingConstants.ReportExtension}"));
-            reportFile.SetLength(0);
-
-            JsonSerializer.Serialize(reportFile, report);
-            
             _reports[rid] = report;
         }
         

@@ -1,8 +1,4 @@
-﻿using System.Globalization;
-using System.Text;
-using Xunit.Abstractions;
-
-namespace Caxivitual.Lunacub.Tests.Common;
+﻿namespace Caxivitual.Lunacub.Tests;
 
 public sealed class AssertHelpers {
     public static void RedirectConsoleOutput(ITestOutputHelper output) {
