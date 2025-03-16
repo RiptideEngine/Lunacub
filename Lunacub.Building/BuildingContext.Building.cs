@@ -2,7 +2,7 @@
 
 namespace Caxivitual.Lunacub.Building;
 
-partial class BuildingContext {
+partial class BuildEnvironment {
     public BuildingResult BuildResources() {
         try {
             HashSet<ResourceID> permark = [];
@@ -35,7 +35,7 @@ partial class BuildingContext {
             throw new ArgumentException($"Cycle detected ({string.Join(" -> ", cyclePath.Reverse())}).");
         }
 
-        string buildDestination = output.GetBuildDestination(rid);
+        string buildDestination = Output.GetBuildDestination(rid);
 
         // If resource has been built before, and have old report, we can begin checking for caching.
         if (File.Exists(buildDestination) && _reportTracker.TryGetReport(rid, out var previousReport)) {
@@ -65,12 +65,14 @@ partial class BuildingContext {
         }
 
         ContentRepresentation imported;
+        ImportingContext context;
         using (FileStream stream = File.OpenRead(resourcePath!)) {
-            imported = importer.ImportObject(stream);
+            context = new();
+            imported = importer.ImportObject(stream, context);
         }
 
         try {
-            if (imported.Dependencies is { } dependencies) {
+            if (context.Dependencies is { } dependencies) {
                 foreach (var dependency in dependencies) {
                     BuildResource(dependency, reports, permark, tempmark, cyclePath);
                 }
@@ -79,16 +81,17 @@ partial class BuildingContext {
             string? processorName = options.ProcessorName;
             
             BuildingReport report;
+            ResourceReference resourceRef = new(rid, resourcePath!);
             
             if (string.IsNullOrWhiteSpace(processorName)) {
                 report = new() {
-                    Dependencies = imported.Dependencies,
+                    Dependencies = context.Dependencies,
                     DestinationPath = buildDestination,
                     Options = options,
                     SourceLastWriteTime = File.GetLastWriteTime(resourcePath!),
                 };
                 
-                CompileObject(imported, report);
+                CompileObject(imported, resourceRef);
             } else {
                 if (!Processors.TryGetValue(processorName, out var processor)) {
                     throw new ArgumentException(string.Format(ExceptionMessages.UnregisteredProcessor, processorName));
@@ -99,7 +102,7 @@ partial class BuildingContext {
                 }
                 
                 report = new() {
-                    Dependencies = imported.Dependencies,
+                    Dependencies = context.Dependencies,
                     DestinationPath = buildDestination,
                     Options = options,
                     SourceLastWriteTime = File.GetLastWriteTime(resourcePath!),
@@ -108,7 +111,7 @@ partial class BuildingContext {
                 ContentRepresentation processed = processor.Process(imported!);
 
                 try {
-                    CompileObject(processed, report);
+                    CompileObject(processed, resourceRef);
                 } finally {
                     processor.DisposeObject(processed);
                 }
@@ -135,12 +138,12 @@ partial class BuildingContext {
         }
     }
 
-    private void CompileObject(ContentRepresentation processed, in BuildingReport report) {
+    private void CompileObject(ContentRepresentation processed, ResourceReference reference) {
         if (Serializers.GetSerializable(processed.GetType()) is not { } serializer) {
             throw new InvalidOperationException(string.Format(ExceptionMessages.NoSuitableSerializer, processed.GetType()));
         }
         
-        using Stream outputStream = output.GetResourceOutputStream(report.DestinationPath);
+        using Stream outputStream = Output.CreateDestinationStream(reference);
         outputStream.SetLength(0);
         outputStream.Flush();
 

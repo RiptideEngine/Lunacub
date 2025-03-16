@@ -1,27 +1,43 @@
-﻿namespace Caxivitual.Lunacub.Importing;
+﻿using Caxivitual.Lunacub.Compilation;
+using Caxivitual.Lunacub.Exceptions;
+using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 
-public sealed class ResourceRegistry : IDisposable {
-    public ResourceLibraryCollection Libraries { get; } = [];
-    private readonly ResourceCache _cache;
+namespace Caxivitual.Lunacub.Importing;
 
+public sealed partial class ResourceRegistry : IDisposable {
+    private readonly ReaderWriterLockSlim _lock;
+    private readonly Dictionary<ResourceID, object> _resources;
+    private readonly ImportEnvironment _context;
+    
     private bool _disposed;
 
-    internal ResourceRegistry(ImportingContext context) {
-        _cache = new(context);
+    internal ResourceRegistry(ImportEnvironment context) {
+        _lock =  new(LockRecursionPolicy.SupportsRecursion);
+        _resources = [];
+        _context = context;
     }
     
     internal T? Import<T>(ResourceID rid) where T : class {
-        foreach (var library in Libraries) {
-            if (library.TryGetValue(rid, out string? path)) {
-                return (T)_cache.Import(rid, path, typeof(T));
-            }
-        }
-
-        return null;
+        return Import(rid, typeof(T)) as T;
     }
 
-    internal T? Import<T>(string path) where T : class {
-        return Libraries.PathToIDMap.TryGetValue(path, out ResourceID rid) ? (T)_cache.Import(rid, path, typeof(T)) : null;
+    private object? Import(ResourceID rid, Type type) {
+        _lock.EnterUpgradeableReadLock();
+        try {
+            if (_resources.TryGetValue(rid, out var cache)) {
+                return cache.GetType().IsAssignableTo(type) ? cache : null;
+            }
+            
+            _lock.EnterWriteLock();
+            try {
+                return ImportInner(rid, type);
+            } finally {
+                _lock.ExitWriteLock();
+            }
+        } finally {
+            _lock.ExitUpgradeableReadLock();
+        }
     }
     
     private void Dispose(bool disposing) {
@@ -30,7 +46,9 @@ public sealed class ResourceRegistry : IDisposable {
         _disposed = true;
 
         if (disposing) {
-            _cache.Dispose();
+            // TODO: Dispose Resources.
+            
+            _lock.Dispose();
         }
     }
 

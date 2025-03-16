@@ -1,22 +1,21 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
-public sealed class ImportingContext : IDisposable {
+public sealed class ImportEnvironment : IDisposable {
     public DeserializerDictionary Deserializers { get; }
-    public ResourceRegistry Resources { get; }
+    public InputSystem Input { get; }
 
+    private readonly ResourceRegistry _resources;
+    
     private bool _disposed;
-
-    public ImportingContext() {
+    
+    public ImportEnvironment() {
         Deserializers = [];
-        Resources = new(this);
+        Input = new();
+        _resources = new(this);
     }
 
     public T? Import<T>(ResourceID rid) where T : class {
-        return Resources.Import<T>(rid);
-    }
-
-    public T? Import<T>(string path) where T : class {
-        return Resources.Import<T>(path);
+        return _resources.Import<T>(rid);
     }
 
     private void Dispose(bool disposing) {
@@ -25,7 +24,7 @@ public sealed class ImportingContext : IDisposable {
         _disposed = true;
 
         if (disposing) {
-            Resources.Dispose();
+            _resources.Dispose();
         }
     }
 
@@ -34,7 +33,7 @@ public sealed class ImportingContext : IDisposable {
         GC.SuppressFinalize(this);
     }
 
-    ~ImportingContext() {
+    ~ImportEnvironment() {
         Dispose(false);
     }
 }

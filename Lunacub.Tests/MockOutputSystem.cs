@@ -1,16 +1,17 @@
 ﻿using Caxivitual.Lunacub.Compilation;
-using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 
 namespace Caxivitual.Lunacub.Tests;
 
-internal sealed class MockBuildOutput : BuildOutput {
+internal sealed class MockOutputSystem : OutputSystem {
     public static string ReportDirectory { get; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports");
     public static string ResourceOutputDirectory { get; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Outputs");
 
-    public MockFileSystem FileSystem { get; } = new();
+    public MockFileSystem FileSystem { get; }
 
-    public MockBuildOutput() {
+    public MockOutputSystem(MockFileSystem? fs = null) {
+        FileSystem = fs ?? new();
+        
         FileSystem.Directory.CreateDirectory(ReportDirectory);
         FileSystem.Directory.CreateDirectory(ResourceOutputDirectory);
     }
@@ -28,11 +29,7 @@ internal sealed class MockBuildOutput : BuildOutput {
 
     public override string GetBuildDestination(ResourceID rid) => Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
 
-    public override Stream GetResourceOutputStream(string buildDestination) {
-        MockFileStream stream = new(FileSystem, buildDestination, FileMode.OpenOrCreate);
-        stream.SetLength(0);
-        stream.Flush();
-
-        return stream;
+    public override Stream CreateDestinationStream(ResourceReference reference) {
+        return new MockFileStream(FileSystem, FileSystem.Path.Combine(ResourceOutputDirectory, $"{reference.Rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.Create);
     }
 }

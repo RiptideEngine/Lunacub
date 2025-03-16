@@ -1,10 +1,10 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
-public class FileBuildOutput : BuildOutput {
+public class FileOutputSystem : OutputSystem {
     public string ReportDirectory { get; }
     public string ResourceOutputDirectory { get; }
     
-    public FileBuildOutput(string reportDirectory, string resourceOutputDirectory) {
+    public FileOutputSystem(string reportDirectory, string resourceOutputDirectory) {
         ReportDirectory = Path.GetFullPath(reportDirectory);
         if (!Directory.Exists(ReportDirectory)) {
             throw new ArgumentException($"Report directory '{ReportDirectory}' does not exist.");
@@ -41,7 +41,7 @@ public class FileBuildOutput : BuildOutput {
 
     public override string GetBuildDestination(ResourceID rid) => Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
 
-    public override Stream GetResourceOutputStream(string buildDestination) {
-        return new FileStream(buildDestination, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+    public override Stream CreateDestinationStream(ResourceReference reference) {
+        return new FileStream(Path.Combine(ResourceOutputDirectory, $"{reference.Rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
     }
 }

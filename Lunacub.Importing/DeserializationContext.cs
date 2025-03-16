@@ -1,35 +1,34 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
 public sealed class DeserializationContext {
-    private readonly Dictionary<string, object> _dependencies;
+    private readonly Dictionary<string, RequestingDependency> _requestingDependencies;
 
-    public IReadOnlyDictionary<string, object> Dependencies => _dependencies;
-    
+    internal IReadOnlyDictionary<string, RequestingDependency> RequestingDependencies => _requestingDependencies;
+    internal Dictionary<string, object?>? Dependencies { get; set; }
+
     internal DeserializationContext() {
-        _dependencies = new(StringComparer.Ordinal);
+        _requestingDependencies = new(StringComparer.Ordinal);
     }
 
-    public void RequestDependency(string property, ResourceID rid, Type resourceType) {
+    public void RequestReference(string property, ResourceID rid, Type resourceType) {
+        if (resourceType.IsValueType) return;
         
-    }
-
-    public void RequestDependency(string property, string path, Type resourceType) {
-        
-    }
-
-    public void RequestDependency<T>(string property, ResourceID rid) where T : class {
-        
+        _requestingDependencies.Add(property, new(rid, resourceType));
     }
     
-    public void RequestDependency<T>(string property, string path) where T : class {
-        
+    public void RequestReference<T>(string property, ResourceID rid) {
+        RequestReference(property, rid, typeof(T));
     }
-
+    
     public T? GetDependency<T>(ReadOnlySpan<char> property) where T : class {
-        if (_dependencies.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(property, out object? dependency) && dependency is T t) {
+        Debug.Assert(Dependencies != null);
+        
+        if (Dependencies.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(property, out object? dependency) && dependency is T t) {
             return t;
         }
 
         return null;
     }
+
+    public readonly record struct RequestingDependency(ResourceID Rid, Type Type);
 }

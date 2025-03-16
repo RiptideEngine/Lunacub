@@ -1,17 +1,20 @@
 ﻿namespace Caxivitual.Lunacub.Tests;
 
 public sealed class DependentResource {
-    public SimpleResource? Dependency { get; set; }
+    public SimpleResource? Dependency1 { get; set; }
+    public SimpleResource? Dependency2 { get; set; }
 }
 
 public sealed class DependentResourceDTO : ContentRepresentation {
-    [JsonPropertyName("Dependency")] public ResourceID DependencyRid { get; set; }
+    [JsonPropertyName("Dependency1")] public ResourceID Dependency1 { get; set; }
+    [JsonPropertyName("Dependency2")] public ResourceID Dependency2 { get; set; }
 }
 
 public sealed class DependentResourceImporter : Importer<DependentResourceDTO> {
-    protected override DependentResourceDTO Import(Stream stream) {
+    protected override DependentResourceDTO Import(Stream stream, ImportingContext context) {
         DependentResourceDTO dto = JsonSerializer.Deserialize<DependentResourceDTO>(stream)!;
-        dto.Dependencies.Add(dto.DependencyRid);
+        context.Dependencies.Add(dto.Dependency1);
+        context.Dependencies.Add(dto.Dependency2);
 
         return dto;
     }
@@ -23,20 +26,25 @@ public sealed class DependentResourceSerializer : Serializer<DependentResourceDT
     protected override void Serialize(DependentResourceDTO input, Stream stream) {
         using var writer = new BinaryWriter(stream, Encoding.UTF8, true);
         
-        writer.Write(input.DependencyRid);
+        writer.Write(input.Dependency1);
+        writer.Write(input.Dependency2);
     }
 }
 
 public sealed class DependentResourceDeserializer : Deserializer<DependentResource> {
     protected override DependentResource Deserialize(Stream stream, DeserializationContext context) {
         using BinaryReader reader = new(stream, Encoding.UTF8, true);
+        
+        reader.BaseStream.Seek(4, SeekOrigin.Current);
 
-        context.RequestDependency<SimpleResource>(nameof(DependentResource.Dependency), reader.ReadResourceID());
+        context.RequestReference<SimpleResource>(nameof(DependentResource.Dependency1), reader.ReadResourceID());
+        context.RequestReference<SimpleResource>(nameof(DependentResource.Dependency2), reader.ReadResourceID());
 
         return new();
     }
 
     protected override void ResolveDependencies(DependentResource instance, DeserializationContext context) {
-        instance.Dependency = context.GetDependency<SimpleResource>(nameof(DependentResource.Dependency));
+        instance.Dependency1 = context.GetDependency<SimpleResource>(nameof(DependentResource.Dependency1));
+        instance.Dependency2 = context.GetDependency<SimpleResource>(nameof(DependentResource.Dependency2));
     }
 }

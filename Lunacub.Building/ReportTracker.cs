@@ -4,17 +4,17 @@ internal sealed class ReportTracker : IReadOnlyCollection<KeyValuePair<ResourceI
     private readonly Dictionary<ResourceID, BuildingReport> _reports;
     private readonly Dictionary<ResourceID, BuildingReport> _pendingReports;
 
-    private readonly BuildOutput _output;
+    private readonly OutputSystem _outputSystem;
     
     public int Count => _reports.Count;
     public int PendingCount => _pendingReports.Count;
 
-    public ReportTracker(BuildOutput output) {
+    public ReportTracker(OutputSystem outputSystem) {
         _reports = [];
         _pendingReports = [];
 
-        _output = output;
-        _output.CollectReports(_reports);
+        _outputSystem = outputSystem;
+        _outputSystem.CollectReports(_reports);
     }
 
     public void AddReport(ResourceID rid, BuildingReport report) {
@@ -34,7 +34,7 @@ internal sealed class ReportTracker : IReadOnlyCollection<KeyValuePair<ResourceI
     }
 
     public void FlushPendingReports() {
-        _output.FlushReports(_pendingReports);
+        _outputSystem.FlushReports(_pendingReports);
         
         foreach ((var rid, var report) in _pendingReports) {
             _reports[rid] = report;

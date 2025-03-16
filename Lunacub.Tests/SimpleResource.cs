@@ -9,7 +9,7 @@ public sealed class SimpleResourceDTO : ContentRepresentation {
 }
 
 public sealed class SimpleResourceImporter : Importer<SimpleResourceDTO> {
-    protected override SimpleResourceDTO Import(Stream stream) {
+    protected override SimpleResourceDTO Import(Stream stream, ImportingContext context) {
         return JsonSerializer.Deserialize<SimpleResourceDTO>(stream)!;
     }
 }
@@ -27,6 +27,8 @@ public sealed class SimpleResourceSerializer : Serializer<SimpleResourceDTO> {
 public sealed class SimpleResourceDeserializer : Deserializer<SimpleResource> {
     protected override SimpleResource Deserialize(Stream stream, DeserializationContext context) {
         using var reader = new BinaryReader(stream, Encoding.UTF8, true);
+        
+        reader.BaseStream.Seek(4, SeekOrigin.Current);
         
         return new() {
             Value = reader.ReadInt32(),
