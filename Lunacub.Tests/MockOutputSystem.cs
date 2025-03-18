@@ -26,10 +26,14 @@ internal sealed class MockOutputSystem : OutputSystem {
             JsonSerializer.Serialize(reportFile, report);
         }
     }
+    
+    public override DateTime? GetResourceLastBuildTime(ResourceID rid) {
+        string path = FileSystem.Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
+        
+        return FileSystem.File.Exists(path) ? FileSystem.File.GetLastWriteTime(path) : null;
+    }
 
-    public override string GetBuildDestination(ResourceID rid) => Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
-
-    public override Stream CreateDestinationStream(ResourceReference reference) {
-        return new MockFileStream(FileSystem, FileSystem.Path.Combine(ResourceOutputDirectory, $"{reference.Rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.Create);
+    public override Stream CreateDestinationStream(ResourceID rid) {
+        return new MockFileStream(FileSystem, FileSystem.Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.Create);
     }
 }

@@ -25,10 +25,6 @@ internal sealed class BuildingReportConverter : JsonConverter<BuildingReport> {
                     output.SourceLastWriteTime = reader.GetDateTime();
                     break;
                     
-                case "Destination":
-                    output.DestinationPath = reader.GetString()!;
-                    break;
-                
                 case "Dependencies":
                     output.Dependencies = JsonSerializer.Deserialize<HashSet<ResourceID>>(ref reader, options) ?? [];
                     break;
@@ -46,7 +42,6 @@ internal sealed class BuildingReportConverter : JsonConverter<BuildingReport> {
         writer.WriteStartObject();
         
         writer.WriteString("SourceLastWriteTime", report.SourceLastWriteTime);
-        writer.WriteString("Destination", report.DestinationPath);
         
         writer.WritePropertyName("Dependencies");
         JsonSerializer.Serialize(writer, report.Dependencies, options);

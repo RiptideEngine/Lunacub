@@ -9,16 +9,22 @@ partial class ResourceRegistry {
     private object? ImportInner(ResourceID rid, Type type) {
         Debug.Assert(_lock.IsWriteLockHeld);
 
+        if (!_context.Input.ContainResource(rid)) return null;
+
         Dictionary<ResourceID, object> imported = [];
 
         return ImportRecursive(rid, type, imported);
     }
 
     private object? ImportRecursive(ResourceID rid, Type type, Dictionary<ResourceID, object> importedStack) {
-        if (_resources.TryGetValue(rid, out var cache)) return cache;
+        if (!_context.Input.ContainResource(rid)) return null;
+        
+        if (_resourceCache.TryGetValue(rid, out var cache)) return cache;
         if (importedStack.TryGetValue(rid, out var imported)) return imported;
         
-        using Stream resourceStream = _context.Input.CreateResourceStream(rid);
+        using Stream resourceStream = _context.Input.CreateResourceStream(rid)!;
+        Debug.Assert(resourceStream != null);
+        
         ExtractCompiledResource(resourceStream, out ushort major, out ushort minor, out ChunkLookupTable table);
                 
         return major switch {
@@ -72,7 +78,7 @@ partial class ResourceRegistry {
         context.Dependencies = importedDependencies;
         deserializer.ResolveDependencies(deserialized, context);
         
-        _resources.Add(rid, deserialized);
+        _resourceCache.Add(rid, deserialized);
         
         return deserialized;
     }

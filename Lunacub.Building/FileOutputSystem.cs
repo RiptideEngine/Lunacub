@@ -39,9 +39,13 @@ public class FileOutputSystem : OutputSystem {
         }
     }
 
-    public override string GetBuildDestination(ResourceID rid) => Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
+    public override DateTime? GetResourceLastBuildTime(ResourceID rid) {
+        string path = Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
+        
+        return File.Exists(path) ? File.GetLastWriteTime(path) : null;
+    }
 
-    public override Stream CreateDestinationStream(ResourceReference reference) {
-        return new FileStream(Path.Combine(ResourceOutputDirectory, $"{reference.Rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+    public override Stream CreateDestinationStream(ResourceID rid) {
+        return new FileStream(Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
     }
 }

@@ -7,14 +7,14 @@ namespace Caxivitual.Lunacub.Importing;
 
 public sealed partial class ResourceRegistry : IDisposable {
     private readonly ReaderWriterLockSlim _lock;
-    private readonly Dictionary<ResourceID, object> _resources;
+    private readonly Dictionary<ResourceID, object> _resourceCache;
     private readonly ImportEnvironment _context;
     
     private bool _disposed;
 
     internal ResourceRegistry(ImportEnvironment context) {
         _lock =  new(LockRecursionPolicy.SupportsRecursion);
-        _resources = [];
+        _resourceCache = [];
         _context = context;
     }
     
@@ -25,7 +25,7 @@ public sealed partial class ResourceRegistry : IDisposable {
     private object? Import(ResourceID rid, Type type) {
         _lock.EnterUpgradeableReadLock();
         try {
-            if (_resources.TryGetValue(rid, out var cache)) {
+            if (_resourceCache.TryGetValue(rid, out var cache)) {
                 return cache.GetType().IsAssignableTo(type) ? cache : null;
             }
             

@@ -13,8 +13,8 @@ public sealed class DependentResourceDTO : ContentRepresentation {
 public sealed class DependentResourceImporter : Importer<DependentResourceDTO> {
     protected override DependentResourceDTO Import(Stream stream, ImportingContext context) {
         DependentResourceDTO dto = JsonSerializer.Deserialize<DependentResourceDTO>(stream)!;
-        context.Dependencies.Add(dto.Dependency1);
-        context.Dependencies.Add(dto.Dependency2);
+        context.SetReference(dto.Dependency1, ResourceReferenceType.Dependency);
+        context.SetReference(dto.Dependency2, ResourceReferenceType.Dependency);
 
         return dto;
     }

@@ -15,3 +15,6 @@ global using SixLabors.ImageSharp.PixelFormats;
 global using FluentAssertions;
 
 global using Xunit.Abstractions;
+
+global using System.IO.Abstractions;
+global using System.IO.Abstractions.TestingHelpers;
