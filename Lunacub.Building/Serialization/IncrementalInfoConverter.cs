@@ -1,16 +1,17 @@
 ﻿namespace Caxivitual.Lunacub.Building.Serialization;
 
-internal sealed class BuildingReportConverter : JsonConverter<BuildingReport> {
-    public override BuildingReport Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> {
+    public override IncrementalInfo Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
         if (reader.TokenType != JsonTokenType.StartObject) {
             throw new JsonException();
         }
-            
-        BuildingReport output = default;
+
+        DateTime sourceLastWriteTime = default;
+        BuildingOptions buildingOptions = default;
             
         while (reader.Read()) {
             if (reader.TokenType == JsonTokenType.EndObject) {
-                return output;
+                return new(sourceLastWriteTime, buildingOptions);
             }
 
             if (reader.TokenType != JsonTokenType.PropertyName) {
@@ -22,15 +23,11 @@ internal sealed class BuildingReportConverter : JsonConverter<BuildingReport> {
 
             switch (propertyName) {
                 case "SourceLastWriteTime":
-                    output.SourceLastWriteTime = reader.GetDateTime();
+                    sourceLastWriteTime= reader.GetDateTime();
                     break;
                     
-                case "Dependencies":
-                    output.Dependencies = JsonSerializer.Deserialize<HashSet<ResourceID>>(ref reader, options) ?? [];
-                    break;
-                
                 case "Options":
-                    output.Options = JsonSerializer.Deserialize<BuildingOptions>(ref reader, options);
+                    buildingOptions = JsonSerializer.Deserialize<BuildingOptions>(ref reader, options);
                     break;
             }
         }
@@ -38,13 +35,10 @@ internal sealed class BuildingReportConverter : JsonConverter<BuildingReport> {
         throw new JsonException();
     }
     
-    public override void Write(Utf8JsonWriter writer, BuildingReport report, JsonSerializerOptions options) {
+    public override void Write(Utf8JsonWriter writer, IncrementalInfo report, JsonSerializerOptions options) {
         writer.WriteStartObject();
         
         writer.WriteString("SourceLastWriteTime", report.SourceLastWriteTime);
-        
-        writer.WritePropertyName("Dependencies");
-        JsonSerializer.Serialize(writer, report.Dependencies, options);
         
         writer.WritePropertyName("Options");
         JsonSerializer.Serialize(writer, report.Options, options);

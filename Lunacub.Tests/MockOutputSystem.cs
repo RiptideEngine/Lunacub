@@ -16,9 +16,9 @@ internal sealed class MockOutputSystem : OutputSystem {
         FileSystem.Directory.CreateDirectory(ResourceOutputDirectory);
     }
     
-    public override void CollectReports(IDictionary<ResourceID, BuildingReport> receiver) { }
+    public override void CollectIncrementalInfos(IDictionary<ResourceID, IncrementalInfo> receiver) { }
 
-    public override void FlushReports(IReadOnlyDictionary<ResourceID, BuildingReport> reports) {
+    public override void FlushIncrementalInfos(IReadOnlyDictionary<ResourceID, IncrementalInfo> reports) {
         foreach ((var rid, var report) in reports) {
             using Stream reportFile = new MockFileStream(FileSystem, Path.Combine(ReportDirectory, $"{rid}{CompilingConstants.ReportExtension}"), FileMode.OpenOrCreate);
             reportFile.SetLength(0);

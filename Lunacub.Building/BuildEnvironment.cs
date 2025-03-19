@@ -1,20 +1,24 @@
-﻿namespace Caxivitual.Lunacub.Building;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace Caxivitual.Lunacub.Building;
 
 public sealed partial class BuildEnvironment : IDisposable {
     public ImporterDictionary Importers { get; } = [];
     public ProcessorDictionary Processors { get; } = [];
     public SerializerCollection Serializers { get; } = [];
-
     public OutputSystem Output { get; }
-
-    private readonly ReportTracker _reportTracker;
     public ResourceRegistry Resources { get; } = new();
 
+    public ILogger Logger { get; set; }
+
+    private readonly IncrementalInfoStorage _incrementalInfoStorage;
     private bool _disposed;
 
     public BuildEnvironment(OutputSystem output) {
         Output = output;
-        _reportTracker = new(output);
+        _incrementalInfoStorage = new(output);
+        Logger = NullLogger.Instance;
     }
 
     private void Dispose(bool disposing) {
@@ -26,7 +30,7 @@ public sealed partial class BuildEnvironment : IDisposable {
             Resources.Dispose();
         }
         
-        _reportTracker.FlushPendingReports();
+        Output.FlushIncrementalInfos(_incrementalInfoStorage);
     }
 
     public void Dispose() {

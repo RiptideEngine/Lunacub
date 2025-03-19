@@ -20,7 +20,7 @@ public sealed class DeserializationContext {
         RequestReference(property, rid, typeof(T));
     }
     
-    public T? GetDependency<T>(ReadOnlySpan<char> property) where T : class {
+    public T? GetReference<T>(ReadOnlySpan<char> property) where T : class {
         Debug.Assert(Dependencies != null);
         
         if (Dependencies.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(property, out object? dependency) && dependency is T t) {

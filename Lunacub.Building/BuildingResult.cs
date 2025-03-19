@@ -1,15 +1,13 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
 public readonly struct BuildingResult {
-    public IReadOnlyDictionary<ResourceID, BuildingReport>? Reports { get; }
-    public Exception? Exception { get; }
-    
-    [MemberNotNullWhen(false, nameof(Exception))]
-    [MemberNotNullWhen(true, nameof(Reports))]
-    public bool IsSuccess => Exception == null;
+    public readonly DateTime BuildStartTime;
+    public readonly DateTime BuildFinishTime;
+    public readonly IReadOnlyDictionary<ResourceID, ResourceBuildingResult>? ResourceResults;
 
-    internal BuildingResult(IReadOnlyDictionary<ResourceID, BuildingReport>? reports, Exception? excecption) {
-        Reports = reports;
-        Exception = excecption;
+    internal BuildingResult(DateTime startTime, DateTime finishTime, IReadOnlyDictionary<ResourceID, ResourceBuildingResult>? resourceResults) {
+        BuildStartTime = startTime;
+        BuildFinishTime = finishTime;
+        ResourceResults = resourceResults;
     }
 }

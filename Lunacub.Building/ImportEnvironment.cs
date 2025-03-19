@@ -1,24 +1,19 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
 public sealed class ImportingContext {
-    internal List<ResourceReference> References { get; }
+    internal List<ResourceID> References { get; }
     
     internal ImportingContext() {
         References = [];
     }
 
-    public void SetReference(ResourceID rid, ResourceReferenceType type) {
-        if (rid == ResourceID.Null) return;
-
-        foreach (ref var reference in CollectionsMarshal.AsSpan(References)) {
-            if (reference.Rid == rid) {
-                reference = new(rid, type);
-                return;
-            }
-        }
+    public void AddReference(ResourceID rid) {
+        if (References.Contains(rid)) return;
         
-        References.Add(new(rid, type));
+        References.Add(rid);
     }
 
-    public readonly record struct ResourceReference(ResourceID Rid, ResourceReferenceType Type);
+    public void RemoveReference(ResourceID rid) {
+        References.Remove(rid);
+    }
 }

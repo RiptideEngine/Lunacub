@@ -13,11 +13,8 @@ public partial class BuildEnvironmentTests : IDisposable {
         _context.Importers.Add(nameof(SimpleResourceImporter), new SimpleResourceImporter());
         _context.Serializers.Add(new SimpleResourceSerializer());
         
-        _context.Importers.Add(nameof(DependentResourceImporter), new DependentResourceImporter());
-        _context.Serializers.Add(new DependentResourceSerializer());
-        
-        _context.Importers.Add(nameof(CircularReferenceResource), new CircularReferenceResourceImporter());
-        _context.Serializers.Add(new CircularReferenceResourceSerializer());
+        _context.Importers.Add(nameof(ReferenceResourceImporter), new ReferenceResourceImporter());
+        _context.Serializers.Add(new ReferenceResourceSerializer());
     }
 
     public void Dispose() {
