@@ -1,6 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Buffers.Binary;
-using System.Collections.Immutable;
+﻿using System.Buffers.Binary;
+using System.Runtime.ExceptionServices;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -8,15 +7,13 @@ partial class BuildEnvironment {
     public BuildingResult BuildResources() {
         DateTime start = DateTime.Now;
 
-        HashSet<ResourceID> visited = [];
         Dictionary<ResourceID, ResourceBuildingResult> results = [];
         
         foreach ((var rid, _) in Resources) {
             bool get = Resources.TryGet(rid, out string? path, out BuildingOptions options);
             Debug.Assert(get);
-            
-            visited.Clear();
-            BuildResource(rid, path!, options, results, visited);
+
+            BuildResource(rid, path!, options, results);
         }
 
         return new(start, DateTime.Now, results);
@@ -31,28 +28,15 @@ partial class BuildEnvironment {
             });
         }
 
-        HashSet<ResourceID> visited = [];
         Dictionary<ResourceID, ResourceBuildingResult> results = [];
         
-        BuildResource(rid, resourcePath, buildingOptions, results, visited);
+        BuildResource(rid, resourcePath, buildingOptions, results);
         
         return new(start, DateTime.Now, results);
     }
 
-    /// <summary>
-    /// The main building function, will be called recursively (Depth-First Traversing).
-    /// </summary>
-    /// <param name="rid">ResourceID of currently importing resource.</param>
-    /// <param name="resourcePath">The file path of the currently importing resource.</param>
-    /// <param name="options">Importing options of currently importing resource.</param>
-    /// <param name="results">Resource Resource Dictionary to receive the result.</param>
-    /// <param name="tracer">Tracer that contains the objects needed for Depth-First Traversing.</param>
-    /// <param name="requestingBuilds">Dictionary that receive the requested building resources.</param>
-    /// <param name="rebuilt"><see langword="true"/> if resource is rebuilt instead of cached, <see langword="false"/> otherwise.</param>
-    /// <exception cref="ArgumentException"></exception>
-    /// <exception cref="InvalidOperationException"></exception>
-    private void BuildResource(ResourceID rid, string resourcePath, BuildingOptions options, Dictionary<ResourceID, ResourceBuildingResult> results, HashSet<ResourceID> visited) {
-        if (!visited.Add(rid)) return;
+    private void BuildResource(ResourceID rid, string resourcePath, BuildingOptions options, Dictionary<ResourceID, ResourceBuildingResult> results) {
+        if (results.ContainsKey(rid)) return;
         
         DateTime resourceLastWriteTime = File.GetLastWriteTime(resourcePath);
 
@@ -75,15 +59,21 @@ partial class BuildEnvironment {
         }
 
         if (!Importers.TryGetValue(options.ImporterName, out Importer? importer)) {
-            throw new ArgumentException(string.Format(ExceptionMessages.UnregisteredImporter, options.ImporterName));
+            results.Add(rid, new(BuildStatus.UnknownImporter));
+            return;
         }
 
         ContentRepresentation imported;
         ImportingContext context;
 
-        using (FileStream stream = File.OpenRead(resourcePath!)) {
+        try {
+            using FileStream stream = File.OpenRead(resourcePath);
+
             context = new();
             imported = importer.ImportObject(stream, context);
+        } catch (Exception e) {
+            results.Add(rid, new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
+            return;
         }
 
         try {
@@ -94,55 +84,66 @@ partial class BuildEnvironment {
             if (string.IsNullOrWhiteSpace(processorName)) {
                 processor = Processor.Passthrough;
             } else if (!Processors.TryGetValue(processorName, out processor)) {
-                throw new ArgumentException(string.Format(ExceptionMessages.UnregisteredProcessor, processorName));
+                results.Add(rid, new(BuildStatus.UnknownProcessor));
+                return;
             }
 
             if (!processor.CanProcess(imported)) {
-                throw new InvalidOperationException($"Processor key '{processorName}' type '{processor.GetType().FullName}' doesn't allow processing object of type '{imported.GetType().FullName}'.");
+                results.Add(rid, new(BuildStatus.CannotProcess));
+                return;
             }
 
             IncrementalInfo incrementalInfo = new(resourceLastWriteTime, options);
 
-            ContentRepresentation processed = processor.Process(imported!);
+            ContentRepresentation processed;
 
             try {
-                CompileObject(processed, rid);
+                processed = processor.Process(imported);
+            } catch (Exception e) {
+                results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
+                return;
+            }
+
+            try {
+                using MemoryStream ms = new(1024);
+                CompileObject(ms, processed);
+                ms.Position = 0;
+                Output.CopyCompiledResourceOutput(ms, rid);
+            } catch (Exception e) {
+                results.Add(rid, new(BuildStatus.CompilationFailed, ExceptionDispatchInfo.Capture(e)));
+                return;
             } finally {
                 processor.DisposeObject(processed);
             }
 
             results.Add(rid, new(BuildStatus.Success));
             _incrementalInfoStorage.Add(rid, incrementalInfo);
-
-            foreach (var reference in context.References) {
-                if (!Resources.TryGet(reference, out string? refResourcePath, out BuildingOptions refResourceBuildingOptions)) continue;
-
-                BuildResource(reference, refResourcePath, refResourceBuildingOptions, results, visited);
-            }
         } finally {
             importer.DisposeObject(imported);
+        }
+        
+        foreach (var reference in context.References) {
+            if (!Resources.TryGet(reference, out string? refResourcePath, out BuildingOptions refResourceBuildingOptions)) continue;
+
+            BuildResource(reference, refResourcePath, refResourceBuildingOptions, results);
         }
     }
     
     private static bool AreOptionsEqual(BuildingOptions currentOptions, BuildingOptions previousOptions) {
         if (currentOptions.ImporterName != previousOptions.ImporterName) return false;
         if (currentOptions.ProcessorName != previousOptions.ProcessorName) return false;
-
+        
         // TODO: Compare difference in import configurations.
         
         return true;
     }
     
-    private void CompileObject(ContentRepresentation processed, ResourceID rid) {
+    private void CompileObject(Stream outputStream, ContentRepresentation processed) {
         if (Serializers.GetSerializable(processed.GetType()) is not { } serializer) {
             throw new InvalidOperationException(string.Format(ExceptionMessages.NoSuitableSerializer, processed.GetType()));
         }
-        
-        using Stream outputStream = Output.CreateDestinationStream(rid);
-        outputStream.SetLength(0);
-        outputStream.Flush();
 
-        using BinaryWriter bwriter = new(outputStream);
+        using BinaryWriter bwriter = new(outputStream, Encoding.UTF8, true);
         bwriter.Write(CompilingConstants.MagicIdentifier);
         bwriter.Write((ushort)1);
         bwriter.Write((ushort)0);

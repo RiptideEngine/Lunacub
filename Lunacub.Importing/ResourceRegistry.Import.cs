@@ -90,9 +90,9 @@ partial class ResourceRegistry {
         unsafe {
             uint magic;
             read = br.Read(new Span<byte>(&magic, sizeof(uint)));
-
+            
             if (read < 4) throw new ArgumentException("Failed to read magic number.");
-
+            
             if (magic != BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.MagicIdentifier)) {
                 throw new FormatException("Invalid magic number.");
             }

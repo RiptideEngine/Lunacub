@@ -45,7 +45,9 @@ public class FileOutputSystem : OutputSystem {
         return File.Exists(path) ? File.GetLastWriteTime(path) : null;
     }
 
-    public override Stream CreateDestinationStream(ResourceID rid) {
-        return new FileStream(Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+    public override void CopyCompiledResourceOutput(Stream sourceStream, ResourceID rid) {
+        using FileStream fs = new(Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        fs.SetLength(0);
+        sourceStream.CopyTo(fs);
     }
 }

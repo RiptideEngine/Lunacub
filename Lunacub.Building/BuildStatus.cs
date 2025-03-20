@@ -6,5 +6,9 @@ public enum BuildStatus {
     
     ResourceNotFound = -1,
     UnknownImporter = -2,
-    UnknownProcessor = -3,
+    ImportingFailed = -3,
+    UnknownProcessor = -4,
+    CannotProcess = -5,
+    ProcessingFailed = -6,
+    CompilationFailed = -7,
 }

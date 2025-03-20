@@ -1,12 +1,14 @@
-﻿namespace Caxivitual.Lunacub.Building;
+﻿using System.Runtime.ExceptionServices;
+
+namespace Caxivitual.Lunacub.Building;
 
 public readonly struct ResourceBuildingResult {
     public readonly BuildStatus Status;
-    public readonly Exception? Exception;
+    public readonly ExceptionDispatchInfo? Exception;
 
     public bool IsSuccess => Status >= BuildStatus.Success;
 
-    internal ResourceBuildingResult(BuildStatus status, Exception? exception = null) {
+    internal ResourceBuildingResult(BuildStatus status, ExceptionDispatchInfo? exception = null) {
         Status = status;
         Exception = exception;
     }

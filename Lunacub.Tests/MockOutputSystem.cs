@@ -1,7 +1,4 @@
-﻿using Caxivitual.Lunacub.Compilation;
-using System.IO.Abstractions.TestingHelpers;
-
-namespace Caxivitual.Lunacub.Tests;
+﻿namespace Caxivitual.Lunacub.Tests;
 
 internal sealed class MockOutputSystem : OutputSystem {
     public static string ReportDirectory { get; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports");
@@ -33,7 +30,9 @@ internal sealed class MockOutputSystem : OutputSystem {
         return FileSystem.File.Exists(path) ? FileSystem.File.GetLastWriteTime(path) : null;
     }
 
-    public override Stream CreateDestinationStream(ResourceID rid) {
-        return new MockFileStream(FileSystem, FileSystem.Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.Create);
+    public override void CopyCompiledResourceOutput(Stream sourceStream, ResourceID rid) {
+        using MockFileStream outputStream = new(FileSystem, FileSystem.Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.Create);
+        sourceStream.Position = 0;
+        sourceStream.CopyTo(outputStream);
     }
 }

@@ -10,7 +10,7 @@ partial class BuildEnvironmentTests {
 
         var result = new Func<BuildingResult>(() => _context.BuildResources()).Should().NotThrow().Which.
             ResourceResults.Should().ContainKey(rid).WhoseValue;
-        
+
         result.IsSuccess.Should().BeTrue();
         fs.File.Exists(fs.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}")).Should().BeTrue();
     }
