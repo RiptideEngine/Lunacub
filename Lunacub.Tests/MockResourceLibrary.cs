@@ -1,12 +1,8 @@
-﻿using Caxivitual.Lunacub.Compilation;
-using System.IO.Abstractions;
-using System.IO.Abstractions.TestingHelpers;
-
-namespace Caxivitual.Lunacub.Tests;
+﻿namespace Caxivitual.Lunacub.Tests;
 
 public class MockResourceLibrary(Guid id, MockFileSystem fs) : ResourceLibrary(id) {
     public MockFileSystem FileSystem { get; } = fs;
-    
+
     public override bool Contains(ResourceID rid) {
         return FileSystem.File.Exists(FileSystem.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"));
     }

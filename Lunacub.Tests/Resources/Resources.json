@@ -1,0 +1,26 @@
+﻿{
+  "e0b8066bf60043c5a0c3a7782363427d": {
+    "Path": "SimpleResource.json",
+    "ImporterName": "SimpleResourceImporter"
+  },
+  "de1b416bf928467ea13bc0f23d3e6dfb": {
+    "Path": "ReferenceResource1.json",
+    "ImporterName": "ReferenceResourceImporter"
+  },
+  "7a6646bd2ee446a1a91c884b76f12392": {
+    "Path": "ReferenceResource2.json",
+    "ImporterName": "ReferenceResourceImporter"
+  },
+  "58f0c3e4c7c24f798129d45f248bfa2c": {
+    "Path": "ReferenceResource3.json",
+    "ImporterName": "ReferenceResourceImporter"
+  },
+  "235be3d4ddfd42fa983ce7c9d9f58d51": {
+    "Path": "ReferenceResource4.json",
+    "ImporterName": "ReferenceResourceImporter"
+  },
+  "2b786332e04a5874b2499ae7b84bd664": {
+    "Path": "DisposableResource.json",
+    "ImporterName": "DisposableResourceImporter"
+  }
+}

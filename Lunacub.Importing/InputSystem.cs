@@ -3,7 +3,7 @@
 public sealed class InputSystem {
     public ResourceLibraryCollection Libraries { get; }
 
-    public InputSystem() {
+    internal InputSystem() {
         Libraries = [];
     }
 
