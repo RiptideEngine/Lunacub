@@ -46,7 +46,7 @@ partial class BuildEnvironment {
             // Check if destination's last write time is later than resource's last write time.
             if (resourceLastWriteTime == previousReport.SourceLastWriteTime && resourceLastBuildTime > resourceLastWriteTime) {
                 // If any importing option is different.
-                if (AreOptionsEqual(options, previousReport.Options)) {
+                if (options.Equals(previousReport.Options)) {
                     ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(results, rid, out bool exists);
 
                     if (!exists) {
@@ -127,15 +127,6 @@ partial class BuildEnvironment {
 
             BuildResource(reference, refResourcePath, refResourceBuildingOptions, results);
         }
-    }
-    
-    private static bool AreOptionsEqual(BuildingOptions currentOptions, BuildingOptions previousOptions) {
-        if (currentOptions.ImporterName != previousOptions.ImporterName) return false;
-        if (currentOptions.ProcessorName != previousOptions.ProcessorName) return false;
-        
-        // TODO: Compare difference in import configurations.
-        
-        return true;
     }
     
     private void CompileObject(Stream outputStream, ContentRepresentation processed) {
