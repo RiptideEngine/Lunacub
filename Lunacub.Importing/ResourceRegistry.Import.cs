@@ -19,7 +19,7 @@ partial class ResourceRegistry {
     private object? ImportRecursive(ResourceID rid, Type type, Dictionary<ResourceID, object> importedStack) {
         if (!_context.Input.ContainResource(rid)) return null;
         
-        if (_resourceCache.TryGetValue(rid, out var cache)) return cache;
+        if (_resourceCache.TryGetValue(rid, out var cachedContainer)) return cachedContainer.Value;
         if (importedStack.TryGetValue(rid, out var imported)) return imported;
         
         using Stream resourceStream = _context.Input.CreateResourceStream(rid)!;
@@ -78,7 +78,7 @@ partial class ResourceRegistry {
         context.Dependencies = importedDependencies;
         deserializer.ResolveDependencies(deserialized, context);
         
-        _resourceCache.Add(rid, deserialized);
+        _resourceCache.Add(rid, new(1, deserialized));
         
         return deserialized;
     }

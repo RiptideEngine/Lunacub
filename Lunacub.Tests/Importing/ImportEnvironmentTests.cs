@@ -3,7 +3,7 @@
 namespace Caxivitual.Lunacub.Tests.Importing;
 
 public partial class ImportEnvironmentTests : IClassFixture<ImportingTestFixture>, IDisposable {
-    private ImportingTestFixture _fixture;
+    private readonly ImportingTestFixture _fixture;
 
     private readonly MockFileSystem _fileSystem;
     private readonly BuildEnvironment _buildEnv;
@@ -20,15 +20,15 @@ public partial class ImportEnvironmentTests : IClassFixture<ImportingTestFixture
         _buildEnv = new(new MockOutputSystem(_fileSystem));
         _importEnv = new();
 
-        foreach (var type in Assembly.GetExecutingAssembly().GetTypes().Where(x => x.IsSubclassOf(typeof(Importer)))) {
+        foreach (var type in _fixture.ComponentTypes[typeof(Importer)]) {
             _buildEnv.Importers.Add(type.Name, (Importer)Activator.CreateInstance(type)!);
         }
         
-        foreach (var type in Assembly.GetExecutingAssembly().GetTypes().Where(x => x.IsSubclassOf(typeof(Serializer)))) {
+        foreach (var type in _fixture.ComponentTypes[typeof(Serializer)]) {
             _buildEnv.Serializers.Add((Serializer)Activator.CreateInstance(type)!);
         }
         
-        foreach (var type in Assembly.GetExecutingAssembly().GetTypes().Where(x => x.IsSubclassOf(typeof(Deserializer)))) {
+        foreach (var type in _fixture.ComponentTypes[typeof(Deserializer)]) {
             _importEnv.Deserializers.Add(type.Name, (Deserializer)Activator.CreateInstance(type)!);
         }
     }

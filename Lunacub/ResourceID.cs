@@ -12,17 +12,10 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IUtf8SpanFormattable
         _guid = guid;
     }
 
-    public static ResourceID Parse(string s) => new(Guid.Parse(s));
-
+    public static ResourceID Parse(string s) => Parse(s.AsSpan());
     public static ResourceID Parse(ReadOnlySpan<char> s) => new(Guid.Parse(s));
 
-    public static bool TryParse([NotNullWhen(true)] string? s, out ResourceID result) {
-        unsafe {
-            fixed (ResourceID* ptr = &result) {
-                return Guid.TryParse(s, out *(Guid*)ptr);
-            }
-        }
-    }
+    public static bool TryParse([NotNullWhen(true)] string? s, out ResourceID result) => TryParse(s.AsSpan(), out result);
     
     public static bool TryParse(ReadOnlySpan<char> s, out ResourceID result) {
         unsafe {

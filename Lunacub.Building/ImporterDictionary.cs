@@ -1,6 +1,8 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
-public sealed class ImporterDictionary() : IdentityDictionary<Importer>(StringComparer.Ordinal) {
+public sealed class ImporterDictionary : IdentityDictionary<Importer> {
+    internal ImporterDictionary() : base(StringComparer.Ordinal) { }
+
     public override void Add(string key, Importer value) {
         ValidateKey(key);
         ValidateValue(value);

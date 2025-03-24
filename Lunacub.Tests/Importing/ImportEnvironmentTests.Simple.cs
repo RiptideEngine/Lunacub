@@ -12,8 +12,8 @@ partial class ImportEnvironmentTests {
         var fs = ((MockResourceLibrary)_importEnv.Input.Libraries[0]).FileSystem;
         fs.File.Exists(fs.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}")).Should().BeTrue();
 
-        new Func<object?>(() => _importEnv.Import<object>(rid)).Should().NotThrow()
-            .Which.Should().BeOfType<SimpleResource>()
-            .Which.Value.Should().Be(69);
+        var handle = new Func<ResourceHandle<object>>(() => _importEnv.Import<object>(rid)).Should().NotThrow().Which;
+        handle.Rid.Should().Be(rid);
+        handle.Value.Should().BeOfType<SimpleResource>().Which.Value.Should().Be(69);
     }
 }

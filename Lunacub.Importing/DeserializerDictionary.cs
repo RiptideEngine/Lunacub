@@ -1,6 +1,8 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
-public sealed class DeserializerDictionary() : IdentityDictionary<Deserializer>(StringComparer.Ordinal) {
+public sealed class DeserializerDictionary : IdentityDictionary<Deserializer> {
+    internal DeserializerDictionary() : base(StringComparer.Ordinal) { }
+    
     public override void Add(string key, Deserializer value) {
         ValidateKey(key);
         ValidateValue(value);

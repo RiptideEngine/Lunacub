@@ -12,15 +12,19 @@ partial class ImportEnvironmentTests {
         
         _fileSystem.File.Exists(_fileSystem.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid1}{CompilingConstants.CompiledResourceExtension}")).Should().BeTrue();
         _fileSystem.File.Exists(_fileSystem.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid2}{CompilingConstants.CompiledResourceExtension}")).Should().BeTrue();
-        
-        var ref1 = new Func<object?>(() => _importEnv.Import<object>(rid1)).Should().NotThrow().Which.Should().BeOfType<ReferenceResource>().Which;
-        var ref2 = new Func<object?>(() => _importEnv.Import<object>(rid2)).Should().NotThrow().Which.Should().BeOfType<ReferenceResource>().Which;
-            
-        ref1.Value.Should().Be(69);
-        ref2.Value.Should().Be(420);
 
-        ref1.Reference.Should().BeSameAs(ref2);
-        ref2.Reference.Should().BeNull();
+        var handle = new Func<ResourceHandle<object>>(() => _importEnv.Import<object>(rid1)).Should().NotThrow().Which;
+        handle.Rid.Should().Be(rid1);
+        var resource1 = handle.Value.Should().BeOfType<ReferenceResource>().Which;
+        resource1.Value.Should().Be(69);
+        
+        handle = new Func<ResourceHandle<object>>(() => _importEnv.Import<object>(rid2)).Should().NotThrow().Which;
+        handle.Rid.Should().Be(rid2);
+        var resource2 = handle.Value.Should().BeOfType<ReferenceResource>().Which;
+        resource2.Value.Should().Be(420);
+
+        resource1.Reference.Should().BeSameAs(resource2);
+        resource2.Reference.Should().BeNull();
     }
     
     [Fact]
@@ -34,13 +38,17 @@ partial class ImportEnvironmentTests {
         _fileSystem.File.Exists(_fileSystem.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid3}{CompilingConstants.CompiledResourceExtension}")).Should().BeTrue();
         _fileSystem.File.Exists(_fileSystem.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid4}{CompilingConstants.CompiledResourceExtension}")).Should().BeTrue();
         
-        var ref1 = new Func<object?>(() => _importEnv.Import<object>(rid3)).Should().NotThrow().Which.Should().BeOfType<ReferenceResource>().Which;
-        var ref2 = new Func<object?>(() => _importEnv.Import<object>(rid4)).Should().NotThrow().Which.Should().BeOfType<ReferenceResource>().Which;
-            
-        ref1.Value.Should().Be(69);
-        ref2.Value.Should().Be(420);
-
-        ref1.Reference.Should().BeSameAs(ref2);
-        ref2.Reference.Should().BeSameAs(ref1);
+        var handle = new Func<ResourceHandle<object>>(() => _importEnv.Import<object>(rid3)).Should().NotThrow().Which;
+        handle.Rid.Should().Be(rid3);
+        var resource3 = handle.Value.Should().BeOfType<ReferenceResource>().Which;
+        resource3.Value.Should().Be(69);
+        
+        handle = new Func<ResourceHandle<object>>(() => _importEnv.Import<object>(rid4)).Should().NotThrow().Which;
+        handle.Rid.Should().Be(rid4);
+        var resource4 = handle.Value.Should().BeOfType<ReferenceResource>().Which;
+        resource4.Value.Should().Be(420);
+        
+        resource3.Reference.Should().BeSameAs(resource4);
+        resource4.Reference.Should().BeSameAs(resource3);
     }
 }

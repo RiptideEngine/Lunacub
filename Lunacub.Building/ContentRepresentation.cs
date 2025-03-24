@@ -1,4 +1,3 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
-public abstract class ContentRepresentation {
-}
+public abstract class ContentRepresentation;

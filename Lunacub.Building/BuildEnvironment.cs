@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-
-namespace Caxivitual.Lunacub.Building;
+﻿namespace Caxivitual.Lunacub.Building;
 
 public sealed partial class BuildEnvironment : IDisposable {
     public ImporterDictionary Importers { get; } = [];
@@ -10,15 +7,12 @@ public sealed partial class BuildEnvironment : IDisposable {
     public OutputSystem Output { get; }
     public ResourceRegistry Resources { get; } = new();
 
-    public ILogger Logger { get; set; }
-
     private readonly IncrementalInfoStorage _incrementalInfoStorage;
     private bool _disposed;
 
     public BuildEnvironment(OutputSystem output) {
         Output = output;
         _incrementalInfoStorage = new(output);
-        Logger = NullLogger.Instance;
     }
 
     private void Dispose(bool disposing) {

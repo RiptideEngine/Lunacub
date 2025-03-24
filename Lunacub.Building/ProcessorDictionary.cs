@@ -1,6 +1,8 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
-public sealed class ProcessorDictionary() : IdentityDictionary<Processor>(StringComparer.Ordinal) {
+public sealed class ProcessorDictionary : IdentityDictionary<Processor> {
+    internal ProcessorDictionary() : base(StringComparer.Ordinal) { }
+    
     public override void Add(string key, Processor value) {
         ValidateKey(key);
         ValidateValue(value);

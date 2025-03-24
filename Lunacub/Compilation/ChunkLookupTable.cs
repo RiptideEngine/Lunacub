@@ -2,32 +2,34 @@
 
 namespace Caxivitual.Lunacub.Compilation;
 
-public ref struct ChunkLookupTable : IDisposable {
-    private ChunkTagPosition[] _array;
-    private Span<ChunkTagPosition> _span;
-    private int _position;
+public struct ChunkLookupTable : IDisposable {
+    public ChunkTagPosition[] _array;
 
-    public int Count => _position;
-    public int Capacity => _span.Length;
+    public int Count { get; private set; }
+    public int Capacity => _array.Length;
 
-    public readonly ReadOnlySpan<ChunkTagPosition> Span => _span[.._position];
-    
+    public readonly ReadOnlySpan<ChunkTagPosition> Span => _array.AsSpan(0,Count);
+
+    public ChunkLookupTable() {
+        _array = [];
+    }
+
     public ChunkLookupTable(int initialCount) {
         _array = ArrayPool<ChunkTagPosition>.Shared.Rent(initialCount);
-        _span = _array;
     }
 
     public void Add(ChunkTagPosition item) {
         if (Count == Capacity) {
-            ChunkTagPosition[] rent = ArrayPool<ChunkTagPosition>.Shared.Rent(_position + 16);
+            ChunkTagPosition[] rent = ArrayPool<ChunkTagPosition>.Shared.Rent(Count + 16);
             Span.CopyTo(rent);
             ArrayPool<ChunkTagPosition>.Shared.Return(_array);
             _array = rent;
-            _span = _array;
         }
 
-        _span[_position++] = item;
+        _array[Count++] = item;
     }
+    
+    public void Add(uint tag, int position) => Add(new(tag, position));
 
     public readonly bool TryGetChunkPosition(uint tag, out int position) {
         foreach (ref readonly var entry in Span) {
@@ -42,7 +44,9 @@ public ref struct ChunkLookupTable : IDisposable {
     }
 
     public void Dispose() {
-        ArrayPool<ChunkTagPosition>.Shared.Return(_array);
-        _array = [];
+        if (_array != null) {
+            ArrayPool<ChunkTagPosition>.Shared.Return(_array);
+            _array = [];
+        }
     }
 }
