@@ -10,5 +10,4 @@ public abstract class Importer<T> : Importer where T : ContentRepresentation {
     }
 
     protected abstract T Import(Stream stream, ImportingContext context);
-    protected virtual void Dispose(T obj) { }
 }
