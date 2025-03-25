@@ -34,8 +34,6 @@ public sealed class ReferenceResourceDeserializer : Deserializer<ReferenceResour
     protected override ReferenceResource Deserialize(Stream stream, DeserializationContext context) {
         using var reader = new BinaryReader(stream, Encoding.UTF8, true);
         
-        reader.BaseStream.Seek(4, SeekOrigin.Current);
-        
         context.RequestReference<ReferenceResource>(nameof(ReferenceResource.Reference), reader.ReadResourceID());
         
         return new() {

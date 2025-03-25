@@ -9,7 +9,9 @@ public class FileResourceLibrary(Guid id, string directory) : ResourceLibrary(id
         return File.Exists(Path.Combine(Directory, $"{rid}{CompilingConstants.CompiledResourceExtension}"));
     }
 
-    public override Stream CreateStream(ResourceID rid) {
-        return new FileStream(Path.Combine(Directory, $"{rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.Open, FileAccess.Read, FileShare.Read);
+    protected override Stream? CreateStreamImpl(ResourceID rid) {
+        string path = Path.Combine(Directory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
+        
+        return File.Exists(path) ? File.OpenRead(path) : null;
     }
 }

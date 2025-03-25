@@ -22,18 +22,26 @@ partial class ResourceRegistry {
         if (_resourceCache.TryGetValue(rid, out var cachedContainer)) return cachedContainer.Value;
         if (importedStack.TryGetValue(rid, out var imported)) return imported;
         
-        using Stream resourceStream = _context.Input.CreateResourceStream(rid)!;
-        Debug.Assert(resourceStream != null);
-        
-        ExtractCompiledResource(resourceStream, out ushort major, out ushort minor, out ChunkLookupTable table);
-                
-        return major switch {
-            1 => ImportV1(minor, rid, resourceStream, type, in table, importedStack),
-            _ => throw new NotSupportedException($"Compiled resource version {major} is not supported."),
-        };
+        Stream? resourceStream = _context.Input.CreateResourceStream(rid);
+
+        if (resourceStream == null) {
+            throw new InvalidOperationException($"Null resource stream provided despite contains resource '{rid}'.");
+        }
+
+        DetachableDisposable<Stream> detachableStream = new(resourceStream);
+        try {
+            ExtractCompiledResource(detachableStream.Value!, out ushort major, out ushort minor, out ChunkLookupTable table);
+
+            return major switch {
+                1 => ImportV1(minor, rid, ref detachableStream, type, in table, importedStack),
+                _ => throw new NotSupportedException($"Compiled resource version {major} is not supported."),
+            };
+        } finally {
+            detachableStream.Dispose();
+        }
     }
 
-    private object? ImportV1(ushort minor, ResourceID rid, Stream resourceStream, Type type, in ChunkLookupTable table, Dictionary<ResourceID, object> importedStack) {
+    private object? ImportV1(ushort minor, ResourceID rid, ref DetachableDisposable<Stream> resourceStream, Type type, in ChunkLookupTable table, Dictionary<ResourceID, object> importedStack) {
         if (minor != 0) {
             throw new NotSupportedException($"Compiled resource version 1.{minor} is not supported.");
         }
@@ -42,10 +50,9 @@ partial class ResourceRegistry {
             throw new CorruptedFormatException($"Compiled resource missing {Encoding.ASCII.GetString(CompilingConstants.ResourceDataChunkTag)} chunk.");
         }
 
-        using BinaryReader reader = new(resourceStream, Encoding.UTF8, true);
-        
-        resourceStream.Seek(deserializationChunkPosition + 8, SeekOrigin.Begin);
+        resourceStream.Value!.Seek(deserializationChunkPosition + 8, SeekOrigin.Begin);
 
+        using BinaryReader reader = new(resourceStream.Value!, Encoding.UTF8, true);
         string deserializerName = reader.ReadString();
 
         if (!_context.Deserializers.TryGetValue(deserializerName, out Deserializer? deserializer)) {
@@ -59,14 +66,22 @@ partial class ResourceRegistry {
         if (!table.TryGetChunkPosition(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.ResourceDataChunkTag), out int dataChunkPosition)) {
             throw new CorruptedFormatException($"Compiled resource missing {Encoding.ASCII.GetString(CompilingConstants.ResourceDataChunkTag)} chunk.");
         }
-        
-        // TODO: Pass in a partial Stream object instead the whole resource stream.
-        resourceStream.Seek(dataChunkPosition + 4, SeekOrigin.Begin);
 
-        // TODO: Context, reference handling.
-        DeserializationContext context = new();
-        object deserialized = deserializer.DeserializeObject(resourceStream, context);
+        DeserializationContext context;
+        object deserialized;
+
+        resourceStream.Value.Seek(dataChunkPosition + 4, SeekOrigin.Begin);   // Skip data chunk tag
+        uint length = reader.ReadUInt32();
         
+        using (PartialReadStream dataStream = new(resourceStream.Value, dataChunkPosition + 8, length, ownStream: false)) {
+            context = new();
+            deserialized = deserializer.DeserializeObject(dataStream, context);
+
+            if (deserializer.Streaming) {
+                resourceStream.Detach();
+            }
+        }
+
         importedStack.Add(rid, deserialized);
         
         Dictionary<string, object?> importedDependencies = [];

@@ -63,20 +63,14 @@ partial class BuildEnvironment {
             return;
         }
 
-        ContentRepresentation imported;
         ImportingContext context;
 
         try {
             using FileStream stream = File.OpenRead(resourcePath);
 
             context = new();
-            imported = importer.ImportObject(stream, context);
-        } catch (Exception e) {
-            results.Add(rid, new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
-            return;
-        }
-
-        try {
+            using ContentRepresentation imported = importer.ImportObject(stream, context);
+            
             string? processorName = options.ProcessorName;
 
             Processor? processor;
@@ -118,8 +112,9 @@ partial class BuildEnvironment {
 
             results.Add(rid, new(BuildStatus.Success));
             _incrementalInfoStorage.Add(rid, incrementalInfo);
-        } finally {
-            imported.Dispose();
+        } catch (Exception e) {
+            results.Add(rid, new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
+            return;
         }
         
         foreach (var reference in context.References) {
@@ -149,23 +144,19 @@ partial class BuildEnvironment {
 
         bwriter.Seek(8 * NumChunks, SeekOrigin.Current);
         
-        try {
-            int chunkStart = (int)outputStream.Position;
-            WriteDataChunk(bwriter, processed, serializer);
-            chunks[chunkIndex++] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.ResourceDataChunkTag), chunkStart);
+        int chunkStart = (int)outputStream.Position;
+        WriteDataChunk(bwriter, processed, serializer);
+        chunks[chunkIndex++] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.ResourceDataChunkTag), chunkStart);
 
-            chunkStart = (int)outputStream.Position;
-            WriteDeserializerChunk(bwriter, serializer);
-            chunks[chunkIndex++] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.DeserializationChunkTag), chunkStart);
-        } finally {
-            Debug.Assert(chunkIndex == NumChunks);
-            
-            outputStream.Seek(chunkLocationPosition, SeekOrigin.Begin);
-            
-            foreach ((uint chunkIdentifier, int chunkSize) in chunks) {
-                bwriter.Write(chunkIdentifier);
-                bwriter.Write(chunkSize);
-            }
+        chunkStart = (int)outputStream.Position;
+        WriteDeserializerChunk(bwriter, serializer);
+        chunks[chunkIndex] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.DeserializationChunkTag), chunkStart);
+        
+        outputStream.Seek(chunkLocationPosition, SeekOrigin.Begin);
+        
+        foreach ((uint chunkIdentifier, int chunkSize) in chunks) {
+            bwriter.Write(chunkIdentifier);
+            bwriter.Write(chunkSize);
         }
 
         static void WriteDataChunk(BinaryWriter writer, ContentRepresentation obj, Serializer serializer) {
@@ -174,8 +165,8 @@ partial class BuildEnvironment {
             writer.Write("DATA"u8);
             {
                 var chunkLenPosition = (int)outputStream.Position;
-            
                 writer.Seek(4, SeekOrigin.Current);
+                
                 serializer.SerializeObject(obj, outputStream);
                 
                 var serializedSize = (int)(outputStream.Position - chunkLenPosition - 4);
@@ -183,7 +174,7 @@ partial class BuildEnvironment {
                 writer.Seek(chunkLenPosition, SeekOrigin.Begin);
                 writer.Write(serializedSize);
                 
-                writer.Seek(chunkLenPosition, SeekOrigin.Current);
+                writer.Seek(serializedSize, SeekOrigin.Current);
             }
         }
 

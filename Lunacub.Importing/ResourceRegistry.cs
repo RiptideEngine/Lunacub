@@ -96,6 +96,16 @@ public sealed partial class ResourceRegistry : IDisposable {
 
         if (disposing) {
             // TODO: Dispose Resources.
+            _lock.EnterWriteLock();
+            try {
+                foreach ((_, var container) in _resourceCache) {
+                    _context.Disposers.TryDispose(container.Value);
+                }
+                
+                _resourceCache.Clear();
+            } finally {
+                _lock.ExitWriteLock();
+            }
             
             _lock.Dispose();
         }

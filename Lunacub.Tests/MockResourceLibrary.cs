@@ -7,7 +7,9 @@ public class MockResourceLibrary(Guid id, MockFileSystem fs) : ResourceLibrary(i
         return FileSystem.File.Exists(FileSystem.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"));
     }
 
-    public override Stream CreateStream(ResourceID rid) {
-        return new MockFileStream(FileSystem, Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.Open, FileAccess.Read);
+    protected override Stream? CreateStreamImpl(ResourceID rid) {
+        string path = FileSystem.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
+        
+        return FileSystem.File.Exists(path) ? FileSystem.File.OpenRead(path) : null;
     }
 }

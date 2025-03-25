@@ -28,8 +28,6 @@ public sealed class SimpleResourceDeserializer : Deserializer<SimpleResource> {
     protected override SimpleResource Deserialize(Stream stream, DeserializationContext context) {
         using var reader = new BinaryReader(stream, Encoding.UTF8, true);
         
-        reader.BaseStream.Seek(4, SeekOrigin.Current);
-        
         return new() {
             Value = reader.ReadInt32(),
         };
