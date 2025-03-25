@@ -7,7 +7,6 @@ public abstract class Processor {
     internal abstract bool CanProcess(ContentRepresentation input);
     
     internal abstract ContentRepresentation Process(ContentRepresentation input);
-    internal virtual void DisposeObject(ContentRepresentation processed) { }
 }
 
 public abstract class Processor<TInput, TOutput> : Processor where TInput : ContentRepresentation where TOutput : ContentRepresentation {
@@ -15,12 +14,6 @@ public abstract class Processor<TInput, TOutput> : Processor where TInput : Cont
         Debug.Assert(input.GetType().IsAssignableTo(typeof(TInput)));
 
         return Process((TInput)input);
-    }
-
-    internal override sealed void DisposeObject(ContentRepresentation processed) {
-        Debug.Assert(processed.GetType().IsAssignableTo(typeof(TOutput)));
-        
-        Dispose((TOutput)processed);
     }
 
     protected virtual bool CanProcess(TInput content) => true;

@@ -113,13 +113,13 @@ partial class BuildEnvironment {
                 results.Add(rid, new(BuildStatus.CompilationFailed, ExceptionDispatchInfo.Capture(e)));
                 return;
             } finally {
-                processor.DisposeObject(processed);
+                processed.Dispose();
             }
 
             results.Add(rid, new(BuildStatus.Success));
             _incrementalInfoStorage.Add(rid, incrementalInfo);
         } finally {
-            importer.DisposeObject(imported);
+            imported.Dispose();
         }
         
         foreach (var reference in context.References) {
