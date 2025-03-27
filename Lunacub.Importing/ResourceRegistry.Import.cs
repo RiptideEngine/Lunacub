@@ -76,7 +76,7 @@ partial class ResourceRegistry {
         using (PartialReadStream dataStream = new(resourceStream.Value, dataChunkPosition + 8, length, ownStream: false)) {
             context = new();
             deserialized = deserializer.DeserializeObject(dataStream, context);
-
+        
             if (deserializer.Streaming) {
                 resourceStream.Detach();
             }

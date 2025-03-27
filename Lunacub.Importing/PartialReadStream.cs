@@ -79,16 +79,20 @@ internal class PartialReadStream : Stream {
     }
 
     public override int Read(byte[] buffer, int offset, int count) {
-        if (_baseStream.Position + count > _basePosition + _length) {
-            count = (int)(_length - _baseStream.Position - _basePosition);
+        long p = _baseStream.Position;
+        
+        if (p + count > _basePosition + _length) {
+            count = (int)(_basePosition + _length - p);
         }
         
         return _baseStream.Read(buffer, offset, count);
     }
 
     public override int Read(Span<byte> buffer) {
-        if (_baseStream.Position + buffer.Length > _basePosition + _length) {
-            buffer = buffer[..(int)(_length - _baseStream.Position - _basePosition)];
+        long p = _baseStream.Position;
+        
+        if (p + buffer.Length > _basePosition + _length) {
+            buffer = buffer[..(int)(_basePosition + _length - p)];
         }
         
         return _baseStream.Read(buffer);
@@ -98,7 +102,7 @@ internal class PartialReadStream : Stream {
         if (disposing) {
             if (_ownStream) {
                 _baseStream.Dispose();
-                _baseStream = null;
+                _baseStream = null!;
             }
         }
     }
