@@ -18,7 +18,6 @@ public abstract class Processor<TInput, TOutput> : Processor where TInput : Cont
 
     protected virtual bool CanProcess(TInput content) => true;
     protected abstract TOutput Process(TInput input);
-    protected virtual void Dispose(TOutput processed) { }
 }
 
 file sealed class PassthroughProcessor : Processor {

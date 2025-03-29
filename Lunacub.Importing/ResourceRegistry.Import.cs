@@ -99,12 +99,11 @@ partial class ResourceRegistry {
     }
     
     private static void ExtractCompiledResource(Stream stream, out ushort majorVersion, out ushort minorVersion, out ChunkLookupTable lookupTable) {
-        int read;
         using BinaryReader br = new(stream, Encoding.UTF8, true);
         
         unsafe {
             uint magic;
-            read = br.Read(new Span<byte>(&magic, sizeof(uint)));
+            int read = br.Read(new Span<byte>(&magic, sizeof(uint)));
             
             if (read < 4) throw new ArgumentException("Failed to read magic number.");
             
