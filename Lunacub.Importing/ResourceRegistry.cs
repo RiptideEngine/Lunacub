@@ -1,91 +1,70 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
 public sealed partial class ResourceRegistry : IDisposable {
-    private readonly ReaderWriterLockSlim _lock;
+    private readonly Lock _lock;
     private readonly Dictionary<ResourceID, Container> _resourceCache;
     private readonly ImportEnvironment _context;
     
     private bool _disposed;
 
     internal ResourceRegistry(ImportEnvironment context) {
-        _lock =  new(LockRecursionPolicy.SupportsRecursion);
+        _lock =  new();
         _resourceCache = [];
         _context = context;
     }
     
     internal ResourceHandle<T> Import<T>(ResourceID rid) where T : class {
-        _lock.EnterUpgradeableReadLock();
-        try {
-            if (_resourceCache.TryGetValue(rid, out var cachedContainer) && cachedContainer.ReferenceCount > 0) {
-                return new(rid, cachedContainer.Value as T);
+        using (_lock.EnterScope()) {
+            ref var container = ref CollectionsMarshal.GetValueRefOrNullRef(_resourceCache, rid);
+
+            if (!Unsafe.IsNullRef(ref container)) {
+                Debug.Assert(container.ReferenceCount != 0);
+                
+                container.ReferenceCount++;
+                return new(rid, container.Value as T);
             }
             
-            _lock.EnterWriteLock();
-            try {
-                return new(rid, ImportInner(rid, typeof(T)) as T);
-            } finally {
-                _lock.ExitWriteLock();
-            }
-        } finally {
-            _lock.ExitUpgradeableReadLock();
+            return new(rid, ImportInner(rid, typeof(T)) as T);
         }
     }
     
     internal ReleaseStatus Release(ResourceHandle handle) {
         if (handle.Value is not { } releasingInstance) return ReleaseStatus.ResourceIncompatible;
-        
-        _lock.EnterUpgradeableReadLock();
-        try {
-            if (!_resourceCache.TryGetValue(handle.Rid, out Container resourceContainer)) return ReleaseStatus.ResourceNotFound;
-            Debug.Assert(resourceContainer.ReferenceCount != 0);
 
-            if (!resourceContainer.Value.Equals(releasingInstance)) return ReleaseStatus.ResourceIncompatible;
+        using (_lock.EnterScope()) {
+            ref var container = ref CollectionsMarshal.GetValueRefOrNullRef(_resourceCache, handle.Rid);
+
+            if (Unsafe.IsNullRef(ref container)) return ReleaseStatus.ResourceNotImported;
             
-            _lock.EnterWriteLock();
-            try {
-                ref var reference = ref CollectionsMarshal.GetValueRefOrNullRef(_resourceCache, handle.Rid);
-                Debug.Assert(!Unsafe.IsNullRef(ref reference));
-
-                if (--reference.ReferenceCount == 0) {
-                    bool result = _context.Disposers.TryDispose(releasingInstance);
-                    _resourceCache.Remove(handle.Rid);
-
-                    return result ? ReleaseStatus.Success : ReleaseStatus.NotDisposed;
-                }
-
-                return ReleaseStatus.Success;
-            } finally {
-                _lock.ExitWriteLock();
+            Debug.Assert(container.ReferenceCount != 0);
+            
+            if (!container.Value.Equals(releasingInstance)) return ReleaseStatus.ResourceIncompatible;
+            
+            if (--container.ReferenceCount == 0) {
+                bool result = _context.Disposers.TryDispose(releasingInstance);
+                _resourceCache.Remove(handle.Rid);
+                return result ? ReleaseStatus.Success : ReleaseStatus.NotDisposed;
             }
-        } finally {
-            _lock.ExitUpgradeableReadLock();
+
+            return ReleaseStatus.Success;
         }
     }
 
     internal ReleaseStatus Release(ResourceID rid) {
-        _lock.EnterUpgradeableReadLock();
-        try {
-            if (!_resourceCache.TryGetValue(rid, out Container resourceContainer)) return ReleaseStatus.ResourceNotFound;
-            Debug.Assert(resourceContainer.ReferenceCount != 0);
+        using (_lock.EnterScope()) {
+            ref var container = ref CollectionsMarshal.GetValueRefOrNullRef(_resourceCache, rid);
+
+            if (Unsafe.IsNullRef(ref container)) return ReleaseStatus.ResourceNotImported;
             
-            _lock.EnterWriteLock();
-            try {
-                ref var reference = ref CollectionsMarshal.GetValueRefOrNullRef(_resourceCache, rid);
-                Debug.Assert(!Unsafe.IsNullRef(ref reference));
-
-                if (--reference.ReferenceCount == 0) {
-                    bool result = _context.Disposers.TryDispose(resourceContainer.Value);
-                    _resourceCache.Remove(rid);
-
-                    return result ? ReleaseStatus.Success : ReleaseStatus.NotDisposed;
-                }
-
-                return ReleaseStatus.Success;
-            } finally {
-                _lock.ExitWriteLock();
+            Debug.Assert(container.ReferenceCount != 0);
+            
+            if (--container.ReferenceCount == 0) {
+                bool result = _context.Disposers.TryDispose(container.Value);
+                _resourceCache.Remove(rid);
+                return result ? ReleaseStatus.Success : ReleaseStatus.NotDisposed;
             }
-        } finally {
-            _lock.ExitUpgradeableReadLock();
+
+            return ReleaseStatus.Success;
         }
     }
     
@@ -95,18 +74,13 @@ public sealed partial class ResourceRegistry : IDisposable {
         _disposed = true;
 
         if (disposing) {
-            _lock.EnterWriteLock();
-            try {
+            using (_lock.EnterScope()) {
                 foreach ((_, var container) in _resourceCache) {
                     _context.Disposers.TryDispose(container.Value);
                 }
                 
                 _resourceCache.Clear();
-            } finally {
-                _lock.ExitWriteLock();
             }
-            
-            _lock.Dispose();
         }
     }
 

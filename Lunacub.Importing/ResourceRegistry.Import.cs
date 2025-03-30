@@ -7,8 +7,6 @@ namespace Caxivitual.Lunacub.Importing;
 
 partial class ResourceRegistry {
     private object? ImportInner(ResourceID rid, Type type) {
-        Debug.Assert(_lock.IsWriteLockHeld);
-
         if (!_context.Input.ContainResource(rid)) return null;
 
         Dictionary<ResourceID, object> imported = [];
@@ -92,7 +90,7 @@ partial class ResourceRegistry {
 
         context.Dependencies = importedDependencies;
         deserializer.ResolveDependencies(deserialized, context);
-        
+
         _resourceCache.Add(rid, new(1, deserialized));
         
         return deserialized;

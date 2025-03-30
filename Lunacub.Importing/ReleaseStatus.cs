@@ -4,7 +4,7 @@ public enum ReleaseStatus {
     Success = 0,
     NotDisposed,
     
-    ResourceNotFound = -1,
+    ResourceNotImported = -1,
     ResourceIncompatible = -2,
     Unspecified = int.MinValue,
 }
