@@ -3,8 +3,11 @@
 public sealed class ImportingContext {
     internal List<ResourceID> References { get; }
     
-    internal ImportingContext() {
+    public object? Options { get; }
+    
+    internal ImportingContext(object? options) {
         References = [];
+        Options = options;
     }
 
     public void AddReference(ResourceID rid) {
