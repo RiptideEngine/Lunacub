@@ -68,7 +68,7 @@ partial class BuildEnvironment {
         try {
             using FileStream stream = File.OpenRead(resourcePath);
 
-            context = new();
+            context = new(options.Options);
             using ContentRepresentation imported = importer.ImportObject(stream, context);
             
             string? processorName = options.ProcessorName;
@@ -92,14 +92,14 @@ partial class BuildEnvironment {
             ContentRepresentation processed;
 
             try {
-                processed = processor.Process(imported);
+                processed = processor.Process(imported, new(options.Options));
             } catch (Exception e) {
                 results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
                 return;
             }
 
             try {
-                using MemoryStream ms = new(1024);
+                using MemoryStream ms = new(4096);
                 CompileObject(ms, processed);
                 ms.Position = 0;
                 Output.CopyCompiledResourceOutput(ms, rid);
