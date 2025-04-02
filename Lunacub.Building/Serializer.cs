@@ -2,7 +2,7 @@
 
 public abstract class Serializer {
     public ContentRepresentation SerializingObject { get; }
-    internal SerializationContext Context { get; }
+    public SerializationContext Context { get; }
     
     public abstract string DeserializerName { get; }
 
