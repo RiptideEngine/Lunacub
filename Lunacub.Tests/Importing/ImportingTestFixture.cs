@@ -12,7 +12,7 @@ public class ImportingTestFixture : IDisposable {
         _resources = JsonSerializer.Deserialize<Dictionary<ResourceID, JsonObject>>(fs)!;
 
         Type[] types = Assembly.GetExecutingAssembly().GetTypes();
-        ComponentTypes = new Dictionary<Type, ImmutableArray<Type>>() {
+        ComponentTypes = new Dictionary<Type, ImmutableArray<Type>> {
             [typeof(Importer)] = [..types.Where(x => x.IsSubclassOf(typeof(Importer)))],
             [typeof(SerializerFactory)] = [..types.Where(x => x.IsSubclassOf(typeof(SerializerFactory)))],
             [typeof(Deserializer)] = [..types.Where(x => x.IsSubclassOf(typeof(Deserializer)))],

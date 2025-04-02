@@ -99,7 +99,7 @@ partial class BuildEnvironment {
             }
 
             try {
-                if (SerializersFactory.GetSerializableFactory(processed.GetType()) is not { } factory) {
+                if (SerializerFactories.GetSerializableFactory(processed.GetType()) is not { } factory) {
                     throw new InvalidOperationException(string.Format(ExceptionMessages.NoSuitableSerializer, processed.GetType()));
                 }
         
