@@ -11,7 +11,7 @@ public abstract class Serializer {
         Context = context;
     }
     
-    public abstract void SerializeObject(Stream outputDestination);
-    public virtual void SerializeOptions(Stream outputDestination) {
+    public abstract void SerializeObject(Stream outputStream);
+    public virtual void SerializeOptions(Stream outputStream) {
     }
 }

@@ -24,8 +24,8 @@ public partial class ImportEnvironmentTests : IClassFixture<ImportingTestFixture
             _buildEnv.Importers.Add(type.Name, (Importer)Activator.CreateInstance(type)!);
         }
         
-        foreach (var type in _fixture.ComponentTypes[typeof(Serializer)]) {
-            _buildEnv.SerializersFactory.Add((Serializer)Activator.CreateInstance(type)!);
+        foreach (var type in _fixture.ComponentTypes[typeof(SerializerFactory)]) {
+            _buildEnv.SerializersFactory.Add((SerializerFactory)Activator.CreateInstance(type)!);
         }
         
         foreach (var type in _fixture.ComponentTypes[typeof(Deserializer)]) {

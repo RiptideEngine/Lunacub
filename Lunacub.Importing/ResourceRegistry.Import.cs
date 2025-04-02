@@ -62,20 +62,36 @@ partial class ResourceRegistry {
         if (!table.TryGetChunkPosition(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.ResourceDataChunkTag), out int dataChunkPosition)) {
             throw new CorruptedFormatException($"Compiled resource missing {Encoding.ASCII.GetString(CompilingConstants.ResourceDataChunkTag)} chunk.");
         }
+        
+        // Copy options to a MemoryStream.
+        Stream optionsStream;
+
+        if (table.TryGetChunkPosition(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.ResourceDataChunkTag), out int optionsChunkPosition)) {
+            resourceStream.Value!.Seek(optionsChunkPosition + 4, SeekOrigin.Begin);
+            int optionsLength = reader.ReadInt32();
+
+            optionsStream = new MemoryStream(optionsLength);
+            resourceStream.Value!.CopyTo(optionsStream, optionsLength, 512);
+        } else {
+            optionsStream = Stream.Null;
+        }
 
         DeserializationContext context;
         object deserialized;
+        
+        try {
+            resourceStream.Value.Seek(dataChunkPosition + 4, SeekOrigin.Begin); // Skip data chunk tag
+            uint dataLength = reader.ReadUInt32();
 
-        resourceStream.Value.Seek(dataChunkPosition + 4, SeekOrigin.Begin);   // Skip data chunk tag
-        uint length = reader.ReadUInt32();
-        
-        using (PartialReadStream dataStream = new(resourceStream.Value, dataChunkPosition + 8, length, ownStream: false)) {
+            using PartialReadStream dataStream = new(resourceStream.Value, dataChunkPosition + 8, dataLength, ownStream: false);
             context = new();
-            deserialized = deserializer.DeserializeObject(dataStream, context);
-        
+            deserialized = deserializer.DeserializeObject(dataStream, optionsStream, context);
+
             if (deserializer.Streaming) {
                 resourceStream.Detach();
             }
+        } finally {
+            optionsStream.Dispose();
         }
 
         importedStack.Add(rid, deserialized);

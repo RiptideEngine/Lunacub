@@ -14,7 +14,7 @@ public class ImportingTestFixture : IDisposable {
         Type[] types = Assembly.GetExecutingAssembly().GetTypes();
         ComponentTypes = new Dictionary<Type, ImmutableArray<Type>>() {
             [typeof(Importer)] = [..types.Where(x => x.IsSubclassOf(typeof(Importer)))],
-            [typeof(Serializer)] = [..types.Where(x => x.IsSubclassOf(typeof(Serializer)))],
+            [typeof(SerializerFactory)] = [..types.Where(x => x.IsSubclassOf(typeof(SerializerFactory)))],
             [typeof(Deserializer)] = [..types.Where(x => x.IsSubclassOf(typeof(Deserializer)))],
         };
     }

@@ -19,20 +19,35 @@ public sealed class ReferenceResourceImporter : Importer<ReferenceResourceDTO> {
     }
 }
 
-public sealed class ReferenceResourceSerializer : Serializer<ReferenceResourceDTO> {
-    public override string DeserializerName => nameof(ReferenceResourceDeserializer);
+public sealed class ReferenceResourceSerializerFactory : SerializerFactory {
+    // public override string DeserializerName => nameof(ReferenceResourceDeserializer);
 
-    protected override void Serialize(ReferenceResourceDTO input, Stream stream) {
-        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+    public override bool CanSerialize(Type representationType) => representationType == typeof(ReferenceResourceDTO);
+
+    protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
+        return new SerializerCore(serializingObject, context);
+    }
+
+    private sealed class SerializerCore : Serializer {
+        public override string DeserializerName => nameof(ReferenceResourceDeserializer);
+
+        public SerializerCore(ContentRepresentation contentRepresentation, SerializationContext context) : base(contentRepresentation, context) {
+        }
+
+        public override void SerializeObject(Stream outputStream) {
+            ReferenceResourceDTO serializing = (ReferenceResourceDTO)SerializingObject;
+            
+            using var writer = new BinaryWriter(outputStream, Encoding.UTF8, leaveOpen: true);
         
-        writer.Write(input.Reference);
-        writer.Write(input.Value);
+            writer.Write(serializing.Reference);
+            writer.Write(serializing.Value);
+        }
     }
 }
 
 public sealed class ReferenceResourceDeserializer : Deserializer<ReferenceResource> {
-    protected override ReferenceResource Deserialize(Stream stream, DeserializationContext context) {
-        using var reader = new BinaryReader(stream, Encoding.UTF8, true);
+    protected override ReferenceResource Deserialize(Stream dataStream, Stream optionsStream, DeserializationContext context) {
+        using var reader = new BinaryReader(dataStream, Encoding.UTF8, true);
         
         context.RequestReference<ReferenceResource>(nameof(ReferenceResource.Reference), reader.ReadResourceID());
         
