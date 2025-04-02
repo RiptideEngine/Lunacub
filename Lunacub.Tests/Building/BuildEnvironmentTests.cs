@@ -11,10 +11,10 @@ public partial class BuildEnvironmentTests : IDisposable {
         _context = new(new MockOutputSystem());
         
         _context.Importers.Add(nameof(SimpleResourceImporter), new SimpleResourceImporter());
-        _context.Serializers.Add(new SimpleResourceSerializer());
+        _context.SerializersFactory.Add(new SimpleResourceSerializer());
         
         _context.Importers.Add(nameof(ReferenceResourceImporter), new ReferenceResourceImporter());
-        _context.Serializers.Add(new ReferenceResourceSerializer());
+        _context.SerializersFactory.Add(new ReferenceResourceSerializer());
     }
 
     public void Dispose() {

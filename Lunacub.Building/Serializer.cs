@@ -1,19 +1,17 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
 public abstract class Serializer {
-    public abstract string DeserializerName { get; }
+    public ContentRepresentation SerializingObject { get; }
+    internal SerializationContext Context { get; }
     
-    public abstract bool CanSerialize(Type type);
+    public abstract string DeserializerName { get; }
 
-    internal abstract void SerializeObject(object input, Stream stream);
-}
-
-public abstract class Serializer<T> : Serializer {
-    public override sealed bool CanSerialize(Type type) => typeof(T).IsAssignableFrom(type);
-
-    internal override sealed void SerializeObject(object input, Stream stream) {
-        Serialize((T)input, stream);
+    protected Serializer(ContentRepresentation serializingObject, SerializationContext context) {
+        SerializingObject = serializingObject;
+        Context = context;
     }
-
-    protected abstract void Serialize(T input, Stream stream);
+    
+    public abstract void SerializeObject(Stream outputDestination);
+    public virtual void SerializeOptions(Stream outputDestination) {
+    }
 }

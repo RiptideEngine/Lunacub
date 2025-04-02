@@ -23,16 +23,16 @@ public static class Resources {
         BuildEnvironment buildEnv = new(new FileOutputSystem(reportDirectory, resourceDirectory));
 
         buildEnv.Importers.Add(nameof(Texture2DImporter), new Texture2DImporter());
-        buildEnv.Serializers.Add(new Texture2DSerializer());
+        buildEnv.SerializersFactory.Add(new Texture2DSerializer());
         
         buildEnv.Importers.Add(nameof(ShaderImporter), new ShaderImporter(shaderingSystem));
-        buildEnv.Serializers.Add(new ShaderSerializer());
+        buildEnv.SerializersFactory.Add(new ShaderSerializer());
         
         buildEnv.Importers.Add(nameof(SamplerImporter), new SamplerImporter());
-        buildEnv.Serializers.Add(new SamplerSerializer());
+        buildEnv.SerializersFactory.Add(new SamplerSerializer());
         
         buildEnv.Importers.Add(nameof(MeshSerializer), new MeshImporter());
-        buildEnv.Serializers.Add(new MeshSerializer());
+        buildEnv.SerializersFactory.Add(new MeshSerializer());
         
         string uncompiledResourceDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UncompiledResources");
         

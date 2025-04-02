@@ -3,7 +3,7 @@
 public sealed partial class BuildEnvironment : IDisposable {
     public ImporterDictionary Importers { get; } = [];
     public ProcessorDictionary Processors { get; } = [];
-    public SerializerCollection Serializers { get; } = [];
+    public SerializerFactoryCollection SerializersFactory { get; } = [];
     public OutputSystem Output { get; }
     public ResourceRegistry Resources { get; } = new();
 
