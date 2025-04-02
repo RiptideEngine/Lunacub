@@ -43,7 +43,7 @@ public sealed unsafe class Shader : IDisposable {
 }
 
 public sealed unsafe class ShaderDTO : ContentRepresentation {
-    public IDxcBlob* CompiledSpirv { get; private set; }
+    public IDxcBlob* CompiledSpirv { get; }
 
     public ShaderDTO(IDxcBlob* spirv) {
         CompiledSpirv = spirv;
@@ -114,16 +114,28 @@ public sealed class ShaderImporter : Importer<ShaderDTO> {
     }
 }
 
-public sealed class ShaderSerializer : Serializer<ShaderDTO> {
-    public override string DeserializerName => nameof(ShaderDeserializer);
+public sealed class ShaderSerializerFactory : SerializerFactory {
+    public override bool CanSerialize(Type representationType) => representationType == typeof(ShaderDTO);
 
-    protected override unsafe void Serialize(ShaderDTO input, Stream stream) {
-        stream.Write(new((byte*)input.CompiledSpirv->GetBufferPointer(), (int)input.CompiledSpirv->GetBufferSize()));
+    protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
+        return new SerializerCore(serializingObject, context);
+    }
+
+    private sealed class SerializerCore : Serializer {
+        public override string DeserializerName => nameof(ShaderDeserializer);
+
+        public SerializerCore(ContentRepresentation serializingObject, SerializationContext context) : base(serializingObject, context) {
+        }
+
+        public override unsafe void SerializeObject(Stream outputStream) {
+            IDxcBlob* blob = ((ShaderDTO)SerializingObject).CompiledSpirv;
+            outputStream.Write(new((byte*)blob->GetBufferPointer(), (int)blob->GetBufferSize()));
+        }
     }
 }
 
 public sealed class ShaderDeserializer(RenderingSystem renderingSystem) : Deserializer<Shader> {
-    protected unsafe override Shader Deserialize(Stream stream, DeserializationContext context) {
+    protected unsafe override Shader Deserialize(Stream stream, Stream optionsStream, DeserializationContext context) {
         Debug.Assert(stream.Length % 4 == 0);
         
         uint[] buffer = new uint[stream.Length / sizeof(uint)];

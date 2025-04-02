@@ -54,22 +54,35 @@ public sealed class SamplerImporter : Importer<SamplerDTO> {
     }
 }
 
-public sealed class SamplerSerializer : Serializer<SamplerDTO> {
-    public override string DeserializerName => nameof(SamplerDeserializer);
+public sealed class SamplerSerializerFactory : SerializerFactory {
+    public override bool CanSerialize(Type representationType) => representationType == typeof(SamplerDTO);
 
-    protected override void Serialize(SamplerDTO input, Stream stream) {
-        using BinaryWriter writer = new(stream, Encoding.UTF8, true);
-        
-        writer.Write((byte)input.AddressU);
-        writer.Write((byte)input.AddressV);
-        writer.Write((byte)input.AddressW);
-        writer.Write((byte)input.MinFilter);
-        writer.Write((byte)input.MagFilter);
-        writer.Write((byte)input.MipmapFilter);
-        writer.Write(input.LodMinClamp);
-        writer.Write(input.LodMaxClamp);
-        writer.Write((byte)input.Comparison);
-        writer.Write(input.MaxAnisotropy);
+    protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
+        return new SerializerCore(serializingObject, context);
+    }
+
+    private sealed class SerializerCore : Serializer {
+        public override string DeserializerName => nameof(SamplerDeserializer);
+
+        public SerializerCore(ContentRepresentation serializationObject, SerializationContext context) : base(serializationObject, context) {
+        }
+
+        public override void SerializeObject(Stream outputStream) {
+            SamplerDTO serializing = (SamplerDTO)SerializingObject;
+            
+            using BinaryWriter writer = new(outputStream, Encoding.UTF8, true);
+
+            writer.Write((byte)serializing.AddressU);
+            writer.Write((byte)serializing.AddressV);
+            writer.Write((byte)serializing.AddressW);
+            writer.Write((byte)serializing.MinFilter);
+            writer.Write((byte)serializing.MagFilter);
+            writer.Write((byte)serializing.MipmapFilter);
+            writer.Write(serializing.LodMinClamp);
+            writer.Write(serializing.LodMaxClamp);
+            writer.Write((byte)serializing.Comparison);
+            writer.Write(serializing.MaxAnisotropy);
+        }
     }
 }
 
@@ -80,7 +93,7 @@ public sealed class SamplerDeserializer : Deserializer<Sampler> {
         _renderingSystem = renderingSystem;
     }
     
-    protected override Sampler Deserialize(Stream stream, DeserializationContext context) {
+    protected override Sampler Deserialize(Stream stream, Stream optionsStream, DeserializationContext context) {
         using BinaryReader reader = new(stream, Encoding.UTF8, true);
         
         return new(_renderingSystem, new() {

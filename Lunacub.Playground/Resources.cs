@@ -23,32 +23,30 @@ public static class Resources {
         BuildEnvironment buildEnv = new(new FileOutputSystem(reportDirectory, resourceDirectory));
 
         buildEnv.Importers.Add(nameof(Texture2DImporter), new Texture2DImporter());
-        buildEnv.SerializersFactory.Add(new Texture2DSerializer());
+        buildEnv.SerializerFactories.Add(new Texture2DSerializerFactory());
         
         buildEnv.Importers.Add(nameof(ShaderImporter), new ShaderImporter(shaderingSystem));
-        buildEnv.SerializersFactory.Add(new ShaderSerializer());
+        buildEnv.SerializerFactories.Add(new ShaderSerializerFactory());
         
         buildEnv.Importers.Add(nameof(SamplerImporter), new SamplerImporter());
-        buildEnv.SerializersFactory.Add(new SamplerSerializer());
+        buildEnv.SerializerFactories.Add(new SamplerSerializerFactory());
         
-        buildEnv.Importers.Add(nameof(MeshSerializer), new MeshImporter());
-        buildEnv.SerializersFactory.Add(new MeshSerializer());
+        buildEnv.Importers.Add(nameof(MeshImporter), new MeshImporter());
+        buildEnv.SerializerFactories.Add(new MeshSerializerFactory());
         
         string uncompiledResourceDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UncompiledResources");
         
         buildEnv.Resources.Add(ResourceID.Parse("7ae127d7df4853bc8e13f5b18cd893aa"), Path.Combine(uncompiledResourceDirectory, "Texture.png"), new() {
             ImporterName = nameof(Texture2DImporter),
         });
-        
         buildEnv.Resources.Add(ResourceID.Parse("d07d31086d805186899523663761f74f"), Path.Combine(uncompiledResourceDirectory, "Shader.hlsl"), new() {
             ImporterName = nameof(ShaderImporter),
         });
-        
         buildEnv.Resources.Add(ResourceID.Parse("0195d7cfdb687a7593979168e2e62a7c"), Path.Combine(uncompiledResourceDirectory, "Sampler.json"), new() {
             ImporterName = nameof(SamplerImporter),
         });
         buildEnv.Resources.Add(ResourceID.Parse("febcd85870715ddea807221fb5b71dc8"), Path.Combine(uncompiledResourceDirectory, "cube2.obj"), new() {
-            ImporterName = nameof(MeshSerializer),
+            ImporterName = nameof(MeshImporter),
         });
 
         BuildingResult result = buildEnv.BuildResources();
