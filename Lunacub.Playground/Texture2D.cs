@@ -60,8 +60,12 @@ public sealed unsafe class Texture2D : IDisposable {
 }
 
 public sealed class Texture2DDTO : ContentRepresentation {
-    public Image Image { get; set; }
+    public Image Image { get; }
 
+    internal Texture2DDTO(Image image) {
+        Image = image;
+    }
+    
     protected override void DisposeImpl(bool disposing) {
         Image.Dispose();
     }
@@ -69,9 +73,7 @@ public sealed class Texture2DDTO : ContentRepresentation {
 
 public sealed class Texture2DImporter : Importer<Texture2DDTO> {
     protected override Texture2DDTO Import(Stream stream, ImportingContext context) {
-        return new() {
-            Image = Image.Load(stream),
-        };
+        return new(Image.Load(stream));
     }
 }
 
