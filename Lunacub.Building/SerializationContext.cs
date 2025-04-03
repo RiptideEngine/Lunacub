@@ -1,9 +1,9 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
 public sealed class SerializationContext {
-    public object? Options { get; }
+    public IImportOptions? Options { get; }
 
-    internal SerializationContext(object? options) {
+    internal SerializationContext(IImportOptions? options) {
         Options = options;
     }
 }

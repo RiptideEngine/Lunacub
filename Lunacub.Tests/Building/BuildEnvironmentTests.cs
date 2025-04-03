@@ -1,28 +1,31 @@
 ﻿namespace Caxivitual.Lunacub.Tests.Building;
 
-public partial class BuildEnvironmentTests : IDisposable {
-    private readonly BuildEnvironment _context;
+public partial class BuildEnvironmentTests : IClassFixture<BuildTestsFixture>, IDisposable {
+    private readonly BuildEnvironment _env;
     private readonly ITestOutputHelper _output;
+    private readonly BuildTestsFixture _fixture;
 
-    public BuildEnvironmentTests(ITestOutputHelper output) {
+    public BuildEnvironmentTests(BuildTestsFixture fixture, ITestOutputHelper output) {
         _output = output;
         AssertHelpers.RedirectConsoleOutput(output);
 
-        _context = new(new MockOutputSystem());
+        _env = new(new MockOutputSystem());
         
-        _context.Importers.Add(nameof(SimpleResourceImporter), new SimpleResourceImporter());
-        _context.SerializerFactories.Add(new SimpleResourceSerializerFactory());
+        _env.Importers.Add(nameof(SimpleResourceImporter), new SimpleResourceImporter());
+        _env.SerializerFactories.Add(new SimpleResourceSerializerFactory());
         
-        _context.Importers.Add(nameof(ReferenceResourceImporter), new ReferenceResourceImporter());
-        _context.SerializerFactories.Add(new ReferenceResourceSerializerFactory());
+        _env.Importers.Add(nameof(ReferenceResourceImporter), new ReferenceResourceImporter());
+        _env.SerializerFactories.Add(new ReferenceResourceSerializerFactory());
         
-        _context.Importers.Add(nameof(OptionsResourceImporter), new OptionsResourceImporter());
-        _context.Processors.Add(nameof(OptionsResourceProcessor), new OptionsResourceProcessor());
-        _context.SerializerFactories.Add(new OptionsResourceSerializerFactory());
+        _env.Importers.Add(nameof(OptionsResourceImporter), new OptionsResourceImporter());
+        _env.Processors.Add(nameof(OptionsResourceProcessor), new OptionsResourceProcessor());
+        _env.SerializerFactories.Add(new OptionsResourceSerializerFactory());
+
+        _fixture = fixture;
     }
 
     public void Dispose() {
-        _context.Dispose();
+        _env.Dispose();
         GC.SuppressFinalize(this);
     }
 

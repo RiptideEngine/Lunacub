@@ -24,7 +24,7 @@ public sealed class OptionsResourceDTO : ContentRepresentation {
         Array = array;
     }
 
-    public record Options(SerializationType SerializationType);
+    public record Options(SerializationType SerializationType) : IImportOptions;
 }
 
 public sealed class ProcesseedOptionsResourceDTO : ContentRepresentation {
@@ -45,7 +45,7 @@ public sealed class OptionsResourceProcessor : Processor<OptionsResourceDTO, Pro
     protected override ProcesseedOptionsResourceDTO Process(OptionsResourceDTO input, ProcessingContext context) {
         var options = (OptionsResourceDTO.Options)context.Options!;
         using MemoryStream ms = new();
-
+        
         switch (options.SerializationType) {
             case SerializationType.Json:
                 JsonSerializer.Serialize(ms, input.Array);
@@ -65,7 +65,7 @@ public sealed class OptionsResourceProcessor : Processor<OptionsResourceDTO, Pro
 }
 
 public sealed class OptionsResourceSerializerFactory : SerializerFactory {
-    public override bool CanSerialize(Type representationType) => representationType == typeof(OptionsResourceDTO);
+    public override bool CanSerialize(Type representationType) => representationType == typeof(ProcesseedOptionsResourceDTO);
 
     protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);

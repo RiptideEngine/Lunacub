@@ -1,18 +1,30 @@
-﻿namespace Caxivitual.Lunacub.Tests.Building;
+﻿// ReSharper disable AccessToDisposedClosure
+
+namespace Caxivitual.Lunacub.Tests.Building;
 
 partial class BuildEnvironmentTests {
     [Fact]
     public void SimpleResource_ShouldBeCorrect() {
         var rid = ResourceID.Parse("e0b8066bf60043c5a0c3a7782363427d");
-        _context.Resources.Add(rid, GetResourcePath("SimpleResource.json"), new(nameof(SimpleResourceImporter), null));
         
-        MockFileSystem fs = ((MockOutputSystem)_context.Output).FileSystem;
+        _fixture.RegisterResourceToBuild(_env, rid);
+        
+        MockFileSystem fs = ((MockOutputSystem)_env.Output).FileSystem;
 
-        var result = new Func<BuildingResult>(() => _context.BuildResources()).Should().NotThrow().Which.
+        var result = new Func<BuildingResult>(() => _env.BuildResources()).Should().NotThrow().Which.
             ResourceResults.Should().ContainKey(rid).WhoseValue;
 
+        ((int)result.Status).Should().BeGreaterThanOrEqualTo((int)BuildStatus.Success);
         result.Exception.Should().BeNull();
         result.IsSuccess.Should().BeTrue();
-        fs.File.Exists(fs.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}")).Should().BeTrue();
+
+        string path = fs.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
+        fs.File.Exists(path).Should().BeTrue();
+
+        using Stream stream = fs.File.OpenRead(path);
+        CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(stream)).Should().NotThrow().Which;
+
+        layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var chunkInfo).Should().BeTrue();
+        chunkInfo.Length.Should().Be(4);
     }
 }

@@ -1,9 +1,9 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
 public sealed class ProcessingContext {
-    public object? Options { get; }
+    public IImportOptions? Options { get; }
 
-    internal ProcessingContext(object? options) {
+    internal ProcessingContext(IImportOptions? options) {
         Options = options;
     }
 }

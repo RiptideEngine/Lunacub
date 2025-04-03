@@ -1,44 +1,60 @@
 ﻿{
   "e0b8066bf60043c5a0c3a7782363427d": {
     "Path": "SimpleResource.json",
-    "ImporterName": "SimpleResourceImporter"
+    "Options": {
+      "ImporterName": "SimpleResourceImporter"
+    }
   },
   "de1b416bf928467ea13bc0f23d3e6dfb": {
     "Path": "ReferenceResource1.json",
-    "ImporterName": "ReferenceResourceImporter"
+    "Options": {
+      "ImporterName": "ReferenceResourceImporter"
+    }
   },
   "7a6646bd2ee446a1a91c884b76f12392": {
     "Path": "ReferenceResource2.json",
-    "ImporterName": "ReferenceResourceImporter"
+    "Options": {
+      "ImporterName": "ReferenceResourceImporter"
+    }
   },
   "58f0c3e4c7c24f798129d45f248bfa2c": {
     "Path": "ReferenceResource3.json",
-    "ImporterName": "ReferenceResourceImporter"
+    "Options": {
+      "ImporterName": "ReferenceResourceImporter"
+    }
   },
   "235be3d4ddfd42fa983ce7c9d9f58d51": {
     "Path": "ReferenceResource4.json",
-    "ImporterName": "ReferenceResourceImporter"
+    "Options": {
+      "ImporterName": "ReferenceResourceImporter"
+    }
   },
   "2b786332e04a5874b2499ae7b84bd664": {
     "Path": "DisposableResource.json",
-    "ImporterName": "DisposableResourceImporter"
-  },
-  "07c0f1c6842b5500a5a5481e01ab4945": {
-    "Path": "OptionsResource.json",
-    "ImporterName": "OptionsResourceImporter",
-    "ProcessorName": "OptionsResourceProcessor",
     "Options": {
-      "$type": "OptionsResource.Options",
-      "SerializationType": 0
+      "ImporterName": "DisposableResourceImporter"
     }
   },
-  "57b0a5af56045c03a2789e09f0f45723": {
+  "178ad6eee6e4521f91c9668566a4b6eb": {
     "Path": "OptionsResource.json",
-    "ImporterName": "OptionsResourceImporter",
-    "ProcessorName": "OptionsResourceProcessor",
     "Options": {
-      "$type": "OptionsResource.Options",
-      "SerializationType": 1
+      "ImporterName": "OptionsResourceImporter",
+      "ProcessorName": "OptionsResourceProcessor",
+      "Options": {
+        "$type": "OptionsResource.Options",
+        "SerializationType": "Binary"
+      }
+    }
+  },
+  "81a12ccd19f15cd6a5df2513c95ffbd1": {
+    "Path": "OptionsResource.json",
+    "Options": {
+      "ImporterName": "OptionsResourceImporter",
+      "ProcessorName": "OptionsResourceProcessor",
+      "Options": {
+        "$type": "OptionsResource.Options",
+        "SerializationType": "Json"
+      }
     }
   }
 }
