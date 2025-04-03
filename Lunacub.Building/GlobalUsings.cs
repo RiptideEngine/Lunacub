@@ -1,0 +1,12 @@
+﻿global using System.Collections.ObjectModel;
+global using System.Collections;
+global using System.Diagnostics.CodeAnalysis;
+global using System.Runtime.CompilerServices;
+global using System.Text;
+global using System.Numerics;
+global using System.Diagnostics;
+global using System.Runtime.InteropServices;
+global using System.Text.Json;
+global using System.Text.Json.Serialization;
+global using System.Buffers.Binary;
+global using Caxivitual.Lunacub.Compilation;
