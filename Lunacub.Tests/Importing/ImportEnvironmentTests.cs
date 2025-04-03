@@ -1,16 +1,14 @@
-﻿using System.Reflection;
+﻿namespace Caxivitual.Lunacub.Tests.Importing;
 
-namespace Caxivitual.Lunacub.Tests.Importing;
-
-public partial class ImportEnvironmentTests : IClassFixture<ImportingTestFixture>, IDisposable {
-    private readonly ImportingTestFixture _fixture;
+public partial class ImportEnvironmentTests : IClassFixture<ImportTestsFixture>, IDisposable {
+    private readonly ImportTestsFixture _fixture;
 
     private readonly MockFileSystem _fileSystem;
     private readonly BuildEnvironment _buildEnv;
     private readonly ImportEnvironment _importEnv;
     private readonly ITestOutputHelper _output;
     
-    public ImportEnvironmentTests(ImportingTestFixture fixture, ITestOutputHelper output) {
+    public ImportEnvironmentTests(ImportTestsFixture fixture, ITestOutputHelper output) {
         _fixture = fixture;
         _output = output;
         AssertHelpers.RedirectConsoleOutput(output);
@@ -24,8 +22,8 @@ public partial class ImportEnvironmentTests : IClassFixture<ImportingTestFixture
             _buildEnv.Importers.Add(type.Name, (Importer)Activator.CreateInstance(type)!);
         }
         
-        foreach (var type in _fixture.ComponentTypes[typeof(Serializer)]) {
-            _buildEnv.Serializers.Add((Serializer)Activator.CreateInstance(type)!);
+        foreach (var type in _fixture.ComponentTypes[typeof(SerializerFactory)]) {
+            _buildEnv.SerializerFactories.Add((SerializerFactory)Activator.CreateInstance(type)!);
         }
         
         foreach (var type in _fixture.ComponentTypes[typeof(Deserializer)]) {
@@ -42,7 +40,7 @@ public partial class ImportEnvironmentTests : IClassFixture<ImportingTestFixture
 
     private void BuildResources(params ResourceID[] rids) {
         foreach (var rid in rids) {
-            _fixture.GetResourceConfiguration(_buildEnv, rid);
+            _fixture.RegisterResourceToBuild(_buildEnv, rid);
         }
         
         _buildEnv.BuildResources();

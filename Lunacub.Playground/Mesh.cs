@@ -93,7 +93,6 @@ public sealed unsafe class Mesh : IDisposable {
     }
     
     public readonly record struct Vertex(Vector3 Position, uint Color, Vector2 TexCoord);
-
     public readonly record struct Submesh(uint VertexOffset, uint VertexCount, uint IndexOffset, uint IndexCount);
 }
 
@@ -111,11 +110,22 @@ public sealed class MeshImporter : Importer<MeshDTO> {
     }
 }
 
-public sealed class MeshSerializer : Serializer<MeshDTO> {
-    public override string DeserializerName => nameof(MeshDeserializer);
+public sealed class MeshSerializerFactory : SerializerFactory {
+    public override bool CanSerialize(Type representationType) => representationType == typeof(MeshDTO);
 
-    protected override void Serialize(MeshDTO input, Stream stream) {
-        input.Stream.CopyTo(stream);
+    protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
+        return new SerializerCore(serializingObject, context);
+    }
+
+    private sealed class SerializerCore : Serializer {
+        public override string DeserializerName => nameof(MeshDeserializer);
+
+        public SerializerCore(ContentRepresentation serializingObject, SerializationContext context) : base(serializingObject, context) {
+        }
+
+        public override void SerializeObject(Stream outputStream) {
+            ((MeshDTO)SerializingObject).Stream.CopyTo(outputStream);
+        }
     }
 }
 
@@ -128,7 +138,7 @@ public sealed class MeshDeserializer : Deserializer<Mesh> {
         _renderingSystem = renderingSystem;
     }
     
-    protected unsafe override Mesh Deserialize(Stream stream, DeserializationContext context) {
+    protected unsafe override Mesh Deserialize(Stream stream, Stream optionsStream, DeserializationContext context) {
         // TODO: FileIO* implementation
         
         Debug.Assert(stream.Length <= Array.MaxLength);

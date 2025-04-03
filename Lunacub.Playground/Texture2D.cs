@@ -60,8 +60,12 @@ public sealed unsafe class Texture2D : IDisposable {
 }
 
 public sealed class Texture2DDTO : ContentRepresentation {
-    public Image Image { get; set; }
+    public Image Image { get; }
 
+    internal Texture2DDTO(Image image) {
+        Image = image;
+    }
+    
     protected override void DisposeImpl(bool disposing) {
         Image.Dispose();
     }
@@ -69,17 +73,26 @@ public sealed class Texture2DDTO : ContentRepresentation {
 
 public sealed class Texture2DImporter : Importer<Texture2DDTO> {
     protected override Texture2DDTO Import(Stream stream, ImportingContext context) {
-        return new() {
-            Image = Image.Load(stream),
-        };
+        return new(Image.Load(stream));
     }
 }
 
-public sealed class Texture2DSerializer : Serializer<Texture2DDTO> {
-    public override string DeserializerName => nameof(Texture2DDeserializer);
+public sealed class Texture2DSerializerFactory : SerializerFactory {
+    public override bool CanSerialize(Type representationType) => representationType == typeof(Texture2DDTO);
 
-    protected override void Serialize(Texture2DDTO input, Stream stream) {
-        input.Image.SaveAsQoi(stream);
+    protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
+        return new SerializerCore(serializingObject, context);
+    }
+
+    private sealed class SerializerCore : Serializer {
+        public override string DeserializerName => nameof(Texture2DDeserializer);
+
+        public SerializerCore(ContentRepresentation serializingObject, SerializationContext context) : base(serializingObject, context) {
+        }
+
+        public override void SerializeObject(Stream outputStream) {
+            ((Texture2DDTO)SerializingObject).Image.SaveAsQoi(outputStream);
+        }
     }
 }
 
@@ -90,7 +103,7 @@ public sealed class Texture2DDeserializer : Deserializer<Texture2D> {
         _renderingSystem = renderingSystem;
     }
     
-    protected unsafe override Texture2D Deserialize(Stream stream, DeserializationContext context) {
+    protected unsafe override Texture2D Deserialize(Stream stream, Stream optionsStream, DeserializationContext context) {
         using Image<Rgba32> image = Image.Load<Rgba32>(stream);
         Texture2D output = new(_renderingSystem, image.Width, image.Height);
         

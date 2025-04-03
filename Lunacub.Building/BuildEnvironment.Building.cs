@@ -63,13 +63,13 @@ partial class BuildEnvironment {
             return;
         }
 
-        ImportingContext context;
+        ImportingContext importingContext;
 
         try {
             using FileStream stream = File.OpenRead(resourcePath);
 
-            context = new();
-            using ContentRepresentation imported = importer.ImportObject(stream, context);
+            importingContext = new(options.Options);
+            using ContentRepresentation imported = importer.ImportObject(stream, importingContext);
             
             string? processorName = options.ProcessorName;
 
@@ -92,15 +92,19 @@ partial class BuildEnvironment {
             ContentRepresentation processed;
 
             try {
-                processed = processor.Process(imported);
+                processed = processor.Process(imported, new(options.Options));
             } catch (Exception e) {
                 results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
                 return;
             }
 
             try {
-                using MemoryStream ms = new(1024);
-                CompileObject(ms, processed);
+                if (SerializerFactories.GetSerializableFactory(processed.GetType()) is not { } factory) {
+                    throw new InvalidOperationException(string.Format(ExceptionMessages.NoSuitableSerializer, processed.GetType()));
+                }
+        
+                using MemoryStream ms = new(4096);
+                CompileHelpers.Compile(factory.InternalCreateSerializer(processed, new(options.Options)), ms);
                 ms.Position = 0;
                 Output.CopyCompiledResourceOutput(ms, rid);
             } catch (Exception e) {
@@ -117,85 +121,10 @@ partial class BuildEnvironment {
             return;
         }
         
-        foreach (var reference in context.References) {
+        foreach (var reference in importingContext.References) {
             if (!Resources.TryGet(reference, out string? refResourcePath, out BuildingOptions refResourceBuildingOptions)) continue;
 
             BuildResource(reference, refResourcePath, refResourceBuildingOptions, results);
-        }
-    }
-    
-    private void CompileObject(Stream outputStream, ContentRepresentation processed) {
-        if (Serializers.GetSerializable(processed.GetType()) is not { } serializer) {
-            throw new InvalidOperationException(string.Format(ExceptionMessages.NoSuitableSerializer, processed.GetType()));
-        }
-
-        using BinaryWriter bwriter = new(outputStream, Encoding.UTF8, true);
-        bwriter.Write(CompilingConstants.MagicIdentifier);
-        bwriter.Write((ushort)1);
-        bwriter.Write((ushort)0);
-
-        const int NumChunks = 2;
-        
-        bwriter.Write(NumChunks);
-        
-        long chunkLocationPosition = bwriter.BaseStream.Position;
-        Span<KeyValuePair<uint, int>> chunks = stackalloc KeyValuePair<uint, int>[NumChunks];
-        int chunkIndex = 0;
-
-        bwriter.Seek(8 * NumChunks, SeekOrigin.Current);
-        
-        int chunkStart = (int)outputStream.Position;
-        WriteDataChunk(bwriter, processed, serializer);
-        chunks[chunkIndex++] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.ResourceDataChunkTag), chunkStart);
-
-        chunkStart = (int)outputStream.Position;
-        WriteDeserializerChunk(bwriter, serializer);
-        chunks[chunkIndex] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.DeserializationChunkTag), chunkStart);
-        
-        outputStream.Seek(chunkLocationPosition, SeekOrigin.Begin);
-        
-        foreach ((uint chunkIdentifier, int chunkSize) in chunks) {
-            bwriter.Write(chunkIdentifier);
-            bwriter.Write(chunkSize);
-        }
-
-        static void WriteDataChunk(BinaryWriter writer, ContentRepresentation obj, Serializer serializer) {
-            Stream outputStream = writer.BaseStream;
-            
-            writer.Write("DATA"u8);
-            {
-                var chunkLenPosition = (int)outputStream.Position;
-                writer.Seek(4, SeekOrigin.Current);
-                
-                serializer.SerializeObject(obj, outputStream);
-                
-                var serializedSize = (int)(outputStream.Position - chunkLenPosition - 4);
-            
-                writer.Seek(chunkLenPosition, SeekOrigin.Begin);
-                writer.Write(serializedSize);
-                
-                writer.Seek(serializedSize, SeekOrigin.Current);
-            }
-        }
-
-        static void WriteDeserializerChunk(BinaryWriter writer, Serializer serializer) {
-            Stream outputStream = writer.BaseStream;
-            
-            writer.Write("DESR"u8);
-            {
-                var chunkLenPosition = (int)outputStream.Position;
-            
-                writer.Seek(4, SeekOrigin.Current);
-                
-                writer.Write(serializer.DeserializerName);
-                
-                var serializedSize = (int)(outputStream.Position - chunkLenPosition - 4);
-            
-                writer.Seek(chunkLenPosition, SeekOrigin.Begin);
-                writer.Write(serializedSize);
-                
-                writer.Seek(chunkLenPosition, SeekOrigin.Current);
-            }
         }
     }
 }

@@ -3,9 +3,9 @@
 public sealed class ImportingContext {
     internal List<ResourceID> References { get; }
     
-    public object? Options { get; }
+    public IImportOptions? Options { get; }
     
-    internal ImportingContext(object? options) {
+    internal ImportingContext(IImportOptions? options) {
         References = [];
         Options = options;
     }

@@ -26,27 +26,27 @@ partial class ResourceRegistry {
 
         DetachableDisposable<Stream> detachableStream = new(resourceStream);
         try {
-            ExtractCompiledResource(detachableStream.Value!, out ushort major, out ushort minor, out ChunkLookupTable table);
+            var layout = LayoutValidation.Validate(detachableStream.Value!);
 
-            return major switch {
-                1 => ImportV1(minor, rid, ref detachableStream, type, in table, importedStack),
-                _ => throw new NotSupportedException($"Compiled resource version {major} is not supported."),
+            return layout.MajorVersion switch {
+                1 => ImportV1(rid, ref detachableStream, type, in layout, importedStack),
+                _ => throw new NotSupportedException($"Compiled resource version {layout.MajorVersion}.{layout.MinorVersion} is not supported."),
             };
         } finally {
             detachableStream.Dispose();
         }
     }
 
-    private object? ImportV1(ushort minor, ResourceID rid, ref DetachableDisposable<Stream> resourceStream, Type type, in ChunkLookupTable table, Dictionary<ResourceID, object> importedStack) {
-        if (minor != 0) {
-            throw new NotSupportedException($"Compiled resource version 1.{minor} is not supported.");
+    private object? ImportV1(ResourceID rid, ref DetachableDisposable<Stream> resourceStream, Type type, in CompiledResourceLayout layout, Dictionary<ResourceID, object> importedStack) {
+        if (layout.MinorVersion != 0) {
+            throw new NotSupportedException($"Compiled resource version 1.{layout.MinorVersion} is not supported.");
         }
 
-        if (!table.TryGetChunkPosition(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.DeserializationChunkTag), out int deserializationChunkPosition)) {
+        if (!layout.TryGetChunkInformation(CompilingConstants.DeserializationChunkTag, out ChunkInformation deserializationChunkInfo)) {
             throw new CorruptedFormatException($"Compiled resource missing {Encoding.ASCII.GetString(CompilingConstants.ResourceDataChunkTag)} chunk.");
         }
 
-        resourceStream.Value!.Seek(deserializationChunkPosition + 8, SeekOrigin.Begin);
+        resourceStream.Value!.Seek(deserializationChunkInfo.ContentOffset, SeekOrigin.Begin);
 
         using BinaryReader reader = new(resourceStream.Value!, Encoding.UTF8, true);
         string deserializerName = reader.ReadString();
@@ -59,23 +59,37 @@ partial class ResourceRegistry {
             return null;
         }
         
-        if (!table.TryGetChunkPosition(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.ResourceDataChunkTag), out int dataChunkPosition)) {
+        if (!layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out ChunkInformation dataChunkInfo)) {
             throw new CorruptedFormatException($"Compiled resource missing {Encoding.ASCII.GetString(CompilingConstants.ResourceDataChunkTag)} chunk.");
+        }
+        
+        // Copy options to a MemoryStream.
+        Stream optionsStream;
+
+        if (layout.TryGetChunkInformation(CompilingConstants.ImportOptionsChunkTag, out ChunkInformation optionsChunkInfo)) {
+            resourceStream.Value!.Seek(optionsChunkInfo.ContentOffset, SeekOrigin.Begin);
+            
+            optionsStream = new MemoryStream((int)optionsChunkInfo.Length);
+            resourceStream.Value!.CopyTo(optionsStream, (int)optionsChunkInfo.Length, 512);
+        } else {
+            optionsStream = Stream.Null;
         }
 
         DeserializationContext context;
         object deserialized;
+        
+        try {
+            resourceStream.Value.Seek(dataChunkInfo.ContentOffset, SeekOrigin.Begin);
 
-        resourceStream.Value.Seek(dataChunkPosition + 4, SeekOrigin.Begin);   // Skip data chunk tag
-        uint length = reader.ReadUInt32();
-        
-        using (PartialReadStream dataStream = new(resourceStream.Value, dataChunkPosition + 8, length, ownStream: false)) {
+            using PartialReadStream dataStream = new(resourceStream.Value, dataChunkInfo.ContentOffset, dataChunkInfo.Length, ownStream: false);
             context = new();
-            deserialized = deserializer.DeserializeObject(dataStream, context);
-        
+            deserialized = deserializer.DeserializeObject(dataStream, optionsStream, context);
+
             if (deserializer.Streaming) {
                 resourceStream.Detach();
             }
+        } finally {
+            optionsStream.Dispose();
         }
 
         importedStack.Add(rid, deserialized);
@@ -92,69 +106,5 @@ partial class ResourceRegistry {
         _resourceCache.Add(rid, new(1, deserialized));
         
         return deserialized;
-    }
-    
-    private static void ExtractCompiledResource(Stream stream, out ushort majorVersion, out ushort minorVersion, out ChunkLookupTable lookupTable) {
-        using BinaryReader br = new(stream, Encoding.UTF8, true);
-        
-        unsafe {
-            uint magic;
-            int read = br.Read(new Span<byte>(&magic, sizeof(uint)));
-            
-            if (read < 4) throw new ArgumentException("Failed to read magic number.");
-            
-            if (magic != BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.MagicIdentifier)) {
-                throw new FormatException("Invalid magic number.");
-            }
-        }
-
-        majorVersion = br.ReadUInt16();
-        minorVersion = br.ReadUInt16();
-
-        int numChunks = br.ReadInt32();
-
-        lookupTable = new(8);
-
-        for (int i = 0; i < numChunks; i++) {
-            lookupTable.Add(new(br.ReadUInt32(), br.ReadInt32()));
-        }
-
-        ValidateLookupTable(br, in lookupTable);
-    }
-
-    private static void ValidateLookupTable(BinaryReader reader, in ChunkLookupTable lookupTable) {
-        Stream baseStream = reader.BaseStream;
-        
-        foreach ((uint chunkTag, int position) in lookupTable.Span) {
-            ReadOnlySpan<byte> chunkTagBytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in chunkTag, 1));
-            
-            if (position >= baseStream.Length) throw new CorruptedFormatException($"Chunk {Encoding.ASCII.GetString(chunkTagBytes)} has position surpassed Stream's length.");
-
-            baseStream.Seek(position, SeekOrigin.Begin);
-
-            uint validatingChunk;
-            
-            try {
-                validatingChunk = reader.ReadUInt32();
-            } catch (EndOfStreamException e) {
-                throw new CorruptedFormatException($"Failed to validate chunk {Encoding.ASCII.GetString(chunkTagBytes)} (Unreadable tag).", e);
-            }
-
-            if (validatingChunk != chunkTag) {
-                throw new CorruptedFormatException($"Expected chunk tag {Encoding.ASCII.GetString(chunkTagBytes)} at position {position}.");
-            }
-            
-            uint chunkLength;
-            
-            try {
-                chunkLength = reader.ReadUInt32();
-            } catch (EndOfStreamException e) {
-                throw new CorruptedFormatException($"Failed to validate chunk {Encoding.ASCII.GetString(chunkTagBytes)} (Unreadable length).", e);
-            }
-
-            if (baseStream.Position + chunkLength > baseStream.Length) {
-                throw new CorruptedFormatException($"Chunk {Encoding.ASCII.GetString(chunkTagBytes)} has length surpassed Stream's length.");
-            }
-        }
     }
 }
