@@ -1,15 +1,20 @@
 ﻿using System.Collections.Immutable;
 using System.Reflection;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Caxivitual.Lunacub.Tests.Importing;
 
 public class ImportingTestFixture : IDisposable {
     public IReadOnlyDictionary<Type, ImmutableArray<Type>> ComponentTypes { get; }
-    private readonly IReadOnlyDictionary<ResourceID, JsonObject> _resources;
+    private readonly Dictionary<ResourceID, JsonObject> _resources;
 
     public ImportingTestFixture() {
-        using FileStream fs = File.OpenRead(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resources.json"));
-        _resources = JsonSerializer.Deserialize<Dictionary<ResourceID, JsonObject>>(fs)!;
+        _resources = JsonSerializer.Deserialize<Dictionary<ResourceID, JsonObject>>(File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resources.json")), new JsonSerializerOptions {
+            Converters = {
+                new JsonStringEnumConverter(),
+            },
+            TypeInfoResolver = new OptionsTypeInfoResolver(),
+        })!;
 
         Type[] types = Assembly.GetExecutingAssembly().GetTypes();
         ComponentTypes = new Dictionary<Type, ImmutableArray<Type>> {
@@ -30,5 +35,25 @@ public class ImportingTestFixture : IDisposable {
     
     public void Dispose() {
         GC.SuppressFinalize(this);
+    }
+    
+    private sealed class OptionsTypeInfoResolver : DefaultJsonTypeInfoResolver {
+        public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options) {
+            JsonTypeInfo jsonTypeInfo = base.GetTypeInfo(type, options);
+
+            if (jsonTypeInfo.Type == typeof(object)) {
+                jsonTypeInfo.PolymorphismOptions = new ()
+                {
+                    TypeDiscriminatorPropertyName = "$type",
+                    IgnoreUnrecognizedTypeDiscriminators = true,
+                    UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FailSerialization,
+                    DerivedTypes = {
+                        new(typeof(OptionsResourceDTO.Options), "OptionsResource.Options"),
+                    }
+                };
+            }
+
+            return jsonTypeInfo;
+        }
     }
 }

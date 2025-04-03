@@ -10,6 +10,8 @@ public abstract class Processor {
 }
 
 public abstract class Processor<TInput, TOutput> : Processor where TInput : ContentRepresentation where TOutput : ContentRepresentation {
+    internal override sealed bool CanProcess(ContentRepresentation input) => input is TInput t && CanProcess(t);
+    
     internal override sealed ContentRepresentation Process(ContentRepresentation input, ProcessingContext context) {
         Debug.Assert(input.GetType().IsAssignableTo(typeof(TInput)));
 

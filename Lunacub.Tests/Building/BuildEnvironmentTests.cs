@@ -15,6 +15,10 @@ public partial class BuildEnvironmentTests : IDisposable {
         
         _context.Importers.Add(nameof(ReferenceResourceImporter), new ReferenceResourceImporter());
         _context.SerializerFactories.Add(new ReferenceResourceSerializerFactory());
+        
+        _context.Importers.Add(nameof(OptionsResourceImporter), new OptionsResourceImporter());
+        _context.Processors.Add(nameof(OptionsResourceProcessor), new OptionsResourceProcessor());
+        _context.SerializerFactories.Add(new OptionsResourceSerializerFactory());
     }
 
     public void Dispose() {
