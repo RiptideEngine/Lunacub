@@ -15,6 +15,7 @@ public class BuildTestsFixture : ResourcesFixture {
     protected virtual Dictionary<Type, ImmutableArray<Type>> GetComponentTypes(Type[] assemblyTypes) {
         return new() {
             [typeof(Importer)] = [..assemblyTypes.Where(x => x.IsSubclassOf(typeof(Importer)))],
+            [typeof(Processor)] = [..assemblyTypes.Where(x => x.IsSubclassOf(typeof(Processor)))],
             [typeof(SerializerFactory)] = [..assemblyTypes.Where(x => x.IsSubclassOf(typeof(SerializerFactory)))],
         };
     }

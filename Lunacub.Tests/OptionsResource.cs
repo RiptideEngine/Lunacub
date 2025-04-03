@@ -59,7 +59,7 @@ public sealed class OptionsResourceProcessor : Processor<OptionsResourceDTO, Pro
                 }
                 return new(ms.ToArray());
 
-            default: throw new NotSupportedException();
+            default: throw new NotSupportedException("Unsupported serialization type.");
         }
     }
 }
@@ -91,7 +91,7 @@ public sealed class OptionsResourceSerializerFactory : SerializerFactory {
 
 public sealed class OptionsResourceDeserializer : Deserializer<OptionsResource> {
     protected override OptionsResource Deserialize(Stream dataStream, Stream optionStream, DeserializationContext context) {
-        using BinaryReader optionsReader = new(dataStream, Encoding.UTF8, leaveOpen: true);
+        using BinaryReader optionsReader = new(optionStream, Encoding.UTF8, leaveOpen: true);
         SerializationType serializationType = (SerializationType)optionsReader.ReadInt32();
 
         switch (serializationType) {
@@ -102,7 +102,7 @@ public sealed class OptionsResourceDeserializer : Deserializer<OptionsResource> 
                 Debug.Assert(dataStream.Length % 4 == 0);
 
                 using (BinaryReader dataReader = new(dataStream, Encoding.UTF8, leaveOpen: true)) {
-                    var builder = ImmutableArray.CreateBuilder<int>();
+                    var builder = ImmutableArray.CreateBuilder<int>((int)(dataStream.Length / 4));
 
                     for (int i = 0, e = (int)(dataStream.Length / 4); i < e; i++) {
                         builder.Add(dataReader.ReadInt32());
@@ -111,7 +111,7 @@ public sealed class OptionsResourceDeserializer : Deserializer<OptionsResource> 
                     return new(builder.MoveToImmutable());
                 }
                 
-            default: throw new NotSupportedException();
+            default: throw new NotSupportedException("Unsupported serialization type.");
         }
     }
 }

@@ -22,6 +22,10 @@ public partial class ImportEnvironmentTests : IClassFixture<ImportTestsFixture>,
             _buildEnv.Importers.Add(type.Name, (Importer)Activator.CreateInstance(type)!);
         }
         
+        foreach (var type in _fixture.ComponentTypes[typeof(Processor)]) {
+            _buildEnv.Processors.Add(type.Name, (Processor)Activator.CreateInstance(type)!);
+        }
+        
         foreach (var type in _fixture.ComponentTypes[typeof(SerializerFactory)]) {
             _buildEnv.SerializerFactories.Add((SerializerFactory)Activator.CreateInstance(type)!);
         }
@@ -38,11 +42,11 @@ public partial class ImportEnvironmentTests : IClassFixture<ImportTestsFixture>,
         GC.SuppressFinalize(this);
     }
 
-    private void BuildResources(params ResourceID[] rids) {
+    private BuildingResult BuildResources(params ResourceID[] rids) {
         foreach (var rid in rids) {
             _fixture.RegisterResourceToBuild(_buildEnv, rid);
         }
         
-        _buildEnv.BuildResources();
+        return _buildEnv.BuildResources();
     }
 }

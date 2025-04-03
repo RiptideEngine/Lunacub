@@ -80,6 +80,7 @@ partial class ResourceRegistry {
         
         try {
             resourceStream.Value.Seek(dataChunkInfo.ContentOffset, SeekOrigin.Begin);
+            optionsStream.Seek(0, SeekOrigin.Begin);
 
             using PartialReadStream dataStream = new(resourceStream.Value, dataChunkInfo.ContentOffset, dataChunkInfo.Length, ownStream: false);
             context = new();
