@@ -1,12 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <LangVersion>latest</LangVersion>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <RootNamespace>Caxivitual.Lunacub.Building</RootNamespace>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <AssemblyName>Caxivitual.Lunacub.Building</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -28,4 +24,5 @@
       </Compile>
     </ItemGroup>
 
+    <Import Project="$(SolutionDir)commons\nugetcommon.props"/>
 </Project>

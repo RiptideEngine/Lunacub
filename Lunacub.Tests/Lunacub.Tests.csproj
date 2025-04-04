@@ -1,12 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
         <RootNamespace>Caxivitual.Lunacub.Tests</RootNamespace>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -42,4 +38,5 @@
       <ProjectReference Include="..\Lunacub\Lunacub.csproj" />
     </ItemGroup>
 
+    <Import Project="$(SolutionDir)commons\buildcommon.props"/>
 </Project>
