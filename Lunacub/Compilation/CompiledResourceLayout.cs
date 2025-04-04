@@ -2,12 +2,18 @@
 
 namespace Caxivitual.Lunacub.Compilation;
 
-public struct CompiledResourceLayout {
-    public ushort MajorVersion;
-    public ushort MinorVersion;
-    public ImmutableArray<ChunkInformation> Chunks;
+public readonly struct CompiledResourceLayout {
+    public readonly ushort MajorVersion;
+    public readonly ushort MinorVersion;
+    public readonly ImmutableArray<ChunkInformation> Chunks;
 
-    public readonly bool TryGetChunkInformation(ReadOnlySpan<byte> tag, out ChunkInformation output) {
+    internal CompiledResourceLayout(ushort majorVersion, ushort minorVersion, ImmutableArray<ChunkInformation> chunks) {
+        MajorVersion = majorVersion;
+        MinorVersion = minorVersion;
+        Chunks = chunks;
+    }
+
+    public bool TryGetChunkInformation(ReadOnlySpan<byte> tag, out ChunkInformation output) {
         if (tag.Length != 4) {
             output = default;
             return false;

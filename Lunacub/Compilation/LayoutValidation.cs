@@ -10,8 +10,6 @@ public static class LayoutValidation {
         if (!stream.CanRead) throw new ArgumentException("Stream is not readable.");
         if (!stream.CanSeek) throw new ArgumentException("Stream is not seekable.");
         
-        CompiledResourceLayout layout = new CompiledResourceLayout();
-        
         using BinaryReader reader = new(stream, Encoding.UTF8, leaveOpen: true);
 
         uint magic = reader.ReadUInt32();
@@ -20,8 +18,8 @@ public static class LayoutValidation {
             throw new CorruptedFormatException($"Unexpected magic identifier 0x{magic:x8}.");
         }
         
-        layout.MajorVersion = reader.ReadUInt16();
-        layout.MinorVersion = reader.ReadUInt16();
+        ushort majorVersion = reader.ReadUInt16();
+        ushort minorVersion = reader.ReadUInt16();
 
         int chunkAmount = reader.ReadInt32();
         
@@ -65,9 +63,7 @@ public static class LayoutValidation {
             chunkInfoBuilder.Add(new(chunkTag, chunkLength, stream.Position));
         }
         
-        layout.Chunks = chunkInfoBuilder.MoveToImmutable();
-        
-        return layout;
+        return new(majorVersion, minorVersion, chunkInfoBuilder.MoveToImmutable());
     }
 
     public static CompiledResourceLayout Validate(ReadOnlySpan<byte> memory) {
