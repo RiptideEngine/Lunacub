@@ -1,5 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
+[ExcludeFromCodeCoverage]
 public sealed class SerializerFactoryCollection : Collection<SerializerFactory> {
     internal SerializerFactoryCollection() {}
 

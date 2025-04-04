@@ -6,7 +6,7 @@ partial class BuildEnvironmentTests {
     public void OptionsResource_Json_ShouldBeCorrect() {
         var rid = ResourceID.Parse("81a12ccd19f15cd6a5df2513c95ffbd1");
         
-        _fixture.RegisterResourceToBuild(_env, rid);
+        _resourcesFixture.RegisterResourceToBuild(_env, rid);
         
         MockFileSystem fs = ((MockOutputSystem)_env.Output).FileSystem;
         
@@ -30,7 +30,7 @@ partial class BuildEnvironmentTests {
     public void OptionsResource_Binary_ShouldBeCorrect() {
         var rid = ResourceID.Parse("178ad6eee6e4521f91c9668566a4b6eb");
         
-        _fixture.RegisterResourceToBuild(_env, rid);
+        _resourcesFixture.RegisterResourceToBuild(_env, rid);
         
         MockFileSystem fs = ((MockOutputSystem)_env.Output).FileSystem;
         

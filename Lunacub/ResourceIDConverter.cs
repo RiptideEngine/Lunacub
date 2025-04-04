@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Caxivitual.Lunacub;
 
+[ExcludeFromCodeCoverage]
 internal sealed class ResourceIDConverter : JsonConverter<ResourceID> {
     public override void Write(Utf8JsonWriter writer, ResourceID value, JsonSerializerOptions options) {
         Span<byte> bytes = stackalloc byte[32];

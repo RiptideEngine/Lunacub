@@ -1,5 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
+[ExcludeFromCodeCoverage]
 public sealed class ProcessorDictionary : IdentityDictionary<Processor> {
     internal ProcessorDictionary() : base(StringComparer.Ordinal) { }
     

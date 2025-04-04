@@ -27,15 +27,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="Resources\**">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Lunacub.Building\Lunacub.Building.csproj" />
-      <ProjectReference Include="..\Lunacub.Importing\Lunacub.Importing.csproj" />
-      <ProjectReference Include="..\Lunacub\Lunacub.csproj" />
+      <ProjectReference Include="..\Lunacub.Tests.Common\Lunacub.Tests.Common.csproj" />
     </ItemGroup>
 
     <Import Project="$(SolutionDir)commons\buildcommon.props"/>

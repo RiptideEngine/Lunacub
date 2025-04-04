@@ -157,6 +157,7 @@ public sealed class ResourceRegistry : IEnumerable<KeyValuePair<ResourceID, Buil
     public IEnumerator<KeyValuePair<ResourceID, BuildingOptions>> GetEnumerator() => _buildOptions.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_buildOptions).GetEnumerator();
     
+    [ExcludeFromCodeCoverage]
     ~ResourceRegistry() {
         Dispose(false);
     }

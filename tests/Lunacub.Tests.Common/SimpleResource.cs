@@ -1,4 +1,4 @@
-﻿namespace Caxivitual.Lunacub.Tests;
+﻿namespace Caxivitual.Lunacub.Tests.Common;
 
 public sealed class SimpleResource {
     public int Value { get; set; }

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization.Metadata;
 
-namespace Caxivitual.Lunacub.Tests;
+namespace Caxivitual.Lunacub.Tests.Common;
 
 public sealed class OptionsTypeInfoResolver : DefaultJsonTypeInfoResolver {
     public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options) {

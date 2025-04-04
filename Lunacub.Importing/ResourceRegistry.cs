@@ -89,6 +89,7 @@ public sealed partial class ResourceRegistry : IDisposable {
         GC.SuppressFinalize(this);
     }
 
+    [ExcludeFromCodeCoverage]
     ~ResourceRegistry() {
         Dispose(false);
     }

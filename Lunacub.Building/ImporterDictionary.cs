@@ -1,5 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
+[ExcludeFromCodeCoverage]
 public sealed class ImporterDictionary : IdentityDictionary<Importer> {
     internal ImporterDictionary() : base(StringComparer.Ordinal) { }
 

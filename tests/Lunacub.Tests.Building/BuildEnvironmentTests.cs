@@ -1,11 +1,11 @@
 ﻿namespace Caxivitual.Lunacub.Tests.Building;
 
-public partial class BuildEnvironmentTests : IClassFixture<BuildTestsFixture>, IDisposable {
+public partial class BuildEnvironmentTests : IClassFixture<ResourcesFixture>, IDisposable {
     private readonly BuildEnvironment _env;
     private readonly ITestOutputHelper _output;
-    private readonly BuildTestsFixture _fixture;
+    private readonly ResourcesFixture _resourcesFixture;
 
-    public BuildEnvironmentTests(BuildTestsFixture fixture, ITestOutputHelper output) {
+    public BuildEnvironmentTests(ResourcesFixture resourcesFixture, ITestOutputHelper output) {
         _output = output;
         AssertHelpers.RedirectConsoleOutput(output);
 
@@ -21,7 +21,7 @@ public partial class BuildEnvironmentTests : IClassFixture<BuildTestsFixture>, I
         _env.Processors.Add(nameof(OptionsResourceProcessor), new OptionsResourceProcessor());
         _env.SerializerFactories.Add(new OptionsResourceSerializerFactory());
 
-        _fixture = fixture;
+        _resourcesFixture = resourcesFixture;
     }
 
     public void Dispose() {

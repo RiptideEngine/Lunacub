@@ -1,4 +1,4 @@
-﻿namespace Caxivitual.Lunacub.Tests;
+﻿namespace Caxivitual.Lunacub.Tests.Common;
 
 public class MockResourceLibrary(Guid id, MockFileSystem fs) : ResourceLibrary(id) {
     public MockFileSystem FileSystem { get; } = fs;

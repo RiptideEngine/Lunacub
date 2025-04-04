@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+        <AssemblyName>Caxivitual.Lunacub.Tests.Common</AssemblyName>
+        <RootNamespace>Caxivitual.Lunacub.Tests.Common</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
+        <PackageReference Include="xunit" Version="2.5.3"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
+        <PackageReference Include="System.IO.Abstractions" Version="22.0.11" />
+        <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" Version="22.0.11" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Lunacub.Building\Lunacub.Building.csproj" />
+        <ProjectReference Include="..\..\Lunacub.Importing\Lunacub.Importing.csproj" />
+        <ProjectReference Include="..\..\Lunacub\Lunacub.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="Resources\**">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
+    <Import Project="$(SolutionDir)commons\buildcommon.props"/>
+</Project>

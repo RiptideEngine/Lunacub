@@ -1,8 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Text.Json;
 
-namespace Caxivitual.Lunacub.Tests;
+namespace Caxivitual.Lunacub.Tests.Common;
 
 public sealed class OptionsResource {
     public ImmutableArray<int> Array { get; }

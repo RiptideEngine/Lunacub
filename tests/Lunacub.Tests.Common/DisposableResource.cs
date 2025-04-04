@@ -1,4 +1,4 @@
-﻿namespace Caxivitual.Lunacub.Tests;
+﻿namespace Caxivitual.Lunacub.Tests.Common;
 
 public class DisposableResource : IDisposable {
     public bool Disposed { get; private set; }

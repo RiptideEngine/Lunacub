@@ -16,6 +16,7 @@ public abstract class ContentRepresentation : IDisposable {
         GC.SuppressFinalize(this);
     }
 
+    [ExcludeFromCodeCoverage]
     ~ContentRepresentation() {
         Dispose(false);
     }

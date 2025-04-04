@@ -7,8 +7,8 @@ partial class BuildEnvironmentTests {
         var rid1 = ResourceID.Parse("de1b416bf928467ea13bc0f23d3e6dfb");
         var rid2 = ResourceID.Parse("7a6646bd2ee446a1a91c884b76f12392");
         
-        _fixture.RegisterResourceToBuild(_env, rid1);
-        _fixture.RegisterResourceToBuild(_env, rid2);
+        _resourcesFixture.RegisterResourceToBuild(_env, rid1);
+        _resourcesFixture.RegisterResourceToBuild(_env, rid2);
         
         MockFileSystem fs = ((MockOutputSystem)_env.Output).FileSystem;
         
@@ -43,7 +43,7 @@ partial class BuildEnvironmentTests {
     public unsafe void ReferenceResource_MissingDependency_ShouldBeCorrect() {
         var rid1 = ResourceID.Parse("de1b416bf928467ea13bc0f23d3e6dfb");
         
-        _fixture.RegisterResourceToBuild(_env, rid1);
+        _resourcesFixture.RegisterResourceToBuild(_env, rid1);
         
         MockFileSystem fs = ((MockOutputSystem)_env.Output).FileSystem;
         

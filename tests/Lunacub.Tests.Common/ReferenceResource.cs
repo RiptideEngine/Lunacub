@@ -1,4 +1,4 @@
-﻿namespace Caxivitual.Lunacub.Tests;
+﻿namespace Caxivitual.Lunacub.Tests.Common;
 
 public sealed class ReferenceResource {
     public ReferenceResource? Reference { get; set; }

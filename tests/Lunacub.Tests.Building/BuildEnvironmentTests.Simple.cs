@@ -7,7 +7,7 @@ partial class BuildEnvironmentTests {
     public void SimpleResource_ShouldBeCorrect() {
         var rid = ResourceID.Parse("e0b8066bf60043c5a0c3a7782363427d");
         
-        _fixture.RegisterResourceToBuild(_env, rid);
+        _resourcesFixture.RegisterResourceToBuild(_env, rid);
         
         MockFileSystem fs = ((MockOutputSystem)_env.Output).FileSystem;
 

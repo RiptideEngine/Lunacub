@@ -2,6 +2,7 @@
 
 namespace Caxivitual.Lunacub;
 
+[ExcludeFromCodeCoverage]
 public abstract class IdentityDictionary<T>(IEqualityComparer<string> comparer) : IDictionary<string, T> {
     protected readonly Dictionary<string, T> _dict = new(comparer);
     

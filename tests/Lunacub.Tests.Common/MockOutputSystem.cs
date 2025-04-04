@@ -1,6 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Tests;
+﻿namespace Caxivitual.Lunacub.Tests.Common;
 
-internal sealed class MockOutputSystem : OutputSystem {
+public sealed class MockOutputSystem : OutputSystem {
     public static string ReportDirectory { get; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Reports");
     public static string ResourceOutputDirectory { get; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Outputs");
 

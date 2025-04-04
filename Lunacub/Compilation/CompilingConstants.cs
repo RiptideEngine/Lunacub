@@ -1,5 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Compilation;
 
+[ExcludeFromCodeCoverage]
 public static class CompilingConstants {
     public const string CompiledResourceExtension = ".lcr";     // Lunacub Compiled Content
     public const string ReportExtension = ".lrer";              // Lunacub Content Export Report
