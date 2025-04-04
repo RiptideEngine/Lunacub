@@ -3,6 +3,7 @@
     <PropertyGroup>
         <RootNamespace>Caxivitual.Lunacub.Importing</RootNamespace>
         <AssemblyName>Caxivitual.Lunacub.Importing</AssemblyName>
+        <Description>Resource importing module for Lunacub.</Description>
     </PropertyGroup>
 
     <ItemGroup>

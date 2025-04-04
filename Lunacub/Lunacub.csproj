@@ -2,6 +2,7 @@
     <PropertyGroup>
         <RootNamespace>Caxivitual.Lunacub</RootNamespace>
         <AssemblyName>Caxivitual.Lunacub</AssemblyName>
+        <Description>Common library for Lunacub.</Description>
     </PropertyGroup>
 
     <Import Project="$(SolutionDir)commons\nugetcommon.props"/>

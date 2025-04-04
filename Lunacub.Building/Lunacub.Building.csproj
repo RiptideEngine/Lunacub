@@ -3,6 +3,7 @@
     <PropertyGroup>
         <RootNamespace>Caxivitual.Lunacub.Building</RootNamespace>
         <AssemblyName>Caxivitual.Lunacub.Building</AssemblyName>
+        <Description>Resource building/compilation module for Lunacub.</Description>
     </PropertyGroup>
 
     <ItemGroup>
