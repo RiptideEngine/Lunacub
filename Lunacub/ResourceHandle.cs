@@ -3,7 +3,7 @@
 namespace Caxivitual.Lunacub;
 
 public readonly record struct ResourceHandle(ResourceID Rid, object? Value) {
-    public ResourceHandle<T> ConvertUnchecked<T>() where T : class {
+    public ResourceHandle<T> ConvertUnsafe<T>() where T : class {
         return new(Rid, (T)Value!);
     }
     
@@ -13,7 +13,7 @@ public readonly record struct ResourceHandle(ResourceID Rid, object? Value) {
 }
 
 public readonly record struct ResourceHandle<T>(ResourceID Rid, T? Value) where T : class {
-    public ResourceHandle<TOther> ConvertUnchecked<TOther>() where TOther : class {
+    public ResourceHandle<TOther> ConvertUnsafe<TOther>() where TOther : class {
         return new(Rid, (TOther)(object)Value!);
     }
     
