@@ -1,6 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Tests;
 
-public sealed class AssertHelpers {
+public sealed class DebugHelpers {
     public static void RedirectConsoleOutput(ITestOutputHelper output) {
         Console.SetOut(new OutputWriter(output));
     }

@@ -28,6 +28,4 @@ public partial class BuildEnvironmentTests : IClassFixture<ResourcesFixture>, ID
         _env.Dispose();
         GC.SuppressFinalize(this);
     }
-
-    private static string GetResourcePath(string filename) => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", filename);
 }

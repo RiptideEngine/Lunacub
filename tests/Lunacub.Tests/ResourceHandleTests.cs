@@ -2,7 +2,7 @@
 
 public class ResourceHandleTests {
     [Fact]
-    public void NonGenericConvert_Downcast_ShouldBeCorrect() {
+    public void NonGenericConvert_Downcast_ReturnsCorrectHandle() {
         new Func<ResourceHandle<Parent>>(() => new ResourceHandle(ResourceID.Null, new Child1()).Convert<Parent>())
             .Should().NotThrow()
             .Which.Value
@@ -10,7 +10,7 @@ public class ResourceHandleTests {
     }
 
     [Fact]
-    public void NonGenericConvert_CorrectType_ShouldBeCorrect() {
+    public void NonGenericConvert_CorrectType_ReturnsCorrectHandle() {
         new Func<ResourceHandle<Child1>>(() => new ResourceHandle(ResourceID.Null, new Child1()).Convert<Child1>())
             .Should().NotThrow()
             .Which.Value
@@ -26,7 +26,7 @@ public class ResourceHandleTests {
     }
     
     [Fact]
-    public void NonGenericConvertUnsafe_Downcast_ShouldBeCorrect() {
+    public void NonGenericConvertUnsafe_Downcast_ReturnsCorrectHandle() {
         new Func<ResourceHandle<Parent>>(() => new ResourceHandle(ResourceID.Null, new Child1()).ConvertUnsafe<Parent>())
             .Should().NotThrow()
             .Which.Value
@@ -34,7 +34,7 @@ public class ResourceHandleTests {
     }
 
     [Fact]
-    public void NonGenericConvertUnsafe_CorrectType_ShouldBeCorrect() {
+    public void NonGenericConvertUnsafe_CorrectType_ReturnsCorrectHandle() {
         new Func<ResourceHandle<Child1>>(() => new ResourceHandle(ResourceID.Null, new Child1()).ConvertUnsafe<Child1>())
             .Should().NotThrow()
             .Which.Value
@@ -42,13 +42,13 @@ public class ResourceHandleTests {
     }
     
     [Fact]
-    public void NonGenericConvertUnsafe_IncorrectType_ShouldThrowInvalidCastException() {
+    public void NonGenericConvertUnsafe_IncorrectType_ThrowsInvalidCastException() {
         new Func<ResourceHandle<Child2>>(() => new ResourceHandle(ResourceID.Null, new Child1()).ConvertUnsafe<Child2>())
             .Should().Throw<InvalidCastException>();
     }
     
     [Fact]
-    public void GenericToNonGeneric_ImplicitConvert_ShouldBeCorrect() {
+    public void GenericToNonGeneric_ImplicitConvert_ReturnsObjectHandle() {
         new Func<ResourceHandle>(() => new ResourceHandle<Child1>(ResourceID.Null, new()))
             .Should().NotThrow()
             .Which.Value
@@ -56,7 +56,7 @@ public class ResourceHandleTests {
     }
     
     [Fact]
-    public void GenericConvert_Downcast_ShouldBeCorrect() {
+    public void GenericConvert_Downcast_ReturnsCorrectHandle() {
         new Func<ResourceHandle<Parent>>(() => new ResourceHandle<Child1>(ResourceID.Null, new()).Convert<Parent>())
             .Should().NotThrow()
             .Which.Value
@@ -64,7 +64,7 @@ public class ResourceHandleTests {
     }
 
     [Fact]
-    public void GenericConvert_UpcastCorrectType_ShouldBeCorrect() {
+    public void GenericConvert_UpcastCorrectType_ReturnsCorrectHandle() {
         new Func<ResourceHandle<Child1>>(() => new ResourceHandle<Parent>(ResourceID.Null, new Child1()).Convert<Child1>())
             .Should().NotThrow()
             .Which.Value
@@ -80,7 +80,7 @@ public class ResourceHandleTests {
     }
     
     [Fact]
-    public void GenericConvertUnsafe_Downcast_ShouldBeCorrect() {
+    public void GenericConvertUnsafe_Downcast_ReturnsCorrectHandle() {
         new Func<ResourceHandle<Parent>>(() => new ResourceHandle<Child1>(ResourceID.Null, new()).ConvertUnsafe<Parent>())
             .Should().NotThrow()
             .Which.Value
@@ -88,7 +88,7 @@ public class ResourceHandleTests {
     }
 
     [Fact]
-    public void GenericConvertUnsafe_UpcastCorrectType_ShouldBeCorrect() {
+    public void GenericConvertUnsafe_UpcastCorrectType_ReturnsCorrectHandle() {
         new Func<ResourceHandle<Child1>>(() => new ResourceHandle<Parent>(ResourceID.Null, new Child1()).ConvertUnsafe<Child1>())
             .Should().NotThrow()
             .Which.Value
@@ -96,7 +96,7 @@ public class ResourceHandleTests {
     }
     
     [Fact]
-    public void GenericConvertUnsafe_UpcastIncorrectType_ShouldThrowInvalidCastException() {
+    public void GenericConvertUnsafe_UpcastIncorrectType_ThrowsInvalidCastException() {
         new Func<ResourceHandle<Child2>>(() => new ResourceHandle<Parent>(ResourceID.Null, new Child1()).ConvertUnsafe<Child2>())
             .Should().Throw<InvalidCastException>();
     }

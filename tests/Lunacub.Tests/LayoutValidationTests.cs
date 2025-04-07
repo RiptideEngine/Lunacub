@@ -5,7 +5,7 @@ namespace Caxivitual.Lunacub.Tests;
 
 public class LayoutValidationTests {
     [Fact]
-    public void Validate_Stream_ShouldBeCorrect() {
+    public void Validate_FromStream_ReturnsCorrectLayout() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
@@ -32,7 +32,7 @@ public class LayoutValidationTests {
     }
 
     [Fact]
-    public void Validate_ReadOnlySpanByte_ShouldBeCorrect() {
+    public void Validate_FromMemory_ReturnsCorrectLayout() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
@@ -59,7 +59,7 @@ public class LayoutValidationTests {
     }
     
     [Fact]
-    public void Validate_ShouldThrowOnUnreadableOrUnseekableStream() {
+    public void Validate_UnreadableStream_ThrowsArgumentException() {
         MemoryStream ms = new MemoryStream([]);
         ms.Dispose();
 
@@ -68,14 +68,14 @@ public class LayoutValidationTests {
     }
 
     [Fact]
-    public void Validate_ShouldThrowOnInvalidMagic() {
+    public void Validate_InvalidMagic_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream("????"u8.ToArray());
         new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
             .Should().Throw<CorruptedFormatException>().WithMessage("*magic*");
     }
     
     [Fact]
-    public void Validate_Header_EndOfStream_ShouldThrowCorruptedFormatException() {
+    public void Validate_HeaderEndOfStream_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
@@ -89,28 +89,9 @@ public class LayoutValidationTests {
         new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
             .Should().Throw<CorruptedFormatException>().WithMessage("*header*").WithInnerException<EndOfStreamException>();
     }
-
-    [Fact]
-    public void Validate_Chunk_PositionSurpassedStreamLength_ShouldThrowCorruptedFormatException() {
-        using MemoryStream ms = new MemoryStream();
-
-        using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
-            writer.Write(CompilingConstants.MagicIdentifier);
-            writer.Write((ushort)1);
-            writer.Write((ushort)0);
-            writer.Write(1); // 1 chunks
-            writer.Write(CompilingConstants.ResourceDataChunkTag);
-            writer.Write(int.MaxValue);
-        }
-
-        ms.Seek(0, SeekOrigin.Begin);
-        
-        new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
-            .Should().Throw<CorruptedFormatException>().WithMessage("*surpassed*length*");
-    }
     
     [Fact]
-    public void Validate_ChunkHeader_EndOfStream_ShouldThrowCorruptedFormatException() {
+    public void Validate_ChunkHeaderEndOfStream_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
@@ -129,9 +110,28 @@ public class LayoutValidationTests {
         new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
             .Should().Throw<CorruptedFormatException>().WithMessage("*chunk header*").WithInnerException<EndOfStreamException>();
     }
+
+    [Fact]
+    public void Validate_ChunkPositionSurpassedStreamLength_ThrowsCorruptedFormatException() {
+        using MemoryStream ms = new MemoryStream();
+
+        using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
+            writer.Write(CompilingConstants.MagicIdentifier);
+            writer.Write((ushort)1);
+            writer.Write((ushort)0);
+            writer.Write(1); // 1 chunks
+            writer.Write(CompilingConstants.ResourceDataChunkTag);
+            writer.Write(int.MaxValue);
+        }
+
+        ms.Seek(0, SeekOrigin.Begin);
+        
+        new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
+            .Should().Throw<CorruptedFormatException>().WithMessage("*surpassed*length*");
+    }
     
     [Fact]
-    public void Validate_ChunkHeader_UnexpectedTag_ShouldThrowCorruptedFormatException() {
+    public void Validate_UnexpectedChunkTag_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
@@ -152,7 +152,7 @@ public class LayoutValidationTests {
     }
     
     [Fact]
-    public void Validate_Chunk_ContentSurpassedStream_ShouldThrowCorruptedFormatException() {
+    public void Validate_ChunkContentSurpassedStreamLength_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {

@@ -8,6 +8,10 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IUtf8SpanFormattable
     
     private readonly Guid _guid;
 
+    public ResourceID(string str) {
+        this = Parse(str);
+    }
+
     public ResourceID(Guid guid) {
         _guid = guid;
     }
