@@ -10,10 +10,10 @@ partial class BuildEnvironment {
         Dictionary<ResourceID, ResourceBuildingResult> results = [];
         
         foreach ((var rid, _) in Resources) {
-            bool get = Resources.TryGet(rid, out string? path, out BuildingOptions options);
+            bool get = Resources.TryGet(rid, out ResourceRegistry.BuildingResource output);
             Debug.Assert(get);
 
-            BuildResource(rid, path!, options, results);
+            BuildResource(rid, in output, results);
         }
 
         return new(start, DateTime.Now, results);
@@ -22,7 +22,7 @@ partial class BuildEnvironment {
     public BuildingResult BuildResource(ResourceID rid) {
         DateTime start = DateTime.Now;
         
-        if (!Resources.TryGet(rid, out string? resourcePath, out BuildingOptions buildingOptions)) {
+        if (!Resources.TryGet(rid, out ResourceRegistry.BuildingResource buildingResource)) {
             return new(start, start, new Dictionary<ResourceID, ResourceBuildingResult> {
                 [rid] = new(BuildStatus.ResourceNotFound),
             });
@@ -30,13 +30,15 @@ partial class BuildEnvironment {
 
         Dictionary<ResourceID, ResourceBuildingResult> results = [];
         
-        BuildResource(rid, resourcePath, buildingOptions, results);
+        BuildResource(rid, in buildingResource, results);
         
         return new(start, DateTime.Now, results);
     }
 
-    private void BuildResource(ResourceID rid, string resourcePath, BuildingOptions options, Dictionary<ResourceID, ResourceBuildingResult> results) {
+    private void BuildResource(ResourceID rid, in ResourceRegistry.BuildingResource buildingResource, Dictionary<ResourceID, ResourceBuildingResult> results) {
         if (results.ContainsKey(rid)) return;
+
+        (string resourcePath, BuildingOptions options) = buildingResource;
         
         DateTime resourceLastWriteTime = File.GetLastWriteTime(resourcePath);
 
@@ -122,9 +124,9 @@ partial class BuildEnvironment {
         }
         
         foreach (var reference in importingContext.References) {
-            if (!Resources.TryGet(reference, out string? refResourcePath, out BuildingOptions refResourceBuildingOptions)) continue;
+            if (!Resources.TryGet(reference, out ResourceRegistry.BuildingResource buildingReference)) continue;
 
-            BuildResource(reference, refResourcePath, refResourceBuildingOptions, results);
+            BuildResource(reference, buildingReference, results);
         }
     }
 }
