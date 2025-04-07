@@ -2,7 +2,7 @@
 
 partial class ImportEnvironmentTests {
     [Fact]
-    public void ReferenceResource_ShouldBeSuccess() {
+    public void ImportReferenceResource_Normal_ShouldHaveCorrectValueAndReference() {
         ResourceID rid1 = ResourceID.Parse("de1b416bf928467ea13bc0f23d3e6dfb");
         ResourceID rid2 = ResourceID.Parse("7a6646bd2ee446a1a91c884b76f12392");
         
@@ -28,7 +28,7 @@ partial class ImportEnvironmentTests {
     }
     
     [Fact]
-    public void ReferenceResource_CircularReference_ShouldBeSuccess() {
+    public void ImportReferenceResource_CircularReference_ShouldHaveCorrectValueAndReference() {
         ResourceID rid3 = ResourceID.Parse("58f0c3e4c7c24f798129d45f248bfa2c");
         ResourceID rid4 = ResourceID.Parse("235be3d4ddfd42fa983ce7c9d9f58d51");
         

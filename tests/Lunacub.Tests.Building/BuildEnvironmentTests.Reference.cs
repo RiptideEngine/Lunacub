@@ -3,9 +3,9 @@ namespace Caxivitual.Lunacub.Tests.Building;
 
 partial class BuildEnvironmentTests {
     [Fact]
-    public unsafe void Build_ReferenceResource_ShouldBeCorrect() {
-        var rid1 = ResourceID.Parse("de1b416bf928467ea13bc0f23d3e6dfb");
-        var rid2 = ResourceID.Parse("7a6646bd2ee446a1a91c884b76f12392");
+    public unsafe void BuildReferenceResource_Sufficient_BuildCorrectly() {
+        ResourceID rid1 = new("de1b416bf928467ea13bc0f23d3e6dfb");
+        ResourceID rid2 = new("7a6646bd2ee446a1a91c884b76f12392");
         
         _resourcesFixture.RegisterResourceToBuild(_env, rid1);
         _resourcesFixture.RegisterResourceToBuild(_env, rid2);
@@ -40,8 +40,8 @@ partial class BuildEnvironmentTests {
     }
     
     [Fact]
-    public unsafe void Build_ReferenceResource_UnregisteredDependency_ShouldBeCorrect() {
-        var rid1 = ResourceID.Parse("de1b416bf928467ea13bc0f23d3e6dfb");
+    public unsafe void BuildReferenceResource_UnregisteredDependency_BuildCorrectly() {
+        ResourceID rid1 = new("de1b416bf928467ea13bc0f23d3e6dfb");
         
         _resourcesFixture.RegisterResourceToBuild(_env, rid1);
         

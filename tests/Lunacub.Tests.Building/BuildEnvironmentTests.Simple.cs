@@ -4,8 +4,8 @@ namespace Caxivitual.Lunacub.Tests.Building;
 
 partial class BuildEnvironmentTests {
     [Fact]
-    public void Build_SimpleResource_ShouldBeCorrect() {
-        var rid = ResourceID.Parse("e0b8066bf60043c5a0c3a7782363427d");
+    public void BuildSimpleResource_BuildCorrectly() {
+        ResourceID rid = new("e0b8066bf60043c5a0c3a7782363427d");
         
         _resourcesFixture.RegisterResourceToBuild(_env, rid);
         

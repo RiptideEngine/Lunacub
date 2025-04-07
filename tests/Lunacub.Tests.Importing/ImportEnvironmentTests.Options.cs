@@ -2,7 +2,7 @@
 
 partial class ImportEnvironmentTests {
     [Fact]
-    public void OptionsResource_Import_Binary_ShouldBeSuccess() {
+    public void ImportOptionsResource_BinaryOption_ReturnsCorrectData() {
         ResourceID rid = ResourceID.Parse("178ad6eee6e4521f91c9668566a4b6eb");
 
         var result = BuildResources(rid);
@@ -21,7 +21,7 @@ partial class ImportEnvironmentTests {
     }
     
     [Fact]
-    public void OptionsResource_Import_Json_ShouldBeSuccess() {
+    public void ImportOptionsResource_JsonOption_ReturnsCorrectData() {
         ResourceID rid = ResourceID.Parse("81a12ccd19f15cd6a5df2513c95ffbd1");
 
         BuildResources(rid);

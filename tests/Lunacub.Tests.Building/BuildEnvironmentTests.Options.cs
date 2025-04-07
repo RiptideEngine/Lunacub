@@ -3,8 +3,8 @@ namespace Caxivitual.Lunacub.Tests.Building;
 
 partial class BuildEnvironmentTests {
     [Fact]
-    public void Build_OptionsResource_Json_ShouldBeCorrect() {
-        var rid = ResourceID.Parse("81a12ccd19f15cd6a5df2513c95ffbd1");
+    public void BuildOptionsResource_JsonOption_CompilesCorrectly() {
+        ResourceID rid = new("81a12ccd19f15cd6a5df2513c95ffbd1");
         
         _resourcesFixture.RegisterResourceToBuild(_env, rid);
         
@@ -27,8 +27,8 @@ partial class BuildEnvironmentTests {
     }
     
     [Fact]
-    public void Build_OptionsResource_Binary_ShouldBeCorrect() {
-        var rid = ResourceID.Parse("178ad6eee6e4521f91c9668566a4b6eb");
+    public void BuildOptionsResource_BinaryOption_CompilesCorrectly() {
+        ResourceID rid = new("178ad6eee6e4521f91c9668566a4b6eb");
         
         _resourcesFixture.RegisterResourceToBuild(_env, rid);
         

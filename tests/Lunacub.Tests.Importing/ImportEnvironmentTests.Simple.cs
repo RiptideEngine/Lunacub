@@ -2,7 +2,7 @@
 
 partial class ImportEnvironmentTests {
     [Fact]
-    public void SimpleResource_Import_ShouldBeSuccess() {
+    public void ImportSimpleResource_Normal_DeserializeCorrectly() {
         ResourceID rid = ResourceID.Parse("e0b8066bf60043c5a0c3a7782363427d");
 
         BuildResources(rid);

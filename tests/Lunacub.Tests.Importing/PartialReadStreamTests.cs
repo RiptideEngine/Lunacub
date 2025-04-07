@@ -13,7 +13,7 @@ public class PartialReadStreamTests : IDisposable {
     }
 
     [Fact]
-    public void Write_ShouldThrowNotSupportedException() {
+    public void WriteOverloads_ThrowsNotSupportedException() {
         using PartialReadStream stream = new(_stream, 0, 256, false);
 
         new Action(() => stream.Write([], 0, 0)).Should().Throw<NotSupportedException>();
@@ -22,21 +22,21 @@ public class PartialReadStreamTests : IDisposable {
     }
 
     [Fact]
-    public void Flush_ShouldThrowNotSupportedException() {
+    public void Flush_ThrowsNotSupportedException() {
         using PartialReadStream stream = new(_stream, 0, 256, false);
         
         new Action(() => stream.Flush()).Should().Throw<NotSupportedException>();
     }
 
     [Fact]
-    public void SetLength_ShouldThrowNotSupportedException() {
+    public void SetLength_ThrowsNotSupportedException() {
         using PartialReadStream stream = new(_stream, 0, 256, false);
         
         new Action(() => stream.SetLength(0)).Should().Throw<NotSupportedException>();
     }
 
     [Fact]
-    public void ReadAll_ShouldBeCorrect() {
+    public void Read_Everything_ShouldBeCorrect() {
         using PartialReadStream stream = new(_stream, 0, 256, false);
         byte[] buffer = new byte[256];
 
@@ -45,7 +45,7 @@ public class PartialReadStreamTests : IDisposable {
     }
 
     [Fact]
-    public void ReadPartial_ShouldBeCorrect() {
+    public void Read_Partial_ShouldBeCorrect() {
         using PartialReadStream stream = new(_stream, 0, 256, false);
         byte[] buffer = new byte[128];
         

@@ -1,21 +1,16 @@
 ﻿namespace Caxivitual.Lunacub.Tests.Importing;
 
 public class ResourceLibraryCollectionTests {
-    [Fact]
-    public void Add_ShouldBeCorrect() {
+    [Theory]
+    [InlineData("c9cecd943b5558929de0403e22d3ad3c")]
+    [InlineData("146dfb18e0195452a5bdd849a9a9a594")]
+    public void Add_ShouldBeCorrect(string guid) {
         ResourceLibraryCollection collection = [];
-        Guid guid1 = Guid.Parse("c9cecd943b5558929de0403e22d3ad3c");
-        Guid guid2 = Guid.Parse("146dfb18e0195452a5bdd849a9a9a594");
-        new Action(() => collection.Add(new FakeResourceLibrary(guid1))).Should().NotThrow();
-        new Action(() => collection.Add(new FakeResourceLibrary(guid2))).Should().NotThrow();
+        new Action(() => collection.Add(new FakeResourceLibrary(new(guid)))).Should().NotThrow();
 
-        collection.Should().HaveCount(2);
-        collection[0].Id.Should().Be(guid1);
-        collection[0].Should().BeOfType<FakeResourceLibrary>();
-        
-        collection.Should().HaveCount(2);
-        collection[1].Id.Should().Be(guid2);
-        collection[1].Should().BeOfType<FakeResourceLibrary>();
+        var library = collection.Should().ContainSingle().Which;
+        library.Id.Should().Be(new Guid(guid));
+        library.Should().BeOfType<FakeResourceLibrary>();
     }
     
     [Fact]
