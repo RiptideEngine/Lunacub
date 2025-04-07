@@ -7,7 +7,7 @@ public partial class BuildEnvironmentTests : IClassFixture<ResourcesFixture>, ID
 
     public BuildEnvironmentTests(ResourcesFixture resourcesFixture, ITestOutputHelper output) {
         _output = output;
-        AssertHelpers.RedirectConsoleOutput(output);
+        DebugHelpers.RedirectConsoleOutput(output);
 
         _env = new(new MockOutputSystem());
         

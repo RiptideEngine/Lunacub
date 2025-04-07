@@ -11,7 +11,7 @@ public partial class ImportEnvironmentTests : IClassFixture<ResourcesFixture>, I
     public ImportEnvironmentTests(ResourcesFixture resourcesFixture, ITestOutputHelper output) {
         _resourcesFixture = resourcesFixture;
         _output = output;
-        AssertHelpers.RedirectConsoleOutput(output);
+        DebugHelpers.RedirectConsoleOutput(output);
 
         _fileSystem = new();
         
