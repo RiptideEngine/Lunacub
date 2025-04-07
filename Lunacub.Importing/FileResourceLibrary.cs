@@ -2,6 +2,7 @@
 
 namespace Caxivitual.Lunacub.Importing;
 
+[ExcludeFromCodeCoverage]
 public class FileResourceLibrary(Guid id, string directory) : ResourceLibrary(id) {
     public string Directory { get; } = directory;
     

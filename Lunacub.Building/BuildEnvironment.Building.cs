@@ -41,7 +41,7 @@ partial class BuildEnvironment {
         DateTime resourceLastWriteTime = File.GetLastWriteTime(resourcePath);
 
         // If resource has been built before, and have old report, we can begin checking for caching.
-        if (Output.GetResourceLastBuildTime(rid) is { } resourceLastBuildTime && _incrementalInfoStorage.TryGet(rid, out var previousReport)) {
+        if (Output.GetResourceLastBuildTime(rid) is { } resourceLastBuildTime && IncrementalInfos.TryGet(rid, out var previousReport)) {
             // Check if resource's last write time is the same as the time stored in report.
             // Check if destination's last write time is later than resource's last write time.
             if (resourceLastWriteTime == previousReport.SourceLastWriteTime && resourceLastBuildTime > resourceLastWriteTime) {
@@ -115,7 +115,7 @@ partial class BuildEnvironment {
             }
 
             results.Add(rid, new(BuildStatus.Success));
-            _incrementalInfoStorage.Add(rid, incrementalInfo);
+            IncrementalInfos.Add(rid, incrementalInfo);
         } catch (Exception e) {
             results.Add(rid, new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
             return;

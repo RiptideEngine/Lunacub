@@ -27,6 +27,14 @@ public sealed class ResourceRegistry : IEnumerable<KeyValuePair<ResourceID, Buil
         _lock.EnterWriteLock();
 
         try {
+            if (_pathToRidMap.ContainsKey(fullPath)) {
+                throw new ArgumentException($"Resource path '{fullPath}' already registered.");
+            }
+            
+            if (_ridToPathMap.ContainsKey(id)) {
+                throw new ArgumentException($"ResourceID '{id}' already registered.");
+            }
+            
             _buildOptions.Add(id, options);
             _ridToPathMap.Add(id, fullPath);
             _pathToRidMap.Add(fullPath, id);

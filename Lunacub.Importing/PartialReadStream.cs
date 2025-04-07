@@ -38,7 +38,9 @@ internal class PartialReadStream : Stream {
         }
     }
 
-    public override void Flush() { }
+    public override void Flush() {
+        throw new NotSupportedException();
+    }
 
     public override void SetLength(long value) {
         throw new NotSupportedException();
@@ -48,6 +50,14 @@ internal class PartialReadStream : Stream {
         throw new NotSupportedException();
     }
 
+    public override void Write(ReadOnlySpan<byte> buffer) {
+        throw new NotSupportedException();
+    }
+
+    public override void WriteByte(byte value) {
+        throw new NotSupportedException();
+    }
+    
     public override long Seek(long offset, SeekOrigin origin) {
         if (!_baseStream.CanSeek) throw new NotSupportedException("Base stream does not support seeking.");
 

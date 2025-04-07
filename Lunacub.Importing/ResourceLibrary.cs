@@ -21,6 +21,4 @@ public abstract class ResourceLibrary {
         return created;
     }
     protected abstract Stream? CreateStreamImpl(ResourceID rid);
-
-    // public abstract Stream CreateStream(ResourceID rid);
 }

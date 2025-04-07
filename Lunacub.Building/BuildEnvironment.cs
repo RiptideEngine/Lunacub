@@ -6,13 +6,13 @@ public sealed partial class BuildEnvironment : IDisposable {
     public SerializerFactoryCollection SerializerFactories { get; } = [];
     public OutputSystem Output { get; }
     public ResourceRegistry Resources { get; } = new();
-
-    private readonly IncrementalInfoStorage _incrementalInfoStorage;
+    internal IncrementalInfoStorage IncrementalInfos { get; }
+    
     private bool _disposed;
 
     public BuildEnvironment(OutputSystem output) {
         Output = output;
-        _incrementalInfoStorage = new(output);
+        IncrementalInfos = new(output);
     }
 
     private void Dispose(bool disposing) {
@@ -24,7 +24,7 @@ public sealed partial class BuildEnvironment : IDisposable {
             Resources.Dispose();
         }
         
-        Output.FlushIncrementalInfos(_incrementalInfoStorage);
+        Output.FlushIncrementalInfos(IncrementalInfos);
     }
 
     public void Dispose() {
@@ -32,6 +32,7 @@ public sealed partial class BuildEnvironment : IDisposable {
         GC.SuppressFinalize(this);
     }
 
+    [ExcludeFromCodeCoverage]
     ~BuildEnvironment() {
         Dispose(false);
     }

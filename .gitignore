@@ -756,3 +756,9 @@ fabric.properties
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/rider,visualstudio,visualstudiocode,csharp,jetbrains
+
+# Begin of Lunacub custom ignore
+
+[Nn]uget.[Cc]onfig
+
+# End of Lunacub custom ignore

@@ -20,8 +20,6 @@ public sealed class ReferenceResourceImporter : Importer<ReferenceResourceDTO> {
 }
 
 public sealed class ReferenceResourceSerializerFactory : SerializerFactory {
-    // public override string DeserializerName => nameof(ReferenceResourceDeserializer);
-
     public override bool CanSerialize(Type representationType) => representationType == typeof(ReferenceResourceDTO);
 
     protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {

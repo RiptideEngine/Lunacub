@@ -1,5 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
+[ExcludeFromCodeCoverage]
 internal struct DetachableDisposable<T>(T value) : IDisposable where T : IDisposable {
     public T? Value { get; private set; } = value;
 

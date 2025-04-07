@@ -2,6 +2,7 @@
 
 namespace Caxivitual.Lunacub.Importing;
 
+[ExcludeFromCodeCoverage]
 public sealed class DisposerCollection : Collection<Disposer> {
     internal DisposerCollection() {}
     

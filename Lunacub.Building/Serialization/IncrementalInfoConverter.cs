@@ -1,5 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Building.Serialization;
 
+[ExcludeFromCodeCoverage]
 internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> {
     public override IncrementalInfo Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
         if (reader.TokenType != JsonTokenType.StartObject) {

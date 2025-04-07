@@ -1,6 +1,4 @@
-﻿using Caxivitual.Lunacub.Compilation;
-
-namespace Caxivitual.Lunacub.Building;
+﻿namespace Caxivitual.Lunacub.Building;
 
 internal static unsafe class CompileHelpers {
     public static void Compile(Serializer serializer, Stream outputStream) {
@@ -47,12 +45,12 @@ internal static unsafe class CompileHelpers {
             
             serializer.SerializeObject(outputStream);
             
-            var serializedSize = (int)(outputStream.Position - chunkLenPosition - 4);
+            var contentSize = (int)(outputStream.Position - chunkLenPosition - 4);
         
             writer.Seek(chunkLenPosition, SeekOrigin.Begin);
-            writer.Write(serializedSize);
+            writer.Write(contentSize);
             
-            writer.Seek(serializedSize, SeekOrigin.Current);
+            writer.Seek(contentSize, SeekOrigin.Current);
         }
     }
     
@@ -66,12 +64,12 @@ internal static unsafe class CompileHelpers {
             
             serializer.SerializeOptions(outputStream);
             
-            var serializedSize = (int)(outputStream.Position - chunkLenPosition - 4);
+            var contentSize = (int)(outputStream.Position - chunkLenPosition - 4);
         
             writer.Seek(chunkLenPosition, SeekOrigin.Begin);
-            writer.Write(serializedSize);
+            writer.Write(contentSize);
             
-            writer.Seek(serializedSize, SeekOrigin.Current);
+            writer.Seek(contentSize, SeekOrigin.Current);
         }
     }
 

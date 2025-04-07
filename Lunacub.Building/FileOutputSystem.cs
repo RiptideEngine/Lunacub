@@ -1,5 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
+[ExcludeFromCodeCoverage]
 public class FileOutputSystem : OutputSystem {
     public string ReportDirectory { get; }
     public string ResourceOutputDirectory { get; }

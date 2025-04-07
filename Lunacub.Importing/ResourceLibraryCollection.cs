@@ -23,16 +23,19 @@ public sealed class ResourceLibraryCollection : Collection<ResourceLibrary> {
 
     protected override void SetItem(int index, ResourceLibrary item) {
         ArgumentNullException.ThrowIfNull(item, nameof(item));
-        ValidateLibrary(item);
-        
-        base.SetItem(index, item);
-    }
 
+        if (!ReferenceEquals(item, this[index])) {
+            ValidateLibrary(item);
+
+            base.SetItem(index, item);
+        }
+    }
+    
     [StackTraceHidden]
-    private void ValidateLibrary(ResourceLibrary library) {
-        foreach (var enumerate in this) {
-            if (enumerate.Id == library.Id) {
-                throw new ArgumentException($"An instance of {nameof(ResourceLibrary)} with ID {library.Id} already present.");
+    private void ValidateLibrary(ResourceLibrary item) {
+        foreach (var library in this) {
+            if (library.Id == item.Id) {
+                throw new ArgumentException($"An instance of {nameof(ResourceLibrary)} with ID {item.Id} already present.", nameof(item));
             }
         }
     }
