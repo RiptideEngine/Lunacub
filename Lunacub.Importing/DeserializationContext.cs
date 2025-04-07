@@ -10,7 +10,7 @@ public sealed class DeserializationContext {
     }
 
     public void RequestReference(string property, ResourceID rid, Type resourceType) {
-        if (resourceType.IsValueType) return;
+        if (resourceType.IsValueType || rid == ResourceID.Null) return;
         
         _requestingDependencies.Add(property, new(rid, resourceType));
     }

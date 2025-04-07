@@ -9,11 +9,8 @@ partial class BuildEnvironment {
 
         Dictionary<ResourceID, ResourceBuildingResult> results = [];
         
-        foreach ((var rid, _) in Resources) {
-            bool get = Resources.TryGet(rid, out ResourceRegistry.BuildingResource output);
-            Debug.Assert(get);
-
-            BuildResource(rid, in output, results);
+        foreach ((var rid, var buildingResource) in Resources) {
+            BuildResource(rid, in buildingResource, results);
         }
 
         return new(start, DateTime.Now, results);
