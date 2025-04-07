@@ -1,6 +1,6 @@
 ﻿using Xunit.Abstractions;
 
-namespace Caxivitual.Lunacub.Tests;
+namespace Caxivitual.Lunacub.Tests.Common;
 
 public sealed class DebugHelpers {
     public static void RedirectConsoleOutput(ITestOutputHelper output) {
