@@ -5,6 +5,8 @@
 		<PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/RiptideEngine/Lunacub</RepositoryUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageIcon>$(SolutionDir)icon.png</PackageIcon>
 		
 		<DebugSymbols>true</DebugSymbols>
 		<IncludeSymbols>true</IncludeSymbols>
@@ -12,4 +14,9 @@
 	</PropertyGroup>
 	
 	<Import Project="buildcommon.props"/>
+	
+	<ItemGroup>
+		<None Include="$(SolutionDir)README.md" Pack="true" PackagePath=""/>
+		<None Include="$(SolutionDir)icon.png" Pack="true" PackagePath=""/>
+	</ItemGroup>
 </Project>
