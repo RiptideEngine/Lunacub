@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="https://raw.githubusercontent.com/RiptideEngine/Lunacub/blob/main/icon.png" alt="icon" width="256" height="256"/>
+    <img src="https://raw.githubusercontent.com/RiptideEngine/Lunacub/refs/heads/main/icon.png" alt="icon" width="256" height="256"/>
 </div>
 
 <h1 align="center">Lunacub</h1>
