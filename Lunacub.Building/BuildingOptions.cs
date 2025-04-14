@@ -3,7 +3,7 @@
 public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
     public readonly string ImporterName;
     public readonly string? ProcessorName;
-    private readonly IReadOnlyCollection<string> Tags;
+    public readonly IReadOnlyCollection<string> Tags;
     public readonly IImportOptions? Options;
 
     public BuildingOptions(string importerName, string? processorName = null) : this(importerName, processorName, Array.Empty<string>(), null) { }
