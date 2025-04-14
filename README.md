@@ -4,8 +4,7 @@
 
 <h1 align="center">Lunacub</h1>
 
-Lunacub is an API designed to simplify the process of building and importing external
-resources during application runtime.
+Lunacub is an API designed to simplify the process of building and importing external resources during application runtime.
 
 Always built with latest .NET version (currently .NET 9.0).
 

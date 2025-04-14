@@ -36,18 +36,10 @@ public static class Resources {
         
         string uncompiledResourceDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UncompiledResources");
         
-        buildEnv.Resources.Add(ResourceID.Parse("7ae127d7df4853bc8e13f5b18cd893aa"), Path.Combine(uncompiledResourceDirectory, "Texture.png"), new() {
-            ImporterName = nameof(Texture2DImporter),
-        });
-        buildEnv.Resources.Add(ResourceID.Parse("d07d31086d805186899523663761f74f"), Path.Combine(uncompiledResourceDirectory, "Shader.hlsl"), new() {
-            ImporterName = nameof(ShaderImporter),
-        });
-        buildEnv.Resources.Add(ResourceID.Parse("0195d7cfdb687a7593979168e2e62a7c"), Path.Combine(uncompiledResourceDirectory, "Sampler.json"), new() {
-            ImporterName = nameof(SamplerImporter),
-        });
-        buildEnv.Resources.Add(ResourceID.Parse("febcd85870715ddea807221fb5b71dc8"), Path.Combine(uncompiledResourceDirectory, "cube2.obj"), new() {
-            ImporterName = nameof(MeshImporter),
-        });
+        buildEnv.Resources.Add(ResourceID.Parse("7ae127d7df4853bc8e13f5b18cd893aa"), Path.Combine(uncompiledResourceDirectory, "Texture.png"), new(nameof(Texture2DImporter)));
+        buildEnv.Resources.Add(ResourceID.Parse("d07d31086d805186899523663761f74f"), Path.Combine(uncompiledResourceDirectory, "Shader.hlsl"), new(nameof(ShaderImporter)));
+        buildEnv.Resources.Add(ResourceID.Parse("0195d7cfdb687a7593979168e2e62a7c"), Path.Combine(uncompiledResourceDirectory, "Sampler.json"), new(nameof(SamplerImporter)));
+        buildEnv.Resources.Add(ResourceID.Parse("febcd85870715ddea807221fb5b71dc8"), Path.Combine(uncompiledResourceDirectory, "cube2.obj"), new(nameof(MeshImporter)));
 
         BuildingResult result = buildEnv.BuildResources();
 
