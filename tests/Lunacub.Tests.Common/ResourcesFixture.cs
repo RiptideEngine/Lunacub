@@ -4,13 +4,13 @@ using System.Reflection;
 namespace Caxivitual.Lunacub.Tests.Common;
 
 public sealed class ResourcesFixture {
-    public IReadOnlyDictionary<ResourceID, ResourceInfo> Options { get; }
+    private readonly IReadOnlyDictionary<ResourceID, ResourceInfo> _options;
     public IReadOnlyDictionary<Type, ImmutableArray<Type>> ComponentTypes { get; }
     
     public ResourcesFixture() {
         string resourceImport = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resources.json"));
         
-        Options = JsonSerializer.Deserialize<Dictionary<ResourceID, ResourceInfo>>(resourceImport, new JsonSerializerOptions(JsonSerializerOptions.Default) {
+        _options = JsonSerializer.Deserialize<Dictionary<ResourceID, ResourceInfo>>(resourceImport, new JsonSerializerOptions(JsonSerializerOptions.Default) {
             Converters = {
                 new JsonStringEnumConverter(),
             },
@@ -32,10 +32,16 @@ public sealed class ResourcesFixture {
     }
     
     public void RegisterResourceToBuild(BuildEnvironment environment, ResourceID rid) {
-        if (!Options.TryGetValue(rid, out ResourceInfo info) || environment.Resources.Contains(rid)) return;
+        if (!_options.TryGetValue(rid, out ResourceInfo info) || environment.Resources.Contains(rid)) return;
         
         environment.Resources.Add(rid, Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", info.Path), info.Options);
     }
 
-    public readonly record struct ResourceInfo(string Path, BuildingOptions Options);
+    private readonly record struct ResourceInfo(string Path, BuildingOptionsSurrogate Options);
+
+    private readonly record struct BuildingOptionsSurrogate(string ImporterName, string? ProcessorName, IReadOnlyCollection<string> Tags, IImportOptions? Options) {
+        public static implicit operator BuildingOptions(BuildingOptionsSurrogate surrogate) {
+            return new(surrogate.ImporterName, surrogate.ProcessorName, surrogate.Tags, surrogate.Options);
+        }
+    }
 }

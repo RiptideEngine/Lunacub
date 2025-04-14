@@ -6,8 +6,8 @@ internal static unsafe class CompileHelpers {
         bwriter.Write(CompilingConstants.MagicIdentifier);
         bwriter.Write((ushort)1);
         bwriter.Write((ushort)0);
-
-        bwriter.Write(3);
+        
+        bwriter.Write(4);
         
         long chunkLocationPosition = bwriter.BaseStream.Position;
         Span<KeyValuePair<uint, int>> chunks = stackalloc KeyValuePair<uint, int>[4];
