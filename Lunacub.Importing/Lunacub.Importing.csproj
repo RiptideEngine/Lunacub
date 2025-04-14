@@ -25,5 +25,6 @@
       </Compile>
     </ItemGroup>
 
+    <Import Project="$(SolutionDir)commons\languagecommon.props"/>
     <Import Project="$(SolutionDir)commons\nugetcommon.props"/>
 </Project>

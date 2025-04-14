@@ -24,5 +24,5 @@
       <ProjectReference Include="..\Lunacub.Tests.Common\Lunacub.Tests.Common.csproj" />
     </ItemGroup>
 
-    <Import Project="$(SolutionDir)commons\buildcommon.props"/>
+    <Import Project="$(SolutionDir)commons\languagecommon.props"/>
 </Project>

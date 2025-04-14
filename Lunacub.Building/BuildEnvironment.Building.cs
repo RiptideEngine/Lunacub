@@ -103,7 +103,7 @@ partial class BuildEnvironment {
                 }
         
                 using MemoryStream ms = new(4096);
-                CompileHelpers.Compile(factory.InternalCreateSerializer(processed, new(options.Options)), ms);
+                CompileHelpers.Compile(factory.InternalCreateSerializer(processed, new(options.Options)), ms, options.Tags);
                 ms.Position = 0;
                 Output.CopyCompiledResourceOutput(ms, rid);
             } catch (Exception e) {

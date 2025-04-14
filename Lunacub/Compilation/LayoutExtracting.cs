@@ -6,8 +6,8 @@ using System.Text;
 
 namespace Caxivitual.Lunacub.Compilation;
 
-public static class LayoutValidation {
-    public static CompiledResourceLayout Validate(Stream stream) {
+public static class LayoutExtracting {
+    public static CompiledResourceLayout Extract(Stream stream) {
         if (!stream.CanRead || !stream.CanSeek) throw new ArgumentException("Stream is not readable or not seekable.");
         
         using BinaryReader reader = new(stream, Encoding.UTF8, leaveOpen: true);
@@ -46,11 +46,11 @@ public static class LayoutValidation {
         }
     }
 
-    public static CompiledResourceLayout Validate(ReadOnlySpan<byte> memory) {
+    public static CompiledResourceLayout Extract(ReadOnlySpan<byte> memory) {
         unsafe {
             fixed (byte* ptr = memory) {
                 using UnmanagedMemoryStream stream = new(ptr, memory.Length, memory.Length, FileAccess.Read);
-                return Validate(stream);
+                return Extract(stream);
             }
         }
     }

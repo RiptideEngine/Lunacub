@@ -2,18 +2,17 @@
 	<PropertyGroup>
 		<Version>1.0.0</Version>
 		<Authors>Caxivitual</Authors>
+		<Description>A library that helps compiling/importing resources at game application runtime.</Description>
 		<PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/RiptideEngine/Lunacub</RepositoryUrl>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageIcon>$(SolutionDir)icon.png</PackageIcon>
+		<PackageIcon>icon.png</PackageIcon>
 		
 		<DebugSymbols>true</DebugSymbols>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	</PropertyGroup>
-	
-	<Import Project="buildcommon.props"/>
 	
 	<ItemGroup>
 		<None Include="$(SolutionDir)README.md" Pack="true" PackagePath=""/>

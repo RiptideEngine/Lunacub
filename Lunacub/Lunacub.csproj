@@ -5,5 +5,6 @@
         <Description>Common library for Lunacub.</Description>
     </PropertyGroup>
 
+    <Import Project="$(SolutionDir)commons\languagecommon.props"/>
     <Import Project="$(SolutionDir)commons\nugetcommon.props"/>
 </Project>

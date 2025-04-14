@@ -2,10 +2,6 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,6 +16,7 @@
         <PackageReference Include="Silk.NET.Assimp" Version="2.22.0" />
         <PackageReference Include="Silk.NET.Core" Version="2.22.0" />
         <PackageReference Include="Silk.NET.Direct3D.Compilers" Version="2.22.0" />
+        <PackageReference Include="Silk.NET.Input" Version="2.22.0" />
         <PackageReference Include="Silk.NET.WebGPU" Version="2.22.0" />
         <PackageReference Include="Silk.NET.WebGPU.Extensions.WGPU" Version="2.22.0" />
         <PackageReference Include="Silk.NET.WebGPU.Native.WGPU" Version="2.22.0" />
@@ -38,11 +35,13 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ClCompile Include="UncompiledResources\Shader.hlsl" />
+        <Folder Include="native-libraries\" />
     </ItemGroup>
+    
+    <Target Name="ClearOutput" AfterTargets="AfterBuild">
+        <RemoveDir Directories="$(OutputPath)Resources"/>
+        <RemoveDir Directories="$(OutputPath)Reports"/>
+    </Target>
 
-    <ItemGroup>
-      <Folder Include="native-libraries\" />
-    </ItemGroup>
-
+    <Import Project="$(SolutionDir)commons\languagecommon.props"/>
 </Project>
