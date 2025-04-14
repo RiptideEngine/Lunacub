@@ -22,7 +22,7 @@ partial class BuildEnvironmentTests {
         fs.File.Exists(path).Should().BeTrue();
 
         using Stream stream = fs.File.OpenRead(path);
-        CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(stream)).Should().NotThrow().Which;
+        CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(stream)).Should().NotThrow().Which;
 
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var chunkInfo).Should().BeTrue();
         chunkInfo.Length.Should().Be(4);

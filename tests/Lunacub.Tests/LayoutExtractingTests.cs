@@ -3,9 +3,9 @@ using System.Buffers.Binary;
 
 namespace Caxivitual.Lunacub.Tests;
 
-public class LayoutValidationTests {
+public class LayoutExtractingTests {
     [Fact]
-    public void Validate_FromStream_ReturnsCorrectLayout() {
+    public void Extract_FromStream_ReturnsCorrectLayout() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
@@ -22,7 +22,7 @@ public class LayoutValidationTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
+        CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
             .Should().NotThrow().Which;
         
         layout.MajorVersion.Should().Be(1);
@@ -32,7 +32,7 @@ public class LayoutValidationTests {
     }
 
     [Fact]
-    public void Validate_FromMemory_ReturnsCorrectLayout() {
+    public void Extract_FromMemory_ReturnsCorrectLayout() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
@@ -49,7 +49,7 @@ public class LayoutValidationTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms.ToArray()))
+        CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms.ToArray()))
             .Should().NotThrow().Which;
         
         layout.MajorVersion.Should().Be(1);
@@ -59,23 +59,23 @@ public class LayoutValidationTests {
     }
     
     [Fact]
-    public void Validate_UnreadableStream_ThrowsArgumentException() {
+    public void Extract_UnreadableStream_ThrowsArgumentException() {
         MemoryStream ms = new MemoryStream([]);
         ms.Dispose();
 
-        new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
+        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
             .Should().Throw<ArgumentException>().WithMessage("*Stream*readable*");
     }
 
     [Fact]
-    public void Validate_InvalidMagic_ThrowsCorruptedFormatException() {
+    public void Extract_InvalidMagic_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream("????"u8.ToArray());
-        new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
+        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
             .Should().Throw<CorruptedFormatException>().WithMessage("*magic*");
     }
     
     [Fact]
-    public void Validate_HeaderEndOfStream_ThrowsCorruptedFormatException() {
+    public void Extract_HeaderEndOfStream_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
@@ -86,12 +86,12 @@ public class LayoutValidationTests {
     
         ms.Seek(0, SeekOrigin.Begin);
         
-        new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
+        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
             .Should().Throw<CorruptedFormatException>().WithMessage("*header*").WithInnerException<EndOfStreamException>();
     }
     
     [Fact]
-    public void Validate_ChunkHeaderEndOfStream_ThrowsCorruptedFormatException() {
+    public void Extract_ChunkHeaderEndOfStream_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
@@ -107,12 +107,12 @@ public class LayoutValidationTests {
 
         ms.Seek(0, SeekOrigin.Begin);
         
-        new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
+        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
             .Should().Throw<CorruptedFormatException>().WithMessage("*chunk header*").WithInnerException<EndOfStreamException>();
     }
 
     [Fact]
-    public void Validate_ChunkPositionSurpassedStreamLength_ThrowsCorruptedFormatException() {
+    public void Extract_ChunkPositionSurpassedStreamLength_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
@@ -126,12 +126,12 @@ public class LayoutValidationTests {
 
         ms.Seek(0, SeekOrigin.Begin);
         
-        new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
+        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
             .Should().Throw<CorruptedFormatException>().WithMessage("*surpassed*length*");
     }
     
     [Fact]
-    public void Validate_UnexpectedChunkTag_ThrowsCorruptedFormatException() {
+    public void Extract_UnexpectedChunkTag_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
@@ -147,12 +147,12 @@ public class LayoutValidationTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
+        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
             .Should().Throw<CorruptedFormatException>().WithMessage("*Expected*chunk tag*position*");
     }
     
     [Fact]
-    public void Validate_ChunkContentSurpassedStreamLength_ThrowsCorruptedFormatException() {
+    public void Extract_ChunkContentSurpassedStreamLength_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream();
 
         using (BinaryWriter writer = new BinaryWriter(ms, Encoding.UTF8, true)) {
@@ -168,7 +168,7 @@ public class LayoutValidationTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(ms))
+        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
             .Should().Throw<CorruptedFormatException>().WithMessage("*content*length*surpassed*");
     }
 }

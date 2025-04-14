@@ -26,7 +26,7 @@ partial class ResourceRegistry {
 
         DetachableDisposable<Stream> detachableStream = new(resourceStream);
         try {
-            var layout = LayoutValidation.Validate(detachableStream.Value!);
+            var layout = LayoutExtracting.Extract(detachableStream.Value!);
 
             return layout.MajorVersion switch {
                 1 => ImportV1(rid, ref detachableStream, type, in layout, importedStack),

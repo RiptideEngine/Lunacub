@@ -20,7 +20,7 @@ partial class BuildEnvironmentTests {
         string path = fs.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
         
         using Stream stream = fs.File.OpenRead(path);
-        var layout = new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(stream)).Should().NotThrow().Which;
+        var layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(stream)).Should().NotThrow().Which;
         
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var chunkInfo).Should().BeTrue();
         chunkInfo.Length.Should().Be((uint)"[0,1,2,3,4,5,6,7,8,9]".Length);
@@ -44,7 +44,7 @@ partial class BuildEnvironmentTests {
         string path = fs.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
         
         using Stream stream = fs.File.OpenRead(path);
-        var layout = new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(stream)).Should().NotThrow().Which;
+        var layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(stream)).Should().NotThrow().Which;
         
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var chunkInfo).Should().BeTrue();
         chunkInfo.Length.Should().Be(40);

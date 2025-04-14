@@ -27,13 +27,13 @@ partial class BuildEnvironmentTests {
         var resource2Path = fs.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid2}{CompilingConstants.CompiledResourceExtension}");
 
         using Stream resource1Stream = new Func<Stream>(() => fs.File.OpenRead(resource1Path)).Should().NotThrow().Which;
-        var layout = new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(resource1Stream)).Should().NotThrow().Which;
+        var layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(resource1Stream)).Should().NotThrow().Which;
         
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var chunkInfo).Should().BeTrue();
         chunkInfo.Length.Should().Be((uint)sizeof(ResourceID) + sizeof(int));
         
         using Stream resource2Stream = new Func<Stream>(() => fs.File.OpenRead(resource2Path)).Should().NotThrow().Which;
-        layout = new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(resource2Stream)).Should().NotThrow().Which;
+        layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(resource2Stream)).Should().NotThrow().Which;
         
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out chunkInfo).Should().BeTrue();
         chunkInfo.Length.Should().Be((uint)sizeof(ResourceID) + sizeof(int));
@@ -55,7 +55,7 @@ partial class BuildEnvironmentTests {
         var resource1Path = fs.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid1}{CompilingConstants.CompiledResourceExtension}");
 
         using Stream resource1Stream = new Func<Stream>(() => fs.File.OpenRead(resource1Path)).Should().NotThrow().Which;
-        var layout = new Func<CompiledResourceLayout>(() => LayoutValidation.Validate(resource1Stream)).Should().NotThrow().Which;
+        var layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(resource1Stream)).Should().NotThrow().Which;
         
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var chunkInfo).Should().BeTrue();
         chunkInfo.Length.Should().Be((uint)sizeof(ResourceID) + sizeof(int));
