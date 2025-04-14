@@ -9,10 +9,23 @@ partial class ResourceRegistry {
 
         Dictionary<ResourceID, object> imported = [];
 
-        return ImportRecursive(rid, type, imported);
+        return ImportRecursiveStart(rid, type, imported);
     }
 
-    private object? ImportRecursive(ResourceID rid, Type type, Dictionary<ResourceID, object> importedStack) {
+    private object? ImportRecursiveStart(ResourceID rid, Type type, Dictionary<ResourceID, object> importedStack) {
+        ref var container = ref CollectionsMarshal.GetValueRefOrNullRef(_resourceCache, rid);
+        
+        if (!Unsafe.IsNullRef(ref container)) {
+            Debug.Assert(container.ReferenceCount != 0);
+                
+            container.ReferenceCount++;
+            return container.Value;
+        }
+
+        return ImportRecursiveBody(rid, type, importedStack);
+    }
+
+    private object? ImportRecursiveBody(ResourceID rid, Type type, Dictionary<ResourceID, object> importedStack) {
         if (!_context.Input.ContainResource(rid)) return null;
         
         if (_resourceCache.TryGetValue(rid, out var cachedContainer)) return cachedContainer.Value;
@@ -98,7 +111,7 @@ partial class ResourceRegistry {
         Dictionary<string, object?> importedDependencies = [];
 
         foreach ((string property, DeserializationContext.RequestingDependency requesting) in context.RequestingDependencies) {
-            importedDependencies.Add(property, ImportRecursive(requesting.Rid, requesting.Type, importedStack));
+            importedDependencies.Add(property, ImportRecursiveStart(requesting.Rid, requesting.Type, importedStack));
         }
 
         context.Dependencies = importedDependencies;

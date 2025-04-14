@@ -15,17 +15,12 @@ public sealed partial class ResourceRegistry : IDisposable {
     
     internal ResourceHandle<T> Import<T>(ResourceID rid) where T : class {
         using (_lock.EnterScope()) {
-            ref var container = ref CollectionsMarshal.GetValueRefOrNullRef(_resourceCache, rid);
-
-            if (!Unsafe.IsNullRef(ref container)) {
-                Debug.Assert(container.ReferenceCount != 0);
-                
-                container.ReferenceCount++;
-                return new(rid, container.Value as T);
-            }
-            
             return new(rid, ImportInner(rid, typeof(T)) as T);
         }
+    }
+
+    internal void ImportFromTags(string filter, ICollection<ResourceHandle> outputList) {
+        throw new NotImplementedException();
     }
     
     internal ReleaseStatus Release(ResourceHandle handle) {
