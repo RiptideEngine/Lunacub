@@ -15,4 +15,12 @@ public class FileResourceLibrary(Guid id, string directory) : ResourceLibrary(id
         
         return File.Exists(path) ? File.OpenRead(path) : null;
     }
+
+    public override IEnumerator<ResourceID> GetEnumerator() {
+        foreach (var file in System.IO.Directory.EnumerateFiles(Directory, $"*{CompilingConstants.CompiledResourceExtension}")) {
+            if (ResourceID.TryParse(file.AsSpan(..^CompilingConstants.CompiledResourceExtension.Length), out var rid)) {
+                yield return rid;
+            }
+        }
+    }
 }

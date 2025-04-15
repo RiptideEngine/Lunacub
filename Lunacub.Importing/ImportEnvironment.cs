@@ -22,8 +22,8 @@ public sealed class ImportEnvironment : IDisposable {
         return _resources.Import<T>(rid);
     }
 
-    public void ImportFromTags(string filter, ICollection<ResourceHandle> outputList) {
-        _resources.ImportFromTags(filter, outputList);
+    public void ImportFromTags(string query, ICollection<ResourceHandle> outputList) {
+        _resources.ImportFromTags(query, outputList);
     }
 
     public ReleaseStatus Release(ResourceHandle handle) {

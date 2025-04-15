@@ -1,8 +1,13 @@
 ﻿namespace Caxivitual.Lunacub.Tests.Common;
 
-public sealed class ReferenceResource {
+public sealed class ReferenceResource : IDisposable {
     public ReferenceResource? Reference { get; set; }
     public int Value { get; set; }
+    public bool Disposed { get; private set; }
+
+    public void Dispose() {
+        Disposed = true;
+    }
 }
 
 public sealed class ReferenceResourceDTO : ContentRepresentation {

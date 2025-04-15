@@ -15,12 +15,22 @@ public sealed partial class ResourceRegistry : IDisposable {
     
     internal ResourceHandle<T> Import<T>(ResourceID rid) where T : class {
         using (_lock.EnterScope()) {
-            return new(rid, ImportInner(rid, typeof(T)) as T);
+            return new(rid, ImportSingleResource(rid, typeof(T)) as T);
         }
     }
 
-    internal void ImportFromTags(string filter, ICollection<ResourceHandle> outputList) {
-        throw new NotImplementedException();
+    internal void ImportFromTags(string query, ICollection<ResourceHandle> outputList) {
+        TagFilter filter = new(query);
+        
+        using (_lock.EnterScope()) {
+            foreach (var library in _context.Input.Libraries) {
+                foreach (var rid in library) {
+                    if (ImportSingleResourceWithTagFilter(rid, filter) is not { } imported) continue;
+                    
+                    outputList.Add(new(rid, imported));
+                }
+            }
+        }
     }
     
     internal ReleaseStatus Release(ResourceHandle handle) {

@@ -45,5 +45,7 @@ public class ResourceLibraryCollectionTests {
 
         public override bool Contains(ResourceID rid) => false;
         protected override Stream? CreateStreamImpl(ResourceID rid) => null;
+
+        public override IEnumerator<ResourceID> GetEnumerator() => Enumerable.Empty<ResourceID>().GetEnumerator();
     }
 }

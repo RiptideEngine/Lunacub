@@ -4,15 +4,13 @@ using Caxivitual.Lunacub.Exceptions;
 namespace Caxivitual.Lunacub.Importing;
 
 partial class ResourceRegistry {
-    private object? ImportInner(ResourceID rid, Type type) {
-        if (!_context.Input.ContainResource(rid)) return null;
+    private object? ImportSingleResourceWithTagFilter(ResourceID rid, TagFilter filter) {
+        // Dictionary<ResourceID, object> importStack = [];
 
-        Dictionary<ResourceID, object> imported = [];
-
-        return ImportRecursiveStart(rid, type, imported);
+        throw new NotImplementedException();
     }
-
-    private object? ImportRecursiveStart(ResourceID rid, Type type, Dictionary<ResourceID, object> importedStack) {
+    
+    private object? ImportSingleResourceWithTagFilterInner(ResourceID rid, TagFilter filter, Dictionary<ResourceID, object> importStack) {
         ref var container = ref CollectionsMarshal.GetValueRefOrNullRef(_resourceCache, rid);
         
         if (!Unsafe.IsNullRef(ref container)) {
@@ -22,14 +20,9 @@ partial class ResourceRegistry {
             return container.Value;
         }
 
-        return ImportRecursiveBody(rid, type, importedStack);
-    }
-
-    private object? ImportRecursiveBody(ResourceID rid, Type type, Dictionary<ResourceID, object> importedStack) {
         if (!_context.Input.ContainResource(rid)) return null;
         
-        if (_resourceCache.TryGetValue(rid, out var cachedContainer)) return cachedContainer.Value;
-        if (importedStack.TryGetValue(rid, out var imported)) return imported;
+        if (importStack.TryGetValue(rid, out var imported)) return imported;
         
         Stream? resourceStream = _context.Input.CreateResourceStream(rid);
 
@@ -42,7 +35,49 @@ partial class ResourceRegistry {
             var layout = LayoutExtracting.Extract(detachableStream.Value!);
 
             return layout.MajorVersion switch {
-                1 => ImportV1(rid, ref detachableStream, type, in layout, importedStack),
+                1 => ImportV1(rid, ref detachableStream, typeof(object), in layout, importStack),
+                _ => throw new NotSupportedException($"Compiled resource version {layout.MajorVersion}.{layout.MinorVersion} is not supported."),
+            };
+        } finally {
+            detachableStream.Dispose();
+        }
+    }
+    
+    private object? ImportSingleResource(ResourceID rid, Type type) {
+        if (!_context.Input.ContainResource(rid)) return null;
+
+        Dictionary<ResourceID, object> importStack = [];
+
+        return ImportSingleResourceInner(rid, type, importStack);
+    }
+
+    private object? ImportSingleResourceInner(ResourceID rid, Type type, Dictionary<ResourceID, object> importStack) {
+        ref var container = ref CollectionsMarshal.GetValueRefOrNullRef(_resourceCache, rid);
+        
+        if (!Unsafe.IsNullRef(ref container)) {
+            Debug.Assert(container.ReferenceCount != 0);
+                
+            container.ReferenceCount++;
+            return container.Value;
+        }
+
+        if (!_context.Input.ContainResource(rid)) return null;
+        
+        if (_resourceCache.TryGetValue(rid, out var cachedContainer)) return cachedContainer.Value;
+        if (importStack.TryGetValue(rid, out var imported)) return imported;
+        
+        Stream? resourceStream = _context.Input.CreateResourceStream(rid);
+
+        if (resourceStream == null) {
+            throw new InvalidOperationException($"Null resource stream provided despite contains resource '{rid}'.");
+        }
+
+        DetachableDisposable<Stream> detachableStream = new(resourceStream);
+        try {
+            var layout = LayoutExtracting.Extract(detachableStream.Value!);
+
+            return layout.MajorVersion switch {
+                1 => ImportV1(rid, ref detachableStream, type, in layout, importStack),
                 _ => throw new NotSupportedException($"Compiled resource version {layout.MajorVersion}.{layout.MinorVersion} is not supported."),
             };
         } finally {
@@ -111,7 +146,7 @@ partial class ResourceRegistry {
         Dictionary<string, object?> importedDependencies = [];
 
         foreach ((string property, DeserializationContext.RequestingDependency requesting) in context.RequestingDependencies) {
-            importedDependencies.Add(property, ImportRecursiveStart(requesting.Rid, requesting.Type, importedStack));
+            importedDependencies.Add(property, ImportSingleResourceInner(requesting.Rid, requesting.Type, importedStack));
         }
 
         context.Dependencies = importedDependencies;
