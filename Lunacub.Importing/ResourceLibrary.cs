@@ -14,7 +14,7 @@ public abstract class ResourceLibrary : IEnumerable<ResourceID> {
 
     public Stream? CreateStream(ResourceID rid) {
         Stream? created = CreateStreamImpl(rid);
-
+        
         if (created != null && (!created.CanRead || !created.CanSeek)) {
             throw new InvalidOperationException("Created Stream must be readable and seekable.");
         }

@@ -1,11 +1,9 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
-public sealed class ImportEnvironment : IDisposable {
+public sealed partial class ImportEnvironment : IDisposable {
     public InputSystem Input { get; }
     public DeserializerDictionary Deserializers { get; }
     public DisposerCollection Disposers { get; }
-    
-    private readonly ResourceRegistry _resources;
     
     private bool _disposed;
     
@@ -13,26 +11,18 @@ public sealed class ImportEnvironment : IDisposable {
         Input = new();
         Deserializers = [];
         Disposers = [];
-        _resources = new(this);
+        _resourceCache = new(this);
     }
-
-    public ResourceHandle Import(ResourceID rid) => Import<object>(rid);
-
-    public ResourceHandle<T> Import<T>(ResourceID rid) where T : class {
-        return _resources.Import<T>(rid);
-    }
-
-    public void ImportFromTags(string query, ICollection<ResourceHandle> outputList) {
-        _resources.ImportFromTags(query, outputList);
-    }
-
-    public ReleaseStatus Release(ResourceHandle handle) {
-        return _resources.Release(handle);
-    }
-
-    public ReleaseStatus Release(ResourceID rid) {
-        return _resources.Release(rid);
-    }
+    
+    // public ResourceHandle Import(ResourceID rid) => Import<object>(rid);
+    //
+    // public ResourceHandle<T> Import<T>(ResourceID rid) where T : class {
+    //     return _resources.Import<T>(rid);
+    // }
+    //
+    // public void ImportFromTags(string query, ICollection<ResourceHandle> outputList) {
+    //     _resources.ImportFromTags(query, outputList);
+    // }
 
     private void Dispose(bool disposing) {
         if (_disposed) return;
@@ -40,7 +30,7 @@ public sealed class ImportEnvironment : IDisposable {
         _disposed = true;
 
         if (disposing) {
-            _resources.Dispose();
+            _resourceCache.Dispose();
         }
     }
 

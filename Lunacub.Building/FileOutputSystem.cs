@@ -25,7 +25,7 @@ public class FileOutputSystem : OutputSystem {
                 using FileStream reportFile = File.OpenRead(file);
                 
                 receiver.Add(rid, JsonSerializer.Deserialize<IncrementalInfo>(reportFile));
-            } catch {
+            } catch (Exception e) {
                 // Ignore any failed attempt to deserialize report.
             }
         }

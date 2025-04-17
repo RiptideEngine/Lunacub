@@ -3,6 +3,7 @@
 public enum ReleaseStatus {
     Success = 0,
     NotDisposed,
+    Null,
     
     ResourceNotImported = -1,
     ResourceIncompatible = -2,

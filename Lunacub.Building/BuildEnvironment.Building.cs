@@ -38,7 +38,7 @@ partial class BuildEnvironment {
         (string resourcePath, BuildingOptions options) = buildingResource;
         
         DateTime resourceLastWriteTime = File.GetLastWriteTime(resourcePath);
-
+        
         // If resource has been built before, and have old report, we can begin checking for caching.
         if (Output.GetResourceLastBuildTime(rid) is { } resourceLastBuildTime && IncrementalInfos.TryGet(rid, out var previousReport)) {
             // Check if resource's last write time is the same as the time stored in report.
@@ -70,7 +70,7 @@ partial class BuildEnvironment {
             importingContext = new(options.Options);
             using ContentRepresentation imported = importer.ImportObject(stream, importingContext);
             
-            string? processorName = options.ProcessorName;
+            string processorName = options.ProcessorName;
 
             Processor? processor;
 
