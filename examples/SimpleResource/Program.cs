@@ -21,7 +21,7 @@ class Program {
         };
         importEnvironment.Input.Libraries.Add(new FileResourceLibrary(Guid.NewGuid(), resOutputDir));
 
-        ResourceHandle handle = await importEnvironment.ImportAsync(ResourceID);
+        ResourceHandle handle = await importEnvironment.ImportAsync(ResourceID).Task;
         
         Debug.Assert(handle.Value is SimpleResource, $"Expecting SimpleResource, {handle.Value.GetType().FullName} imported.");
         

@@ -1,8 +1,8 @@
 {
-  "Integer": 69,
-  "Single": 420.69,
+  "Integer": 1,
+  "Single": 2,
   "Vector": {
-    "X": 69,
-    "Y": 420
+    "X": 3,
+    "Y": 4
   }
 }

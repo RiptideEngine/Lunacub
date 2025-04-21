@@ -1,9 +1,21 @@
-﻿namespace Caxivitual.Lunacub.Importing;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace Caxivitual.Lunacub.Importing;
 
 public sealed partial class ImportEnvironment : IDisposable {
     public InputSystem Input { get; }
     public DeserializerDictionary Deserializers { get; }
     public DisposerCollection Disposers { get; }
+
+    private ILogger _logger;
+    public ILogger Logger {
+        get => _logger;
+        
+        // ReSharper disable NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+        set => _logger = value ?? NullLogger.Instance;
+        // ReSharper restore NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+    }
     
     private bool _disposed;
     
@@ -12,6 +24,7 @@ public sealed partial class ImportEnvironment : IDisposable {
         Deserializers = [];
         Disposers = [];
         _resourceCache = new(this);
+        _logger = NullLogger.Instance;
     }
     
     // public ResourceHandle Import(ResourceID rid) => Import<object>(rid);

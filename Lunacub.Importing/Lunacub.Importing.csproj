@@ -25,6 +25,10 @@
       </Compile>
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.4" />
+    </ItemGroup>
+
     <Import Project="$(SolutionDir)commons\languagecommon.props"/>
     <Import Project="$(SolutionDir)commons\nugetcommon.props"/>
 </Project>
