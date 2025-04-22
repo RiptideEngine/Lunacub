@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace Caxivitual.Lunacub.Examples.SimpleResource;
+namespace Caxivitual.Lunacub.Examples.SimpleResourceImporting;
 
 public sealed class SimpleResourceImporter : Importer<SimpleResourceDTO> {
     private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerOptions.Default) {

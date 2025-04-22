@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Caxivitual.Lunacub.Examples.SimpleResource;
+namespace Caxivitual.Lunacub.Examples.SimpleResourceImporting;
 
 public sealed class SimpleResourceDTO : ContentRepresentation {
     public int Integer;

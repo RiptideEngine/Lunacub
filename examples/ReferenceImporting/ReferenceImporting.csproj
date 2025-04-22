@@ -5,8 +5,6 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Caxivitual.Lunacub.Examples.SimpleResource</AssemblyName>
-        <RootNamespace>Caxivitual.Lunacub.Examples.SimpleResource</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -16,8 +14,12 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Resources\Resource.json" />
-      <Content Include="Resources\Resource.json">
+      <None Remove="Resources\Resource1.json" />
+      <Content Include="Resources\Resource1.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <None Remove="Resources\Resource2.json" />
+      <Content Include="Resources\Resource2.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
     </ItemGroup>

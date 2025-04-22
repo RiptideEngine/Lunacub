@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Text;
 
-namespace Caxivitual.Lunacub.Examples.SimpleResource;
+namespace Caxivitual.Lunacub.Examples.SimpleResourceImporting;
 
 public sealed class SimpleResourceDeserializer : Deserializer<SimpleResource> {
     protected override SimpleResource Deserialize(Stream dataStream, Stream optionStream, DeserializationContext context) {
