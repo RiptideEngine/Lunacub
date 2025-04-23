@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using Caxivitual.Lunacub.Building.Core;
+using Caxivitual.Lunacub.Importing.Core;
+using System.Diagnostics;
 
 namespace ReferenceImporting;
 
@@ -16,7 +18,7 @@ internal static class Program {
     
     private static void BuildResources(string reportDirectory, string outputDirectory) {
         Console.WriteLine("Building resources...");
-
+        
         using BuildEnvironment env = new(new FileOutputSystem(reportDirectory, outputDirectory)) {
             Importers = {
                 [nameof(ReferenceResourceImporter)] = new ReferenceResourceImporter(),
@@ -47,13 +49,10 @@ internal static class Program {
         };
         importEnvironment.Input.Libraries.Add(new FileResourceLibrary(Guid.NewGuid(), resourceDirectory));
 
-        ResourceHandle handle = await importEnvironment.ImportAsync(new("01965cef1af37ee9bd5d6c37ae77bbf0")).Task;
+        ResourceHandle<ReferenceResource> handle = await importEnvironment.ImportAsync<ReferenceResource>(new("01965cef1af37ee9bd5d6c37ae77bbf0")).Task;
         
-        Debug.Assert(handle.Value is ReferenceResource, $"Expecting SimpleResource, {handle.Value.GetType().FullName} imported.");
-        
-        ReferenceResource resource = (ReferenceResource)handle.Value;
-        
-        Console.WriteLine("resource.Value: " + resource.Value);
-        Console.WriteLine("resource.Reference.Value: " + resource.Reference!.Value);
+        Console.WriteLine("resource.Value: " + handle.Value!.Value);
+        Console.WriteLine("resource.Reference.Value: " + handle.Value!.Reference!.Value);
+        Console.WriteLine("resource.Reference.Reference.Value: " + handle.Value!.Reference!.Reference!.Value);
     }
 }

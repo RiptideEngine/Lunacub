@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using Caxivitual.Lunacub.Building.Core;
+using Caxivitual.Lunacub.Importing.Core;
+using System.Diagnostics;
 
 namespace Caxivitual.Lunacub.Examples.SimpleResourceImporting;
 
@@ -43,12 +45,10 @@ internal static class Program {
             },
         };
         importEnvironment.Input.Libraries.Add(new FileResourceLibrary(Guid.NewGuid(), resourceDirectory));
-
-        ResourceHandle handle = await importEnvironment.ImportAsync(new("d2bb9aa4d1a9443489e0434885d12d97")).Task;
         
-        Debug.Assert(handle.Value is SimpleResource, $"Expecting SimpleResource, {handle.Value.GetType().FullName} imported.");
+        ResourceHandle<SimpleResource> handle = await importEnvironment.ImportAsync<SimpleResource>(new("d2bb9aa4d1a9443489e0434885d12d97")).Task;
         
-        SimpleResource resource = (SimpleResource)handle.Value;
+        SimpleResource resource = handle.Value!;
         
         Console.WriteLine("Integer: " + resource.Integer);
         Console.WriteLine("Single: " + resource.Single);
