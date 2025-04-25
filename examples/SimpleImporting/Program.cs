@@ -48,10 +48,6 @@ internal static class Program {
         
         ResourceHandle<SimpleResource> handle = await importEnvironment.ImportAsync<SimpleResource>(new("d2bb9aa4d1a9443489e0434885d12d97")).Task;
         
-        SimpleResource resource = handle.Value!;
-        
-        Console.WriteLine("Integer: " + resource.Integer);
-        Console.WriteLine("Single: " + resource.Single);
-        Console.WriteLine("Vector: " + resource.Vector);
+        Console.WriteLine("Imported: " + handle.Value);
     }
 }

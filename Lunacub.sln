@@ -16,7 +16,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunacub.Tests.Importing", "
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{BD303699-F202-42F4-B61F-8D17F82567F4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleResourceImporting", "examples\SimpleResourceImporting\SimpleResourceImporting.csproj", "{D250027C-8D8F-4DE5-A961-E6AFEE52DFDD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleImporting", "examples\SimpleImporting\SimpleImporting.csproj", "{D250027C-8D8F-4DE5-A961-E6AFEE52DFDD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReferenceImporting", "examples\ReferenceImporting\ReferenceImporting.csproj", "{B80B8216-3AF7-42D8-BFEB-68E5ED35C09A}"
 EndProject

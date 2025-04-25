@@ -3,13 +3,13 @@
 partial class ImportEnvironment {
     private readonly ResourceCache _resourceCache;
 
-    public ImportingOperation ImportAsync(ResourceID rid) {
-        return new(rid, _resourceCache.ImportAsync(rid));
-    }
-
-    public Task<ResourceHandle<T>> ImportAsync<T>(ResourceID rid) where T : class {
+    public ImportingOperation<T> ImportAsync<T>(ResourceID rid) where T : class {
         return _resourceCache.ImportAsync<T>(rid);
     }
+
+    // public Task<ResourceHandle<T>> ImportAsync<T>(ResourceID rid) where T : class {
+    //     return _resourceCache.ImportAsync<T>(rid);
+    // }
     
     public ReleaseStatus Release(object? resource) {
         if (resource is null) return ReleaseStatus.Null;

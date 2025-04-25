@@ -1,27 +1,26 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
 public sealed partial class ResourceCache : IDisposable {
-    private readonly Lock _cacheLock;
-    private readonly Dictionary<ResourceID, CacheContainer> _cacheDict;
+    private readonly SemaphoreSlim _containerLock;
+    private readonly Dictionary<ResourceID, ResourceContainer> _resourceContainers;
     private readonly ImportEnvironment _environment;
     
     private bool _disposed;
 
     internal ResourceCache(ImportEnvironment environment) {
-        _cacheLock =  new();
-        _cacheDict = [];
+        _containerLock =  new(1, 1);
+        _resourceContainers = [];
         _environment = environment;
     }
 
-    public async Task<ResourceHandle> ImportAsync(ResourceID rid) {
-        object? output = await ImportSingleResource(rid);
-        return new(rid, output);
+    public ImportingOperation<T> ImportAsync<T>(ResourceID rid) where T : class {
+        return new(rid, ImportSingleResource<T>(rid));
     }
     
-    public async Task<ResourceHandle<T>> ImportAsync<T>(ResourceID rid) where T : class {
-        T? output = await ImportSingleResource(rid, typeof(T)) as T;
-        return new(rid, output);
-    }
+    // public async Task<ResourceHandle<T>> ImportAsync<T>(ResourceID rid) where T : class {
+    //     T? output = await ImportSingleResource(rid, typeof(T)) as T;
+    //     return new(rid, output);
+    // }
 
     public ReleaseStatus Release(object? resource) {
         throw new NotImplementedException();
@@ -35,6 +34,8 @@ public sealed partial class ResourceCache : IDisposable {
         if (Interlocked.Exchange(ref _disposed, true)) return;
 
         if (disposing) {
+            _containerLock.Dispose();
+            
             // using (_lock.EnterScope()) {
             //     foreach ((_, var container) in _resourceCache) {
             //         _context.Disposers.TryDispose(container.Value);
@@ -55,15 +56,19 @@ public sealed partial class ResourceCache : IDisposable {
         Dispose(false);
     }
 
-    private class CacheContainer {
-        public readonly Task<object?> Task;
+    private class ResourceContainer {
+        public readonly ResourceID Rid;
+        public Task<object?> FullImportTask;
+        public Task<ResourceVessel> VesselImportTask;
         public uint ReferenceCount;
-        public CancellationTokenSource CancellationTokenSource;
 
-        public CacheContainer(Task<object?> task, uint initialReferenceCount, CancellationTokenSource cancellationTokenSource) {
-            Task = task;
+        public ResourceContainer(ResourceID rid, uint initialReferenceCount) {
+            Rid = rid;
+            FullImportTask = Task.FromResult<object?>(null);
+            VesselImportTask = Task.FromResult<ResourceVessel>(default);
             ReferenceCount = initialReferenceCount;
-            CancellationTokenSource = cancellationTokenSource;
         }
     }
+
+    private readonly record struct ResourceVessel(Deserializer Deserializer, object Deserialized, DeserializationContext Context);
 }

@@ -7,85 +7,70 @@ using System.Text.Json;
 namespace Caxivitual.Lunacub.Importing;
 
 partial class ResourceCache {
-    private Task<object?> ImportSingleResource(ResourceID rid) {
-        if (!_environment.Input.ContainResource(rid)) return Task.FromResult<object?>(null);
+    private async Task<ResourceHandle<T>> ImportSingleResource<T>(ResourceID rid) where T : class {
+        if (!_environment.Input.ContainResource(rid)) return new(rid, null);
 
-        using (_cacheLock.EnterScope()) {
-            ref var container = ref CollectionsMarshal.GetValueRefOrAddDefault(_cacheDict, rid, out bool exists);
-
-            if (exists) {
-                Debug.Assert(container!.ReferenceCount != 0);
-                container.ReferenceCount++;
-
-                return container.Task;
-            }
-            
-            Dictionary<ResourceID, Task<object?>> importStack = [];
-            CancellationTokenSource cts = new();
-            
-            container = new(BeginImport(rid, importStack, cts), 1, cts);
-
-            return container.Task;
-        }
-    }
-
-    private Task<object?> GetOrBeginImportAsync(ResourceID rid, Dictionary<ResourceID, Task<object?>> importStack) {
-        if (!_environment.Input.ContainResource(rid)) return Task.FromResult<object?>(null);
+        Task<object?> importingTask;
         
-        using (_cacheLock.EnterScope()) {
-            ref var container = ref CollectionsMarshal.GetValueRefOrAddDefault(_cacheDict, rid, out bool exists);
-
-            if (exists) {
-                Debug.Assert(container!.ReferenceCount != 0);
-                container.ReferenceCount++;
-
-                return container.Task;
-            }
-            
-            CancellationTokenSource cts = new();
-            container = new(BeginImport(rid, importStack, cts), 1, cts);
-
-            return container.Task;
-        }
-    }
-
-    private async Task<object?> BeginImport(ResourceID rid, Dictionary<ResourceID, Task<object?>> importStack, CancellationTokenSource cts) {
-        Task<object?> task;
-        
-        lock (importStack) {
-            if (importStack.TryGetValue(rid, out var importingTask)) {
-                using (_cacheLock.EnterScope()) {
-                    _cacheDict[rid].ReferenceCount++;
-                }
-
-                return importingTask;
-            }
-            
-            _environment.Logger.LogInformation(Logging.BeginImportEvent, "Begin import resource {rid}.", rid);
-            
-            task = ImportResourceInner(rid, importStack, cts.Token);
-            importStack.Add(rid, task);
-        }
-        
+        await _containerLock.WaitAsync();
         try {
-            return await task;
-        } catch (OperationCanceledException) {
-            _environment.Logger.LogInformation(Logging.ImportCancelEvent, "Cancel import resource {rid}.", rid);
-            return Task.FromCanceled<object?>(CancellationToken.None);
-        } catch (Exception e) {
-            cts.Dispose();
-            _environment.Logger.LogError(Logging.ImportExceptionOccuredEvent, e, "Failed to import resource {rid}.", rid);;
+            ref var container = ref CollectionsMarshal.GetValueRefOrAddDefault(_resourceContainers, rid, out bool exists);
+
+            if (exists) {
+                Debug.Assert(container!.ReferenceCount != 0);
+                
+                container.ReferenceCount++;
+                importingTask = container.FullImportTask;
+            } else {
+                container = new(rid, 1) {
+                    VesselImportTask = ImportResourceVessel(rid, typeof(T)),
+                };
+
+                importingTask = container.FullImportTask = FullImport(rid, container.VesselImportTask, [rid]);
+            }
+        } finally {
+            _containerLock.Release();
+        }
+
+        return new(rid, await importingTask as T);
+    }
+    
+    private ResourceContainer? ImportDependencyResource(ResourceID rid, HashSet<ResourceID> stack) {
+        if (!_environment.Input.ContainResource(rid)) return null;
+
+        lock (stack) {
+            stack.Add(rid);
+        }
+
+        Debug.Assert(_containerLock.CurrentCount == 1);
+        
+        _containerLock.Wait();
+        try {
+            ref var container = ref CollectionsMarshal.GetValueRefOrAddDefault(_resourceContainers, rid, out bool exists);
+
+            if (exists) {
+                Debug.Assert(container!.ReferenceCount != 0);
+                
+                container.ReferenceCount++;
+                return container;
+            }
             
-            _cacheDict.Remove(rid);
-            return Task.FromException<object?>(e);
+            container = new(rid, 1) {
+                VesselImportTask = ImportResourceVessel(rid, typeof(object)),
+            };
+            container.FullImportTask = FullImport(rid, container.VesselImportTask, stack);
+
+            return container;
+        } finally {
+            _containerLock.Release();
         }
     }
-
-    private async Task<object?> ImportResourceInner(ResourceID rid, Dictionary<ResourceID, Task<object?>> importStack, CancellationToken cancellationToken) {
-        cancellationToken.ThrowIfCancellationRequested();
+    
+    private async Task<ResourceVessel> ImportResourceVessel(ResourceID rid, Type type) {
+        await Task.Yield();
         
         Stream? resourceStream = _environment.Input.CreateResourceStream(rid);
-        
+
         if (resourceStream == null) {
             throw new InvalidOperationException($"Null resource stream provided despite contains resource '{rid}'.");
         }
@@ -93,14 +78,63 @@ partial class ResourceCache {
         var layout = LayoutExtracting.Extract(resourceStream);
 
         switch (layout.MajorVersion) {
-            case 1: return await ImportV1(rid, resourceStream, layout, importStack, cancellationToken);
+            case 1: return ImportResourceVesselV1(type, resourceStream, layout);
+                
             default:
                 await resourceStream.DisposeAsync();
                 throw new NotSupportedException($"Compiled resource version {layout.MajorVersion}.{layout.MinorVersion} is not supported.");
         }
     }
 
-    private async Task<object?> ImportV1(ResourceID rid, Stream resourceStream, CompiledResourceLayout layout, Dictionary<ResourceID, Task<object?>> importStack, CancellationToken cancellationToken) {
+    private async Task<object?> FullImport(ResourceID rid, Task<ResourceVessel> vesselTask, HashSet<ResourceID> stack) {
+        (Deserializer deserializer, object deserialized, DeserializationContext deserializationContext) = await vesselTask;
+
+        if (deserialized == null!) return null;
+        
+        // TODO: Handle failure and cancelling in the future.
+        Debug.Assert(vesselTask.Status == TaskStatus.RanToCompletion);
+                
+        Dictionary<string, ResourceContainer> importedDependencies = [];
+                
+        lock (stack) {
+            foreach ((string property, DeserializationContext.RequestingDependency requesting) in deserializationContext.RequestingDependencies) {
+                if (ImportDependencyResource(requesting.Rid, stack) is not { } dependencyContainer) continue;
+                
+                importedDependencies.Add(property, dependencyContainer);
+            }
+        }
+        
+        await Task.WhenAll(importedDependencies.Values.Select(async x => {
+            try {
+                return await x.VesselImportTask;
+            } catch (Exception e) {
+                _environment.Logger.LogError(Logging.DependencyImportExceptionOccuredEvent, e, "Exception occured while importing dependency resource {rid}.", rid);
+                return default;
+            }
+        }));
+                
+        deserializationContext.Dependencies = importedDependencies.Where(x => x.Value.VesselImportTask.IsCompletedSuccessfully).Select(x => KeyValuePair.Create(x.Key, x.Value.VesselImportTask.Result.Deserialized)).Where(x => x.Value != null!).ToDictionary()!;
+        deserializer.ResolveDependencies(deserialized, deserializationContext);
+
+        IEnumerable<ResourceContainer> filteredContainers;
+        
+        lock (stack) {
+            filteredContainers = importedDependencies.Values.ExceptBy(stack, c => c.Rid);
+        }
+
+        await Task.WhenAll(filteredContainers.Select(async x => {
+            try {
+                return await x.FullImportTask;
+            } catch (Exception e) {
+                _environment.Logger.LogError(Logging.DependencyImportExceptionOccuredEvent, e, "Exception occured while importing dependency resource {rid}.", rid);
+                return null;
+            }
+        }));
+
+        return deserialized;
+    }
+    
+    private ResourceVessel ImportResourceVesselV1(Type type, Stream resourceStream, CompiledResourceLayout layout) {
         bool disposeResourceStream = true;
         
         try {
@@ -125,15 +159,19 @@ partial class ResourceCache {
             if (!_environment.Deserializers.TryGetValue(deserializerName, out Deserializer? deserializer)) {
                 throw new ArgumentException($"Deserializer name '{deserializerName}' is unregistered.");
             }
+
+            if (!deserializer.OutputType.IsAssignableTo(type)) {
+                return default;
+            }
             
             DeserializationContext context;
             object deserialized;
             
-            await using (Stream optionsStream = CopyOptionsStream(resourceStream, in layout)) {
+            using (Stream optionsStream = CopyOptionsStream(resourceStream, in layout)) {
                 resourceStream.Seek(dataChunkInfo.ContentOffset, SeekOrigin.Begin);
                 optionsStream.Seek(0, SeekOrigin.Begin);
             
-                await using PartialReadStream dataStream = new(resourceStream, dataChunkInfo.ContentOffset, dataChunkInfo.Length, ownStream: false);
+                using PartialReadStream dataStream = new(resourceStream, dataChunkInfo.ContentOffset, dataChunkInfo.Length, ownStream: false);
                 context = new();
                 
                 deserialized = deserializer.DeserializeObject(dataStream, optionsStream, context);
@@ -142,60 +180,23 @@ partial class ResourceCache {
                     disposeResourceStream = false;
                 }
             }
-            
-            Dictionary<string, Task<object?>> importedDependencies = [];
-            
-            foreach ((string property, DeserializationContext.RequestingDependency requesting) in context.RequestingDependencies) {
-                importedDependencies.Add(property, GetOrBeginImportAsync(requesting.Rid, importStack));
-            }
-            
-            await Task.WhenAll(importedDependencies.Values.Select(async x => {
-                try {
-                    return await x;
-                } catch (Exception e) {
-                    _environment.Logger.LogError(Logging.DependencyImportExceptionOccuredEvent, e, "Exception occured while importing dependency resource {rid}.", rid);
-                    return null;
-                }
-            }));
-            
-            context.Dependencies = importedDependencies.Where(x => x.Value.IsCompletedSuccessfully).Select(x => KeyValuePair.Create(x.Key, x.Value.Result)).ToDictionary();
-            deserializer.ResolveDependencies(deserialized, context);
-
-            return deserialized;
+    
+            return new(deserializer, deserialized, context);
         } finally {
-            if (disposeResourceStream) await resourceStream.DisposeAsync();
+            if (disposeResourceStream) resourceStream.Dispose();
         }
-
+    
         static Stream CopyOptionsStream(Stream stream, in CompiledResourceLayout layout) {
             if (layout.TryGetChunkInformation(CompilingConstants.ImportOptionsChunkTag, out ChunkInformation optionsChunkInfo)) {
                 stream.Seek(optionsChunkInfo.ContentOffset, SeekOrigin.Begin);
                 
                 MemoryStream optionsStream = new((int)optionsChunkInfo.Length);
                 stream.CopyTo(optionsStream, (int)optionsChunkInfo.Length, 512);
-
+    
                 return optionsStream;
             }
-
+    
             return Stream.Null;
         }
-    }
-
-    private Task<object?> ImportSingleResourceRecursive(ResourceID rid, IDictionary<ResourceID, Task<object?>> importStack) {
-        throw new NotImplementedException();
-
-        // ref var container = ref CollectionsMarshal.GetValueRefOrNullRef(_cacheDict, rid);
-        //
-        // if (!Unsafe.IsNullRef(ref container)) {
-        //     Debug.Assert(container.ReferenceCount != 0);
-        //
-        //     container.ReferenceCount++;
-        //     return container.Value;
-        // }
-    }
-
-    private Task<object?> ImportSingleResource(ResourceID rid, Type type) {
-        if (_environment.Input.ContainResource(rid)) return Task.FromResult<object?>(null);
-
-        throw new NotImplementedException();
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Caxivitual.Lunacub.Building;
+﻿namespace Caxivitual.Lunacub.Building.Core;
 
 [ExcludeFromCodeCoverage]
 public class FileOutputSystem : OutputSystem {

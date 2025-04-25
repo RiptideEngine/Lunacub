@@ -1,9 +1,9 @@
 ﻿using Caxivitual.Lunacub.Compilation;
 
-namespace Caxivitual.Lunacub.Importing;
+namespace Caxivitual.Lunacub.Importing.Core;
 
 [ExcludeFromCodeCoverage]
-public class FileResourceLibrary(Guid id, string directory) : ResourceLibrary(id) {
+public sealed class FileResourceLibrary(Guid id, string directory) : ResourceLibrary(id) {
     public string Directory { get; } = directory;
     
     public override bool Contains(ResourceID rid) {
