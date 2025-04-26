@@ -27,11 +27,15 @@ partial class ResourceCache {
                 };
 
                 importingTask = container.FullImportTask = FullImport(rid, container.VesselImportTask, [rid]);
+                
+                _environment.Statistics.IncrementUniqueResourceCount();
             }
+            
+            _environment.Statistics.IncrementTotalReferenceCount();
         } finally {
             _containerLock.Release();
         }
-
+        
         return new(rid, await importingTask as T);
     }
     
@@ -52,6 +56,7 @@ partial class ResourceCache {
                 Debug.Assert(container!.ReferenceCount != 0);
                 
                 container.ReferenceCount++;
+                _environment.Statistics.IncrementTotalReferenceCount();
                 return container;
             }
             
@@ -59,7 +64,9 @@ partial class ResourceCache {
                 VesselImportTask = ImportResourceVessel(rid, typeof(object)),
             };
             container.FullImportTask = FullImport(rid, container.VesselImportTask, stack);
-
+            
+            _environment.Statistics.IncrementTotalReferenceCount();
+            _environment.Statistics.IncrementUniqueResourceCount();
             return container;
         } finally {
             _containerLock.Release();
@@ -96,12 +103,10 @@ partial class ResourceCache {
                 
         Dictionary<string, ResourceContainer> importedDependencies = [];
                 
-        lock (stack) {
-            foreach ((string property, DeserializationContext.RequestingDependency requesting) in deserializationContext.RequestingDependencies) {
-                if (ImportDependencyResource(requesting.Rid, stack) is not { } dependencyContainer) continue;
-                
-                importedDependencies.Add(property, dependencyContainer);
-            }
+        foreach ((string property, DeserializationContext.RequestingDependency requesting) in deserializationContext.RequestingDependencies) {
+            if (ImportDependencyResource(requesting.Rid, stack) is not { } dependencyContainer) continue;
+            
+            importedDependencies.Add(property, dependencyContainer);
         }
         
         await Task.WhenAll(importedDependencies.Values.Select(async x => {
