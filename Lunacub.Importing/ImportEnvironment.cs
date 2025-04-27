@@ -17,6 +17,8 @@ public sealed partial class ImportEnvironment : IDisposable {
         // ReSharper restore NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
     }
     
+    public Statistics Statistics { get; } = new();
+    
     private bool _disposed;
     
     public ImportEnvironment() {

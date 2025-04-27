@@ -7,4 +7,5 @@ public static class Logging {
     public static EventId ImportExceptionOccuredEvent => new(2, "ImportExceptionOccured");
     public static EventId DependencyImportExceptionOccuredEvent => new(3, "DependencyImportExceptionOccured");
     public static EventId ImportCancelEvent => new(4, "ImportCancel");
+    public static EventId ImportUnregisteredDependencyEvent => new(5, "ImportUnregisteredDependency");
 }

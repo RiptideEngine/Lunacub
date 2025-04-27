@@ -7,6 +7,38 @@ using System.Text.Json;
 namespace Caxivitual.Lunacub.Importing;
 
 partial class ResourceCache {
+    private async Task<ResourceHandle> ImportSingleResource(ResourceID rid) {
+        if (!_environment.Input.ContainResource(rid)) return new(rid, null);
+
+        Task<object?> importingTask;
+        
+        await _containerLock.WaitAsync();
+        try {
+            ref var container = ref CollectionsMarshal.GetValueRefOrAddDefault(_resourceContainers, rid, out bool exists);
+
+            if (exists) {
+                Debug.Assert(container!.ReferenceCount != 0);
+                
+                container.ReferenceCount++;
+                importingTask = container.FullImportTask;
+            } else {
+                container = new(rid, 1) {
+                    VesselImportTask = ImportResourceVessel(rid, typeof(object)),
+                };
+
+                importingTask = container.FullImportTask = FullImport(rid, container.VesselImportTask, [rid], container);
+                
+                _environment.Statistics.IncrementUniqueResourceCount();
+            }
+            
+            _environment.Statistics.IncrementTotalReferenceCount();
+        } finally {
+            _containerLock.Release();
+        }
+        
+        return new(rid, await importingTask);
+    }
+    
     private async Task<ResourceHandle<T>> ImportSingleResource<T>(ResourceID rid) where T : class {
         if (!_environment.Input.ContainResource(rid)) return new(rid, null);
 
@@ -26,7 +58,7 @@ partial class ResourceCache {
                     VesselImportTask = ImportResourceVessel(rid, typeof(T)),
                 };
 
-                importingTask = container.FullImportTask = FullImport(rid, container.VesselImportTask, [rid]);
+                importingTask = container.FullImportTask = FullImport(rid, container.VesselImportTask, [rid], container);
                 
                 _environment.Statistics.IncrementUniqueResourceCount();
             }
@@ -40,14 +72,16 @@ partial class ResourceCache {
     }
     
     private ResourceContainer? ImportDependencyResource(ResourceID rid, HashSet<ResourceID> stack) {
-        if (!_environment.Input.ContainResource(rid)) return null;
+        if (!_environment.Input.ContainResource(rid)) {
+            _environment.Logger.LogWarning(Logging.ImportUnregisteredDependencyEvent, "Importing unregistered dependency resource {rid}.", rid);
+            
+            return null;
+        }
 
         lock (stack) {
             stack.Add(rid);
         }
 
-        Debug.Assert(_containerLock.CurrentCount == 1);
-        
         _containerLock.Wait();
         try {
             ref var container = ref CollectionsMarshal.GetValueRefOrAddDefault(_resourceContainers, rid, out bool exists);
@@ -63,7 +97,7 @@ partial class ResourceCache {
             container = new(rid, 1) {
                 VesselImportTask = ImportResourceVessel(rid, typeof(object)),
             };
-            container.FullImportTask = FullImport(rid, container.VesselImportTask, stack);
+            container.FullImportTask = FullImport(rid, container.VesselImportTask, stack, container);
             
             _environment.Statistics.IncrementTotalReferenceCount();
             _environment.Statistics.IncrementUniqueResourceCount();
@@ -93,7 +127,7 @@ partial class ResourceCache {
         }
     }
 
-    private async Task<object?> FullImport(ResourceID rid, Task<ResourceVessel> vesselTask, HashSet<ResourceID> stack) {
+    private async Task<object?> FullImport(ResourceID rid, Task<ResourceVessel> vesselTask, HashSet<ResourceID> stack, ResourceContainer container) {
         (Deserializer deserializer, object deserialized, DeserializationContext deserializationContext) = await vesselTask;
 
         if (deserialized == null!) return null;
@@ -136,6 +170,7 @@ partial class ResourceCache {
             }
         }));
 
+        _importedReleaseCache.Add(deserialized, container); // If cache correctly, we don't need to lock.
         return deserialized;
     }
     
