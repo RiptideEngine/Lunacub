@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Caxivitual.Lunacub;
@@ -6,26 +7,18 @@ namespace Caxivitual.Lunacub;
 [ExcludeFromCodeCoverage]
 internal sealed class ResourceIDConverter : JsonConverter<ResourceID> {
     public override void Write(Utf8JsonWriter writer, ResourceID value, JsonSerializerOptions options) {
-        Span<byte> bytes = stackalloc byte[32];
-        bool format = value.TryFormat(bytes, out _, "N", null);
-        Debug.Assert(format);
-        
-        writer.WriteStringValue(bytes);
+        JsonSerializer.Serialize(writer, Unsafe.BitCast<ResourceID, UInt128>(value), options);
     }
 
     public override void WriteAsPropertyName(Utf8JsonWriter writer, ResourceID value, JsonSerializerOptions options) {
-        Span<byte> bytes = stackalloc byte[32];
-        bool format = value.TryFormat(bytes, out _, "N", null);
-        Debug.Assert(format);
-        
-        writer.WritePropertyName(bytes);
+        ((JsonConverter<UInt128>)options.GetConverter(typeof(UInt128))).WriteAsPropertyName(writer, Unsafe.BitCast<ResourceID, UInt128>(value), options);
     }
 
     public override ResourceID Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-        return ResourceID.Parse(reader.GetString()!);
+        return Unsafe.BitCast<UInt128, ResourceID>(JsonSerializer.Deserialize<UInt128>(ref reader, options));
     }
 
     public override ResourceID ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-        return ResourceID.Parse(reader.GetString()!);
+        return ((JsonConverter<UInt128>)options.GetConverter(typeof(UInt128))).ReadAsPropertyName(ref reader, typeToConvert, options);
     }
 }

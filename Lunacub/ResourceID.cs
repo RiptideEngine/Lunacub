@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace Caxivitual.Lunacub;
@@ -8,16 +9,18 @@ namespace Caxivitual.Lunacub;
 public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>, ISpanFormattable, IUtf8SpanFormattable {
     public static ResourceID Null => default;
 
-    private readonly UInt128 _value;
+    public UInt128 Value { get; }
     
     public ResourceID(UInt128 value) {
-        _value = value;
+        Value = value;
     }
 
     public ResourceID(string str) {
         this = Parse(str);
     }
 
+    public static ResourceID Create() => Unsafe.BitCast<Guid, ResourceID>(Guid.NewGuid());
+    
     public static ResourceID Parse(string str) => Parse(str.AsSpan());
     public static ResourceID Parse(ReadOnlySpan<char> str) {
         if (TryParse(str, out var rid)) return rid;
@@ -39,22 +42,22 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
         return false;
     }
 
-    public string ToString(string? format) => _value.ToString(format);
-    public string ToString(IFormatProvider? formatProvider) => _value.ToString(formatProvider);
+    public string ToString(string? format) => Value.ToString(format);
+    public string ToString(IFormatProvider? formatProvider) => Value.ToString(formatProvider);
     public string ToString(string? format, IFormatProvider? formatProvider) {
-        return _value.ToString(format, formatProvider);
+        return Value.ToString(format, formatProvider);
     }
 
     public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
-        return _value.TryFormat(destination, out charsWritten, "X", provider);
+        return Value.TryFormat(destination, out charsWritten, "X", provider);
     }
 
     public bool TryFormat(Span<byte> destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
-        return _value.TryFormat(destination, out bytesWritten, "X", provider);
+        return Value.TryFormat(destination, out bytesWritten, "X", provider);
     }
 
-    public bool Equals(ResourceID other) => _value == other._value;
-    public bool Equals(UInt128 other) => _value == other;
+    public bool Equals(ResourceID other) => Value == other.Value;
+    public bool Equals(UInt128 other) => Value == other;
 
     public override bool Equals([NotNullWhen(true)] object? other) {
         return other switch {
@@ -63,10 +66,13 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
             _ => false,
         };
     }
-    public override int GetHashCode() => _value.GetHashCode();
+    public override int GetHashCode() => Value.GetHashCode();
     
     public static bool operator ==(ResourceID left, ResourceID right) => left.Equals(right);
     public static bool operator !=(ResourceID left, ResourceID right) => !left.Equals(right);
     
-    public override string ToString() => _value.ToString();
+    public static implicit operator ResourceID(UInt128 value) => new(value);
+    public static implicit operator UInt128(ResourceID value) => value.Value;
+    
+    public override string ToString() => Value.ToString();
 }
