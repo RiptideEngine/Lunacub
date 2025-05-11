@@ -1,79 +1,85 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
 public sealed class Statistics {
-    private uint _totalReferenceCount, _totalDisposeCount, _uniqueResourceCount, _disposedResourceCount, _undisposedResourceCount;
-
+    private AtomicCounter _totalReferenceCount, _remainReferenceCount;
+    private AtomicCounter _uniqueResourceCount, _disposedResourceCount, _undisposedResourceCount;
+    
     public uint TotalReferenceCount => _totalReferenceCount;
-    public uint TotalDisposeCount => _totalDisposeCount;
+    public uint RemainReferenceCount => _remainReferenceCount;
     public uint UniqueResourceCount => _uniqueResourceCount;
     public uint DisposedResourceCount => _disposedResourceCount;
     public uint UndisposedResourceCount => _undisposedResourceCount;
     
     internal Statistics() { }
 
-    internal void IncrementTotalReferenceCount() {
-        Interlocked.Increment(ref _totalReferenceCount);
+    internal void AddReference() {
+        _totalReferenceCount.Increment();
+        _remainReferenceCount.Increment();
     }
 
-    internal void DecrementTotalReferenceCount() {
-        uint initialValue, computedValue;
-        do {
-            initialValue = _totalReferenceCount;
-            computedValue = initialValue == 0 ? 0 : initialValue - 1;
-        } while (initialValue != Interlocked.CompareExchange(ref _totalReferenceCount, computedValue, initialValue));
-    }
-    
-    internal void IncrementTotalDisposeCount() {
-        Interlocked.Increment(ref _totalDisposeCount);
-    }
-
-    internal void DecrementTotalDisposeCount() {
-        uint initialValue, computedValue;
-        do {
-            initialValue = _totalDisposeCount;
-            computedValue = initialValue == 0 ? 0 : initialValue - 1;
-        } while (initialValue != Interlocked.CompareExchange(ref _totalDisposeCount, computedValue, initialValue));
+    internal void Release(uint count = 1) {
+        _remainReferenceCount.Subtract(count);
     }
     
     internal void IncrementUniqueResourceCount() {
-        Interlocked.Increment(ref _uniqueResourceCount);
+        _uniqueResourceCount.Increment();
     }
-
+    
     internal void DecrementUniqueResourceCount() {
-        uint initialValue, computedValue;
-        do {
-            initialValue = _uniqueResourceCount;
-            computedValue = initialValue == 0 ? 0 : initialValue - 1;
-        } while (initialValue != Interlocked.CompareExchange(ref _uniqueResourceCount, computedValue, initialValue));
+        _uniqueResourceCount.Decrement();
     }
     
     internal void IncrementDisposedResourceCount() {
-        Interlocked.Increment(ref _disposedResourceCount);
+        _disposedResourceCount.Increment();
     }
-
+    
     internal void DecrementDisposedResourceCount() {
-        uint initialValue, computedValue;
-        do {
-            initialValue = _disposedResourceCount;
-            computedValue = initialValue == 0 ? 0 : initialValue - 1;
-        } while (initialValue != Interlocked.CompareExchange(ref _disposedResourceCount, computedValue, initialValue));
+        _disposedResourceCount.Decrement();
     }
     
     internal void IncrementUndisposedResourceCount() {
-        Interlocked.Increment(ref _undisposedResourceCount);
-    }
-
-    internal void DecrementUndisposedResourceCount() {
-        uint initialValue, computedValue;
-        do {
-            initialValue = _undisposedResourceCount;
-            computedValue = initialValue == 0 ? 0 : initialValue - 1;
-        } while (initialValue != Interlocked.CompareExchange(ref _undisposedResourceCount, computedValue, initialValue));
+        _undisposedResourceCount.Increment();
     }
     
+    internal void DecrementUndisposedResourceCount() {
+        _undisposedResourceCount.Decrement();
+    }
+
     internal void SetTotalReferenceCount(uint value) => _totalReferenceCount = value;
-    internal void SetTotalDisposeCount(uint value) => _totalDisposeCount = value;
+    internal void SetRemainReferenceCount(uint value) => _remainReferenceCount = value;
     internal void SetUniqueResourceCount(uint value) => _uniqueResourceCount = value;
     internal void SetDisposedResourceCount(uint value) => _disposedResourceCount = value;
     internal void SetUndisposedResourceCount(uint value) => _undisposedResourceCount = value;
+
+    private struct AtomicCounter {
+        private uint _value;
+        public uint Value => _value;
+
+        private AtomicCounter(uint value) {
+            _value = value;
+        }
+        
+        public void Increment() {
+            Interlocked.Increment(ref _value);
+        }
+
+        public void Decrement() {
+            uint initialValue, computedValue;
+            do {
+                initialValue = _value;
+                computedValue = _value == 0 ? 0 : _value - 1;
+            } while (initialValue != Interlocked.CompareExchange(ref _value, computedValue, initialValue));
+        }
+
+        public void Subtract(uint count) {
+            uint initialValue, computedValue;
+            do {
+                initialValue = _value;
+                computedValue = count >= _value ? 0 : _value - count;
+            } while (initialValue != Interlocked.CompareExchange(ref _value, computedValue, initialValue));
+        }
+        
+        public static implicit operator uint(AtomicCounter counter) => counter._value;
+        public static implicit operator AtomicCounter(uint value) => new(value);
+    }
 }

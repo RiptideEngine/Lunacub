@@ -2,6 +2,7 @@
 
 public enum ReleaseStatus {
     Success = 0,
+    Canceled,
     NotDisposed,
     Null,
     

@@ -127,7 +127,7 @@ public class BinaryReaderExtensionsTests : IDisposable {
     
     [Fact]
     public void ReadResourceID_Sufficient_ReturnsOriginalValue() {
-        ResourceID value = new("17a7f0fe-c4c0-553a-a097-a48468eb2b90");
+        ResourceID value = new("17a7f0fec4c0553aa097a48468eb2b90");
         
         _writer.Write(value);
         _ms.Position = 0;

@@ -23,4 +23,27 @@ internal static class Helpers {
 
         return oldAmount - amount;
     }
+    
+    public static async ValueTask<int> CopyToAsync(this Stream source, Stream destination, int amount, CancellationToken token, int bufferSize = 4096) {
+        int oldAmount = amount;
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+
+        try {
+            while (amount > 0) {
+                token.ThrowIfCancellationRequested();
+                
+                int amountToRead = int.Min(buffer.Length, amount);
+                int readAmount = await source.ReadAsync(buffer.AsMemory(0, amountToRead), token);
+
+                if (readAmount == 0) break;
+                
+                await destination.WriteAsync(buffer.AsMemory(0, readAmount), token);
+                amount -= readAmount;
+            }
+        } finally {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+
+        return oldAmount - amount;
+    }
 }

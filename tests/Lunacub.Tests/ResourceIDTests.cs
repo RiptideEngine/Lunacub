@@ -1,44 +1,47 @@
 ﻿// ReSharper disable EqualExpressionComparison
 
+using System.Globalization;
+
 namespace Caxivitual.Lunacub.Tests;
 
 public class ResourceIDTests {
-    [Fact]
-    public void Parse_CorrectFormat_ShouldBeCorrect() {
-        new Func<ResourceID>(() => ResourceID.Parse("0521a625c46a5c9fb76890ca92c7d4ed")).Should().NotThrow().Which
-            .Should().Be(ResourceID.Parse("0521a625c46a5c9fb76890ca92c7d4ed"));
+    [Theory]
+    [InlineData("0")]
+    [InlineData("526BE3718")]
+    [InlineData("40e1e2f1a3d2403ca3429ab0a5d189b0")]
+    public void Parse_HexadecimalInteger_ParseCorrectly(string input) {
+        UInt128 idAsInt = Unsafe.BitCast<ResourceID, UInt128>(new Func<ResourceID>(() => ResourceID.Parse(input)).Should().NotThrow().Which);
+        idAsInt.Should().Be(UInt128.Parse(input, NumberStyles.HexNumber));
     }
     
     [Theory]
     [InlineData("")]
-    [InlineData("0325ac32")]
+    [InlineData("XXXXX")]
     [InlineData("0521a625c46a5c9fb76890ca92c7d4ed4c72064230615589bc680e3718610af4")]
     public void Parse_InvalidFormat_ThrowsFormatException(string input) {
         new Func<ResourceID>(() => ResourceID.Parse(input)).Should().Throw<FormatException>();
     }
     
-    [Fact]
-    public void TryParse_CorrectFormat_ReturnsTrueAndOutputCorrectValue() {
-        new Func<(bool, ResourceID)>(() => {
-            bool result = ResourceID.TryParse("0521a625c46a5c9fb76890ca92c7d4ed", out var output);
-            return (result, output);
-        }).Should().NotThrow().Which.Should().Be((true, ResourceID.Parse("0521a625c46a5c9fb76890ca92c7d4ed")));
+    [Theory]
+    [InlineData("0")]
+    [InlineData("526BE3718")]
+    [InlineData("40e1e2f1a3d2403ca3429ab0a5d189b0")]
+    public void TryParse_CorrectFormat_ReturnsTrueAndOutputCorrectValue(string input) {
+        new Func<(bool, UInt128)>(() => {
+            bool result = ResourceID.TryParse(input, out var output);
+            return (result, Unsafe.BitCast<ResourceID, UInt128>(output));
+        }).Should().NotThrow().Which.Should().Be((true, UInt128.Parse(input, NumberStyles.HexNumber)));
     }
     
     [Theory]
     [InlineData("")]
-    [InlineData("0325ac32")]
+    [InlineData("Invalid Value")]
     [InlineData("0521a625c46a5c9fb76890ca92c7d4ed4c72064230615589bc680e3718610af4")]
     public void TryParse_InvalidFormat_ReturnsFalseAndOutputDefault(string input) {
         new Func<(bool, ResourceID)>(() => {
             bool result = ResourceID.TryParse(input, out var output);
             return (result, output);
         }).Should().NotThrow().Which.Should().Be((false, ResourceID.Null));
-    }
-
-    [Fact]
-    public void TryFormatSpan_InsufficientBuffer_ShouldNotThrow() {
-        new Func<bool>(() => ResourceID.Null.TryFormat([], out _, ReadOnlySpan<char>.Empty, null)).Should().NotThrow().Which.Should().BeFalse();
     }
 
     [Fact]

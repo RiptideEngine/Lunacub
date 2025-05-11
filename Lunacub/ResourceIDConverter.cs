@@ -7,7 +7,7 @@ namespace Caxivitual.Lunacub;
 internal sealed class ResourceIDConverter : JsonConverter<ResourceID> {
     public override void Write(Utf8JsonWriter writer, ResourceID value, JsonSerializerOptions options) {
         Span<byte> bytes = stackalloc byte[32];
-        bool format = value.TryFormat(bytes, out _, ReadOnlySpan<char>.Empty, null);
+        bool format = value.TryFormat(bytes, out _, "N", null);
         Debug.Assert(format);
         
         writer.WriteStringValue(bytes);
@@ -15,7 +15,7 @@ internal sealed class ResourceIDConverter : JsonConverter<ResourceID> {
 
     public override void WriteAsPropertyName(Utf8JsonWriter writer, ResourceID value, JsonSerializerOptions options) {
         Span<byte> bytes = stackalloc byte[32];
-        bool format = value.TryFormat(bytes, out _, ReadOnlySpan<char>.Empty, null);
+        bool format = value.TryFormat(bytes, out _, "N", null);
         Debug.Assert(format);
         
         writer.WritePropertyName(bytes);
