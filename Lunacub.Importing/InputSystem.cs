@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Importing;
+﻿using Caxivitual.Lunacub.Importing.Collections;
+
+namespace Caxivitual.Lunacub.Importing;
 
 public sealed class InputSystem {
     public ResourceLibraryCollection Libraries { get; }

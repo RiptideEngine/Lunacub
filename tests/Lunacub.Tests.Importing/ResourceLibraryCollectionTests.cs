@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Tests.Importing;
+﻿using Caxivitual.Lunacub.Importing.Collections;
+
+namespace Caxivitual.Lunacub.Tests.Importing;
 
 public class ResourceLibraryCollectionTests {
     private readonly ResourceLibraryCollection _collection = [];

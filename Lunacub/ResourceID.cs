@@ -71,6 +71,8 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     public static bool operator ==(ResourceID left, ResourceID right) => left.Equals(right);
     public static bool operator !=(ResourceID left, ResourceID right) => !left.Equals(right);
     
+    public static implicit operator ResourceID(uint value) => new(value);
+    public static implicit operator ResourceID(ulong value) => new(value);
     public static implicit operator ResourceID(UInt128 value) => new(value);
     public static implicit operator UInt128(ResourceID value) => value.Value;
     

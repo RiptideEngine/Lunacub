@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 
-namespace Caxivitual.Lunacub.Importing;
+namespace Caxivitual.Lunacub.Importing.Collections;
 
 public sealed class ResourceLibraryCollection : Collection<ResourceLibrary> {
     public bool Remove(Guid id) {

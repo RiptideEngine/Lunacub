@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Tests.Building;
+﻿using Caxivitual.Lunacub.Building.Core;
+
+namespace Caxivitual.Lunacub.Tests.Building;
 
 public partial class BuildEnvironmentTests : IClassFixture<ResourcesFixture>, IDisposable {
     private readonly BuildEnvironment _env;

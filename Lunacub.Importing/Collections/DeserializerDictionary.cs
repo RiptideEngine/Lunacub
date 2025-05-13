@@ -1,24 +1,24 @@
-﻿namespace Caxivitual.Lunacub.Building;
+﻿namespace Caxivitual.Lunacub.Importing.Collections;
 
 [ExcludeFromCodeCoverage]
-public sealed class ProcessorDictionary : IdentityDictionary<Processor> {
-    internal ProcessorDictionary() : base(StringComparer.Ordinal) { }
+public sealed class DeserializerDictionary : IdentityDictionary<Deserializer> {
+    internal DeserializerDictionary() : base(StringComparer.Ordinal) { }
     
-    public override void Add(string key, Processor value) {
+    public override void Add(string key, Deserializer value) {
         ValidateKey(key);
         ValidateValue(value);
         
         _dict.Add(key, value);
     }
 
-    public override bool TryAdd(string key, Processor value) {
+    public override bool TryAdd(string key, Deserializer value) {
         ValidateKey(key);
         ValidateValue(value);
         
         return _dict.TryAdd(key, value);
     }
 
-    public override bool TryAdd(ReadOnlySpan<char> key, Processor value) {
+    public override bool TryAdd(ReadOnlySpan<char> key, Deserializer value) {
         ValidateKey(key);
         ValidateValue(value);
 
@@ -29,7 +29,7 @@ public sealed class ProcessorDictionary : IdentityDictionary<Processor> {
         return _dict.Remove(key);
     }
 
-    public override bool Remove(string key, [NotNullWhen(true)] out Processor? value) {
+    public override bool Remove(string key, [NotNullWhen(true)] out Deserializer? value) {
         return _dict.Remove(key, out value);
     }
 
@@ -37,7 +37,7 @@ public sealed class ProcessorDictionary : IdentityDictionary<Processor> {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().Remove(key);
     }
 
-    public override bool Remove(ReadOnlySpan<char> key, [NotNullWhen(true)] out Processor? value) {
+    public override bool Remove(ReadOnlySpan<char> key, [NotNullWhen(true)] out Deserializer? value) {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().Remove(key, out _, out value);
     }
 
@@ -49,15 +49,15 @@ public sealed class ProcessorDictionary : IdentityDictionary<Processor> {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(key);
     }
 
-    public override bool TryGetValue(string key, [MaybeNullWhen(false)] out Processor value) {
+    public override bool TryGetValue(string key, [MaybeNullWhen(false)] out Deserializer value) {
         return _dict.TryGetValue(key, out value);
     }
     
-    public override bool TryGetValue(ReadOnlySpan<char> key, [MaybeNullWhen(false)] out Processor value) {
+    public override bool TryGetValue(ReadOnlySpan<char> key, [MaybeNullWhen(false)] out Deserializer value) {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(key, out value);
     }
     
-    public override Processor this[string key] {
+    public override Deserializer this[string key] {
         get => _dict[key];
         set {
             ValidateKey(key);
@@ -67,7 +67,7 @@ public sealed class ProcessorDictionary : IdentityDictionary<Processor> {
         }
     }
 
-    public override Processor this[ReadOnlySpan<char> key] {
+    public override Deserializer this[ReadOnlySpan<char> key] {
         get => _dict.GetAlternateLookup<ReadOnlySpan<char>>()[key];
         set {
             ValidateKey(key);
@@ -88,7 +88,7 @@ public sealed class ProcessorDictionary : IdentityDictionary<Processor> {
         }
     }
     
-    private static void ValidateValue(Processor value, [CallerArgumentExpression(nameof(value))] string? expression = "") {
+    private static void ValidateValue(Deserializer value, [CallerArgumentExpression(nameof(value))] string? expression = "") {
         ArgumentNullException.ThrowIfNull(value, expression);
     }
 }

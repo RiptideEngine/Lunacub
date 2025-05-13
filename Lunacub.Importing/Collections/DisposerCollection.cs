@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 
-namespace Caxivitual.Lunacub.Importing;
+namespace Caxivitual.Lunacub.Importing.Collections;
 
 [ExcludeFromCodeCoverage]
 public sealed class DisposerCollection : Collection<Disposer> {

@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Tests.Importing;
+﻿using Caxivitual.Lunacub.Building.Core;
+
+namespace Caxivitual.Lunacub.Tests.Importing;
 
 public partial class ImportEnvironmentTests : IClassFixture<ResourcesFixture>, IDisposable {
     private readonly ResourcesFixture _resourcesFixture;
@@ -15,7 +17,7 @@ public partial class ImportEnvironmentTests : IClassFixture<ResourcesFixture>, I
 
         _fileSystem = new();
         
-        _buildEnv = new(new MockOutputSystem(_fileSystem));
+        _buildEnv = new(new FileResourceProvider(), new MockOutputSystem(_fileSystem));
         _importEnv = new();
 
         foreach (var type in _resourcesFixture.ComponentTypes[typeof(Importer)]) {

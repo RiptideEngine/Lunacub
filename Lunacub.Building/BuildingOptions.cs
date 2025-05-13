@@ -4,16 +4,24 @@ namespace Caxivitual.Lunacub.Building;
 
 [JsonConverter(typeof(BuildingOptionsConverter))]
 public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
-    public readonly string ImporterName;
-    public readonly string ProcessorName;
-    public readonly IReadOnlyCollection<string> Tags;
-    public readonly IImportOptions? Options;
+    public required string ImporterName { get; init; }
+    public string? ProcessorName { get; init; }
+    public IReadOnlyCollection<string> Tags { get; init; }
+    public IImportOptions? Options { get; init; }
 
+    public BuildingOptions() {
+        ProcessorName = string.Empty;
+        Tags = [];
+    }
+    
+    [SetsRequiredMembers]
     public BuildingOptions(string importerName, string? processorName = null) : this(importerName, processorName, Array.Empty<string>(), null) { }
+    
+    [SetsRequiredMembers]
     public BuildingOptions(string importerName, string? processorName, IReadOnlyCollection<string>? tags, IImportOptions? options) {
         ImporterName = importerName;
-        ProcessorName = processorName ?? string.Empty;
-        Tags = tags ?? Array.Empty<string>();
+        ProcessorName = processorName;
+        Tags = tags ?? [];
         Options = options;
     }
 

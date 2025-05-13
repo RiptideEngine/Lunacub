@@ -1,24 +1,24 @@
-﻿namespace Caxivitual.Lunacub.Importing;
+﻿namespace Caxivitual.Lunacub.Building.Collections;
 
 [ExcludeFromCodeCoverage]
-public sealed class DeserializerDictionary : IdentityDictionary<Deserializer> {
-    internal DeserializerDictionary() : base(StringComparer.Ordinal) { }
-    
-    public override void Add(string key, Deserializer value) {
+public sealed class ImporterDictionary : IdentityDictionary<Importer> {
+    internal ImporterDictionary() : base(StringComparer.Ordinal) { }
+
+    public override void Add(string key, Importer value) {
         ValidateKey(key);
         ValidateValue(value);
         
         _dict.Add(key, value);
     }
 
-    public override bool TryAdd(string key, Deserializer value) {
+    public override bool TryAdd(string key, Importer value) {
         ValidateKey(key);
         ValidateValue(value);
         
         return _dict.TryAdd(key, value);
     }
 
-    public override bool TryAdd(ReadOnlySpan<char> key, Deserializer value) {
+    public override bool TryAdd(ReadOnlySpan<char> key, Importer value) {
         ValidateKey(key);
         ValidateValue(value);
 
@@ -29,7 +29,7 @@ public sealed class DeserializerDictionary : IdentityDictionary<Deserializer> {
         return _dict.Remove(key);
     }
 
-    public override bool Remove(string key, [NotNullWhen(true)] out Deserializer? value) {
+    public override bool Remove(string key, [NotNullWhen(true)] out Importer? value) {
         return _dict.Remove(key, out value);
     }
 
@@ -37,7 +37,7 @@ public sealed class DeserializerDictionary : IdentityDictionary<Deserializer> {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().Remove(key);
     }
 
-    public override bool Remove(ReadOnlySpan<char> key, [NotNullWhen(true)] out Deserializer? value) {
+    public override bool Remove(ReadOnlySpan<char> key, [NotNullWhen(true)] out Importer? value) {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().Remove(key, out _, out value);
     }
 
@@ -49,15 +49,15 @@ public sealed class DeserializerDictionary : IdentityDictionary<Deserializer> {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(key);
     }
 
-    public override bool TryGetValue(string key, [MaybeNullWhen(false)] out Deserializer value) {
+    public override bool TryGetValue(string key, [MaybeNullWhen(false)] out Importer value) {
         return _dict.TryGetValue(key, out value);
     }
     
-    public override bool TryGetValue(ReadOnlySpan<char> key, [MaybeNullWhen(false)] out Deserializer value) {
+    public override bool TryGetValue(ReadOnlySpan<char> key, [MaybeNullWhen(false)] out Importer value) {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(key, out value);
     }
     
-    public override Deserializer this[string key] {
+    public override Importer this[string key] {
         get => _dict[key];
         set {
             ValidateKey(key);
@@ -67,7 +67,7 @@ public sealed class DeserializerDictionary : IdentityDictionary<Deserializer> {
         }
     }
 
-    public override Deserializer this[ReadOnlySpan<char> key] {
+    public override Importer this[ReadOnlySpan<char> key] {
         get => _dict.GetAlternateLookup<ReadOnlySpan<char>>()[key];
         set {
             ValidateKey(key);
@@ -88,7 +88,7 @@ public sealed class DeserializerDictionary : IdentityDictionary<Deserializer> {
         }
     }
     
-    private static void ValidateValue(Deserializer value, [CallerArgumentExpression(nameof(value))] string? expression = "") {
+    private static void ValidateValue(Importer value, [CallerArgumentExpression(nameof(value))] string? expression = "") {
         ArgumentNullException.ThrowIfNull(value, expression);
     }
 }

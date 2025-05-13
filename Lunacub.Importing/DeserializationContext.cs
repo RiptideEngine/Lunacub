@@ -10,13 +10,15 @@ public sealed class DeserializationContext {
     }
 
     public void RequestReference(string property, ResourceID rid, Type resourceType) {
-        if (resourceType.IsValueType || rid == ResourceID.Null) return;
+        if (resourceType.IsValueType || rid == ResourceID.Null || resourceType.IsGenericTypeDefinition) return;
         
         _requestingDependencies.Add(property, new(rid, resourceType));
     }
     
-    public void RequestReference<T>(string property, ResourceID rid) {
-        RequestReference(property, rid, typeof(T));
+    public void RequestReference<T>(string property, ResourceID rid) where T : class {
+        if (rid == ResourceID.Null) return;
+        
+        _requestingDependencies.Add(property, new(rid, typeof(T)));
     }
     
     public T? GetReference<T>(ReadOnlySpan<char> property) where T : class {

@@ -33,11 +33,27 @@ internal static class Program {
             SerializerFactories = {
                 new ReferenceResourceSerializerFactory(),
             },
+            Resources = {
+                [1] = new() {
+                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource1.json")),
+                    Options = new() {
+                        ImporterName = nameof(ReferenceResourceImporter),
+                    },
+                },
+                [2] = new() {
+                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource2.json")),
+                    Options = new() {
+                        ImporterName = nameof(ReferenceResourceImporter),
+                    },
+                },
+                [3] = new() {
+                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource3.json")),
+                    Options = new() {
+                        ImporterName = nameof(ReferenceResourceImporter),
+                    },
+                },
+            },
         };
-        
-        env.Resources.Add(new("01965cef1af37ee9bd5d6c37ae77bbf0"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource1.json"), new(nameof(ReferenceResourceImporter)));
-        env.Resources.Add(new("01965cecccaa74028f6e0ae1095dc388"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource2.json"), new(nameof(ReferenceResourceImporter)));
-        env.Resources.Add(new("019661146647790c960521de9fda2773"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource3.json"), new(nameof(ReferenceResourceImporter)));
 
         var result = env.BuildResources();
         
@@ -55,10 +71,12 @@ internal static class Program {
         importEnvironment.Logger = _logger;
         importEnvironment.Input.Libraries.Add(new FileResourceLibrary(Guid.NewGuid(), resourceDirectory));
 
-        ResourceHandle<ReferenceResource> handle = await importEnvironment.ImportAsync<ReferenceResource>(new("01965cef1af37ee9bd5d6c37ae77bbf0")).Task;
+        ResourceHandle<ReferenceResource> handle = await importEnvironment.ImportAsync<ReferenceResource>(1).Task;
         
-        Console.WriteLine("resource.Value: " + handle.Value!.Value);
-        Console.WriteLine("resource.Reference.Value: " + handle.Value!.Reference!.Value);
-        Console.WriteLine("resource.Reference.Reference.Value: " + handle.Value!.Reference!.Reference!.Value);
+        _logger.LogInformation("resource.Value: {value}", handle.Value!.Value);
+        _logger.LogInformation("resource.Reference.Value: {refValue}", handle.Value!.Reference!.Value);
+        _logger.LogInformation("resource.Reference.Reference.Value: {referefValue}", handle.Value!.Reference!.Reference!.Value);
+
+        await Task.Delay(100);
     }
 }

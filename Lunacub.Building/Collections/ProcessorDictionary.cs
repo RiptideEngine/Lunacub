@@ -1,24 +1,24 @@
-﻿namespace Caxivitual.Lunacub.Building;
+﻿namespace Caxivitual.Lunacub.Building.Collections;
 
 [ExcludeFromCodeCoverage]
-public sealed class ImporterDictionary : IdentityDictionary<Importer> {
-    internal ImporterDictionary() : base(StringComparer.Ordinal) { }
-
-    public override void Add(string key, Importer value) {
+public sealed class ProcessorDictionary : IdentityDictionary<Processor> {
+    internal ProcessorDictionary() : base(StringComparer.Ordinal) { }
+    
+    public override void Add(string key, Processor value) {
         ValidateKey(key);
         ValidateValue(value);
         
         _dict.Add(key, value);
     }
 
-    public override bool TryAdd(string key, Importer value) {
+    public override bool TryAdd(string key, Processor value) {
         ValidateKey(key);
         ValidateValue(value);
         
         return _dict.TryAdd(key, value);
     }
 
-    public override bool TryAdd(ReadOnlySpan<char> key, Importer value) {
+    public override bool TryAdd(ReadOnlySpan<char> key, Processor value) {
         ValidateKey(key);
         ValidateValue(value);
 
@@ -29,7 +29,7 @@ public sealed class ImporterDictionary : IdentityDictionary<Importer> {
         return _dict.Remove(key);
     }
 
-    public override bool Remove(string key, [NotNullWhen(true)] out Importer? value) {
+    public override bool Remove(string key, [NotNullWhen(true)] out Processor? value) {
         return _dict.Remove(key, out value);
     }
 
@@ -37,7 +37,7 @@ public sealed class ImporterDictionary : IdentityDictionary<Importer> {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().Remove(key);
     }
 
-    public override bool Remove(ReadOnlySpan<char> key, [NotNullWhen(true)] out Importer? value) {
+    public override bool Remove(ReadOnlySpan<char> key, [NotNullWhen(true)] out Processor? value) {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().Remove(key, out _, out value);
     }
 
@@ -49,15 +49,15 @@ public sealed class ImporterDictionary : IdentityDictionary<Importer> {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(key);
     }
 
-    public override bool TryGetValue(string key, [MaybeNullWhen(false)] out Importer value) {
+    public override bool TryGetValue(string key, [MaybeNullWhen(false)] out Processor value) {
         return _dict.TryGetValue(key, out value);
     }
     
-    public override bool TryGetValue(ReadOnlySpan<char> key, [MaybeNullWhen(false)] out Importer value) {
+    public override bool TryGetValue(ReadOnlySpan<char> key, [MaybeNullWhen(false)] out Processor value) {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(key, out value);
     }
     
-    public override Importer this[string key] {
+    public override Processor this[string key] {
         get => _dict[key];
         set {
             ValidateKey(key);
@@ -67,7 +67,7 @@ public sealed class ImporterDictionary : IdentityDictionary<Importer> {
         }
     }
 
-    public override Importer this[ReadOnlySpan<char> key] {
+    public override Processor this[ReadOnlySpan<char> key] {
         get => _dict.GetAlternateLookup<ReadOnlySpan<char>>()[key];
         set {
             ValidateKey(key);
@@ -88,7 +88,7 @@ public sealed class ImporterDictionary : IdentityDictionary<Importer> {
         }
     }
     
-    private static void ValidateValue(Importer value, [CallerArgumentExpression(nameof(value))] string? expression = "") {
+    private static void ValidateValue(Processor value, [CallerArgumentExpression(nameof(value))] string? expression = "") {
         ArgumentNullException.ThrowIfNull(value, expression);
     }
 }

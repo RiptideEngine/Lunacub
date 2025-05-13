@@ -1,4 +1,5 @@
-﻿using Caxivitual.Lunacub.Building.Core;
+﻿using Caxivitual.Lunacub.Building.Collections;
+using Caxivitual.Lunacub.Building.Core;
 using Caxivitual.Lunacub.Importing.Core;
 using System.Diagnostics;
 
@@ -26,9 +27,15 @@ internal static class Program {
             SerializerFactories = {
                 new SimpleResourceSerializerFactory(),
             },
+            Resources = {
+                [1] = new() {
+                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource.json")),
+                    Options =  new() {
+                        ImporterName = nameof(SimpleResourceImporter)
+                    },
+                },
+            },
         };
-        
-        env.Resources.Add(new("d2bb9aa4d1a9443489e0434885d12d97"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource.json"), new(nameof(SimpleResourceImporter)));
 
         var result = env.BuildResources();
 
@@ -46,7 +53,7 @@ internal static class Program {
         };
         importEnvironment.Input.Libraries.Add(new FileResourceLibrary(Guid.NewGuid(), resourceDirectory));
         
-        ResourceHandle<SimpleResource> handle = await importEnvironment.ImportAsync<SimpleResource>(new("d2bb9aa4d1a9443489e0434885d12d97")).Task;
+        ResourceHandle<SimpleResource> handle = await importEnvironment.ImportAsync<SimpleResource>(0).Task;
         
         Console.WriteLine("Imported: " + handle.Value);
     }
