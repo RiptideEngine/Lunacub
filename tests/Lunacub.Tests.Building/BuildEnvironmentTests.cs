@@ -1,33 +1,23 @@
-﻿using Caxivitual.Lunacub.Building.Core;
+﻿namespace Caxivitual.Lunacub.Tests.Building;
 
-namespace Caxivitual.Lunacub.Tests.Building;
-
-public partial class BuildEnvironmentTests : IClassFixture<ResourcesFixture>, IDisposable {
-    private readonly BuildEnvironment _env;
+public partial class BuildEnvironmentTests : IClassFixture<ComponentsFixture>, IDisposable {
     private readonly ITestOutputHelper _output;
-    private readonly ResourcesFixture _resourcesFixture;
+    private readonly BuildEnvironment _environment;
+    private readonly ComponentsFixture _componentsFixture;
 
-    public BuildEnvironmentTests(ResourcesFixture resourcesFixture, ITestOutputHelper output) {
+    public BuildEnvironmentTests(ComponentsFixture componentsFixture, ITestOutputHelper output) {
         _output = output;
         DebugHelpers.RedirectConsoleOutput(output);
+        
+        _componentsFixture = componentsFixture;
 
-        _env = new(new MockOutputSystem());
+        _environment = new(new MockOutputSystem());
         
-        _env.Importers.Add(nameof(SimpleResourceImporter), new SimpleResourceImporter());
-        _env.SerializerFactories.Add(new SimpleResourceSerializerFactory());
-        
-        _env.Importers.Add(nameof(ReferenceResourceImporter), new ReferenceResourceImporter());
-        _env.SerializerFactories.Add(new ReferenceResourceSerializerFactory());
-        
-        _env.Importers.Add(nameof(OptionsResourceImporter), new OptionsResourceImporter());
-        _env.Processors.Add(nameof(OptionsResourceProcessor), new OptionsResourceProcessor());
-        _env.SerializerFactories.Add(new OptionsResourceSerializerFactory());
-
-        _resourcesFixture = resourcesFixture;
+        _componentsFixture.ApplyComponents(_environment);
     }
 
     public void Dispose() {
-        _env.Dispose();
+        _environment.Dispose();
         GC.SuppressFinalize(this);
     }
 }

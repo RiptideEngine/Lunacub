@@ -4,12 +4,6 @@ using System.Collections.ObjectModel;
 namespace Caxivitual.Lunacub.Importing;
 
 public abstract class ResourceLibrary : IEnumerable<ResourceID> {
-    public Guid Id { get; }
-    
-    protected ResourceLibrary(Guid id) {
-        Id = id;
-    }
-
     public abstract bool Contains(ResourceID rid);
 
     public Stream? CreateStream(ResourceID rid) {

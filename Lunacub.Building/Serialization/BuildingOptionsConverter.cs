@@ -9,7 +9,7 @@ internal sealed class BuildingOptionsConverter : JsonConverter<BuildingOptions> 
         }
         
         string importerName = string.Empty, processorName = string.Empty;
-        IReadOnlyCollection<string> tags = Array.Empty<string>();
+        IReadOnlyCollection<string> tags = [];
         IImportOptions? buildOptions = null;
         
         while (reader.Read()) {

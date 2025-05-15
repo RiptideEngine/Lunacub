@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Caxivitual.Lunacub.Importing;
 
 public sealed partial class ImportEnvironment : IDisposable {
-    public InputSystem Input { get; }
+    public ResourceLibraryCollection Libraries { get; }
     public DeserializerDictionary Deserializers { get; }
     public DisposerCollection Disposers { get; }
 
@@ -23,7 +23,7 @@ public sealed partial class ImportEnvironment : IDisposable {
     private bool _disposed;
     
     public ImportEnvironment() {
-        Input = new();
+        Libraries = new();
         Deserializers = [];
         Disposers = [];
         _resourceCache = new(this);
@@ -55,6 +55,7 @@ public sealed partial class ImportEnvironment : IDisposable {
         GC.SuppressFinalize(this);
     }
 
+    [ExcludeFromCodeCoverage]
     ~ImportEnvironment() {
         Dispose(false);
     }

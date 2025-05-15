@@ -1,6 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
-public sealed partial class ResourceCache : IDisposable {
+public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
     private readonly SemaphoreSlim _containerLock;
     private readonly Dictionary<ResourceID, ResourceContainer> _resourceContainers;
     private readonly Dictionary<object, ResourceContainer> _importedReleaseCache;
@@ -26,7 +26,7 @@ public sealed partial class ResourceCache : IDisposable {
     public ReleaseStatus Release(object resource) {
         _containerLock.Wait();
         try {
-            if (!_importedReleaseCache.TryGetValue(resource, out var container)) return ReleaseStatus.ResourceNotImported;
+            if (!_importedReleaseCache.TryGetValue(resource, out var container)) return ReleaseStatus.InvalidResource;
             
             Debug.Assert(container.FullImportTask.Status == TaskStatus.RanToCompletion);
             Debug.Assert(ReferenceEquals(container.FullImportTask.Result, resource));
@@ -58,29 +58,29 @@ public sealed partial class ResourceCache : IDisposable {
     public ReleaseStatus Release(ResourceHandle rid) {
         _containerLock.Wait();
         try {
-            if (!_importedReleaseCache.TryGetValue(rid.Value!, out var container)) return ReleaseStatus.ResourceNotImported;
+            if (!_importedReleaseCache.TryGetValue(rid.Value!, out var container)) return ReleaseStatus.InvalidResource;
             if (container.Rid != rid.Rid) return ReleaseStatus.ResourceIncompatible;
             
             Debug.Assert(container.FullImportTask.Status == TaskStatus.RanToCompletion);
             Debug.Assert(ReferenceEquals(container.FullImportTask.Result, rid.Value));
             
             if (DecrementResourceContainerReference(ref container.ReferenceCount) != 0) return ReleaseStatus.Success;
-
+            
             object releasedResource = container.FullImportTask.Result!;
-        
+            
             _environment.Statistics.DecrementUniqueResourceCount();
-
+            
             bool removal = _importedReleaseCache.Remove(releasedResource);
             Debug.Assert(removal);
-        
+            
             removal = _resourceContainers.Remove(container.Rid);
             Debug.Assert(removal);
-
+            
             if (_environment.Disposers.TryDispose(releasedResource)) {
                 _environment.Statistics.IncrementDisposedResourceCount();
                 return ReleaseStatus.Success;
             }
-
+            
             _environment.Statistics.IncrementUndisposedResourceCount();
             return ReleaseStatus.NotDisposed;
         } finally {
@@ -91,7 +91,7 @@ public sealed partial class ResourceCache : IDisposable {
     public ReleaseStatus Release(ResourceID rid) {
         _containerLock.Wait();
         try {
-            if (!_resourceContainers.TryGetValue(rid, out var container)) return ReleaseStatus.ResourceNotImported;
+            if (!_resourceContainers.TryGetValue(rid, out var container)) return ReleaseStatus.UnregisteredResourceID;
             
             if (DecrementResourceContainerReference(ref container.ReferenceCount) != 0) return ReleaseStatus.Success;
 
@@ -149,20 +149,40 @@ public sealed partial class ResourceCache : IDisposable {
         return --referenceCount;
     }
 
+    private void DisposeResources() {
+        // TODO: Implement this.
+    }
+
     private void Dispose(bool disposing) {
         if (Interlocked.Exchange(ref _disposed, true)) return;
 
         if (disposing) {
+            _containerLock.Wait();
+
+            try {
+                DisposeResources();
+            } finally {
+                _containerLock.Release();
+            }
+
             _containerLock.Dispose();
-            
-            // using (_lock.EnterScope()) {
-            //     foreach ((_, var container) in _resourceCache) {
-            //         _context.Disposers.TryDispose(container.Value);
-            //     }
-            //     
-            //     _resourceCache.Clear();
-            // }
         }
+    }
+    
+    public async ValueTask DisposeAsync() {
+        if (Interlocked.Exchange(ref _disposed, true)) return;
+        
+        await _containerLock.WaitAsync();
+
+        try {
+            DisposeResources();
+        } finally {
+            _containerLock.Release();
+        }
+
+        _containerLock.Dispose();
+        
+        GC.SuppressFinalize(this);
     }
 
     public void Dispose() {

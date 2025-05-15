@@ -11,7 +11,7 @@ public sealed class OptionsResource {
     }
 }
 
-public enum SerializationType {
+public enum OutputType {
     Json,
     Binary,
 }
@@ -23,15 +23,7 @@ public sealed class OptionsResourceDTO : ContentRepresentation {
         Array = array;
     }
 
-    public record Options(SerializationType SerializationType) : IImportOptions;
-}
-
-public sealed class ProcesseedOptionsResourceDTO : ContentRepresentation {
-    public byte[] Buffer { get; }
-
-    public ProcesseedOptionsResourceDTO(byte[] buffer) {
-        Buffer = buffer;
-    }
+    public record Options(OutputType OutputType) : IImportOptions;
 }
 
 public sealed class OptionsResourceImporter : Importer<OptionsResourceDTO> {
@@ -40,31 +32,8 @@ public sealed class OptionsResourceImporter : Importer<OptionsResourceDTO> {
     }
 }
 
-public sealed class OptionsResourceProcessor : Processor<OptionsResourceDTO, ProcesseedOptionsResourceDTO> {
-    protected override ProcesseedOptionsResourceDTO Process(OptionsResourceDTO input, ProcessingContext context) {
-        var options = (OptionsResourceDTO.Options)context.Options!;
-        using MemoryStream ms = new();
-        
-        switch (options.SerializationType) {
-            case SerializationType.Json:
-                JsonSerializer.Serialize(ms, input.Array);
-                return new(ms.ToArray());
-            
-            case SerializationType.Binary:
-                using (BinaryWriter writer = new(ms)) {
-                    foreach (var value in input.Array) {
-                        writer.Write(value);
-                    }
-                }
-                return new(ms.ToArray());
-
-            default: throw new NotSupportedException("Unsupported serialization type.");
-        }
-    }
-}
-
 public sealed class OptionsResourceSerializerFactory : SerializerFactory {
-    public override bool CanSerialize(Type representationType) => representationType == typeof(ProcesseedOptionsResourceDTO);
+    public override bool CanSerialize(Type representationType) => representationType == typeof(OptionsResourceDTO);
 
     protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
@@ -77,13 +46,29 @@ public sealed class OptionsResourceSerializerFactory : SerializerFactory {
         }
 
         public override void SerializeObject(Stream outputStream) {
-            outputStream.Write(((ProcesseedOptionsResourceDTO)SerializingObject).Buffer);
+            var buffer = ((OptionsResourceDTO)SerializingObject).Array;
+
+            switch (((OptionsResourceDTO.Options)Context.Options!).OutputType) {
+                case OutputType.Json:
+                    JsonSerializer.Serialize(outputStream, buffer);
+                    return;
+                
+                case OutputType.Binary:
+                    using (BinaryWriter bw = new BinaryWriter(outputStream, Encoding.UTF8, true)) {
+                        foreach (var item in buffer) {
+                            bw.Write(item);
+                        }
+                    }
+                    break;
+                
+                default: throw new UnreachableException();
+            }
         }
 
         public override void SerializeOptions(Stream outputStream) {
             using BinaryWriter writer = new(outputStream, Encoding.UTF8, leaveOpen: true);
             
-            writer.Write((int)((OptionsResourceDTO.Options)Context.Options!).SerializationType);
+            writer.Write((int)((OptionsResourceDTO.Options)Context.Options!).OutputType);
         }
     }
 }
@@ -91,13 +76,13 @@ public sealed class OptionsResourceSerializerFactory : SerializerFactory {
 public sealed class OptionsResourceDeserializer : Deserializer<OptionsResource> {
     protected override OptionsResource Deserialize(Stream dataStream, Stream optionStream, DeserializationContext context) {
         using BinaryReader optionsReader = new(optionStream, Encoding.UTF8, leaveOpen: true);
-        SerializationType serializationType = (SerializationType)optionsReader.ReadInt32();
+        OutputType outputType = (OutputType)optionsReader.ReadInt32();
 
-        switch (serializationType) {
-            case SerializationType.Json:
+        switch (outputType) {
+            case Common.OutputType.Json:
                 return new(JsonSerializer.Deserialize<ImmutableArray<int>>(dataStream));
             
-            case SerializationType.Binary:
+            case Common.OutputType.Binary:
                 Debug.Assert(dataStream.Length % 4 == 0);
 
                 using (BinaryReader dataReader = new(dataStream, Encoding.UTF8, leaveOpen: true)) {

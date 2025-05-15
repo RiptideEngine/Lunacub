@@ -13,7 +13,7 @@ partial class ResourceCache {
     }
     
     private async Task<ResourceHandle<T>> ImportSingleResource<T>(ResourceID rid) where T : class {
-        if (!_environment.Input.ContainResource(rid)) return new(rid, null);
+        if (!_environment.Libraries.ContainResource(rid)) return new(rid, null);
 
         Task<object?> importingTask;
         
@@ -42,7 +42,7 @@ partial class ResourceCache {
     }
     
     private ResourceContainer? ImportDependencyResource(ResourceID rid, HashSet<ResourceID> stack) {
-        if (!_environment.Input.ContainResource(rid)) {
+        if (!_environment.Libraries.ContainResource(rid)) {
             _environment.Logger.LogWarning(Logging.ImportUnregisteredDependencyEvent, "Importing unregistered dependency resource {rid}.", rid);
             
             return null;
@@ -76,7 +76,7 @@ partial class ResourceCache {
     private async Task<DeserializeResult> ImportResourceVessel(ResourceID rid, Type type, CancellationToken cancelToken) {
         await Task.Yield();
         
-        Stream? resourceStream = _environment.Input.CreateResourceStream(rid);
+        Stream? resourceStream = _environment.Libraries.CreateResourceStream(rid);
 
         if (resourceStream == null) {
             throw new InvalidOperationException($"Null resource stream provided despite contains resource '{rid}'.");
@@ -105,8 +105,6 @@ partial class ResourceCache {
             // Import dependencies references.
             Dictionary<string, ResourceContainer> importedDependencies = [];
             foreach ((string property, DeserializationContext.RequestingDependency requesting) in context.RequestingDependencies) {
-                // Console.WriteLine($"{property}: {requesting.Rid} ({requesting.Type.FullName})");
-                
                 if (ImportDependencyResource(requesting.Rid, stack) is not { } dependencyContainer) continue;
                 
                 importedDependencies.Add(property, dependencyContainer);

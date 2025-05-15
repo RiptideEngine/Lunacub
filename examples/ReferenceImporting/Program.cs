@@ -69,7 +69,7 @@ internal static class Program {
         using ImportEnvironment importEnvironment = new ImportEnvironment();
         importEnvironment.Deserializers[nameof(ReferenceResourceDeserializer)] = new ReferenceResourceDeserializer();
         importEnvironment.Logger = _logger;
-        importEnvironment.Input.Libraries.Add(new FileResourceLibrary(Guid.NewGuid(), resourceDirectory));
+        importEnvironment.Libraries.Add(new FileResourceLibrary(resourceDirectory));
 
         ResourceHandle<ReferenceResource> handle = await importEnvironment.ImportAsync<ReferenceResource>(1).Task;
         

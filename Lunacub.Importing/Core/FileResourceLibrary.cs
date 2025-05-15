@@ -3,7 +3,7 @@
 namespace Caxivitual.Lunacub.Importing.Core;
 
 [ExcludeFromCodeCoverage]
-public sealed class FileResourceLibrary(Guid id, string directory) : ResourceLibrary(id) {
+public sealed class FileResourceLibrary(string directory) : ResourceLibrary {
     public string Directory { get; } = directory;
     
     public override bool Contains(ResourceID rid) {

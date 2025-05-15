@@ -51,7 +51,7 @@ internal static class Program {
                 [nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer(),
             },
         };
-        importEnvironment.Input.Libraries.Add(new FileResourceLibrary(Guid.NewGuid(), resourceDirectory));
+        importEnvironment.Libraries.Add(new FileResourceLibrary(resourceDirectory));
         
         ResourceHandle<SimpleResource> handle = await importEnvironment.ImportAsync<SimpleResource>(0).Task;
         

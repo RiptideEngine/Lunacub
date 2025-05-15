@@ -9,13 +9,14 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
     public IReadOnlyCollection<string> Tags { get; init; }
     public IImportOptions? Options { get; init; }
 
+    [ExcludeFromCodeCoverage]
     public BuildingOptions() {
         ProcessorName = string.Empty;
         Tags = [];
     }
     
     [SetsRequiredMembers]
-    public BuildingOptions(string importerName, string? processorName = null) : this(importerName, processorName, Array.Empty<string>(), null) { }
+    public BuildingOptions(string importerName, string? processorName = null) : this(importerName, processorName, [], null) { }
     
     [SetsRequiredMembers]
     public BuildingOptions(string importerName, string? processorName, IReadOnlyCollection<string>? tags, IImportOptions? options) {
@@ -26,15 +27,15 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
     }
 
     public bool Equals(BuildingOptions other) {
-        if (ImporterName != other.ImporterName || ProcessorName != other.ProcessorName) return false;
-        if (!Tags.SequenceEqual(other.Tags)) return false;
-        if (Options == null) return other.Options == null;
-        
-        return Options.Equals(other.Options);
+        return ImporterName == other.ImporterName && ProcessorName == other.ProcessorName &&
+               Tags.SequenceEqual(other.Tags) &&
+               (Options?.Equals(other.Options) ?? other.Options == null);
     }
 
+    [ExcludeFromCodeCoverage]
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is BuildingOptions other && Equals(other);
     
+    [ExcludeFromCodeCoverage]
     public override int GetHashCode() {
         HashCode hc = new();
         
@@ -42,7 +43,6 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
         hc.Add(ProcessorName);
         hc.Add(Options);
         
-        hc.Add(Tags.Count);
         foreach (var tag in Tags) {
             hc.Add(tag);
         }
@@ -50,6 +50,7 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
         return hc.ToHashCode();
     }
 
+    [ExcludeFromCodeCoverage]
     public override string ToString() {
         StringBuilder sb = new StringBuilder();
         sb.Append(nameof(BuildingOptions));
@@ -63,6 +64,6 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
         return sb.ToString();
     }
 
-    public static bool operator ==(BuildingOptions left, BuildingOptions right) => left.Equals(right);
-    public static bool operator !=(BuildingOptions left, BuildingOptions right) => !(left == right);
+    [ExcludeFromCodeCoverage] public static bool operator ==(BuildingOptions left, BuildingOptions right) => left.Equals(right);
+    [ExcludeFromCodeCoverage] public static bool operator !=(BuildingOptions left, BuildingOptions right) => !(left == right);
 }

@@ -1,4 +1,4 @@
-﻿namespace Caxivitual.Lunacub.Building;
+﻿namespace Caxivitual.Lunacub.Building.Collections;
 
 internal sealed class IncrementalInfoStorage : IReadOnlyDictionary<ResourceID, IncrementalInfo> {
     private readonly Dictionary<ResourceID, IncrementalInfo> _reports;

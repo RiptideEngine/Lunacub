@@ -5,10 +5,11 @@ public sealed class ResourceDictionary : IDictionary<ResourceID, ResourceDiction
     private readonly Dictionary<ResourceID, BuildingResource> _dict;
 
     public int Count => _dict.Count;
-    bool ICollection<KeyValuePair<ResourceID, BuildingResource>>.IsReadOnly => false;
     
-    ICollection<ResourceID> IDictionary<ResourceID, BuildingResource>.Keys => _dict.Keys;
-    ICollection<BuildingResource> IDictionary<ResourceID, BuildingResource>.Values => _dict.Values;
+    [ExcludeFromCodeCoverage] bool ICollection<KeyValuePair<ResourceID, BuildingResource>>.IsReadOnly => false;
+    
+    [ExcludeFromCodeCoverage] ICollection<ResourceID> IDictionary<ResourceID, BuildingResource>.Keys => _dict.Keys;
+    [ExcludeFromCodeCoverage] ICollection<BuildingResource> IDictionary<ResourceID, BuildingResource>.Values => _dict.Values;
 
     private bool _disposed;
 

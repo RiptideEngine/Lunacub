@@ -1,6 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Tests.Common;
 
-public class MockResourceLibrary(Guid id, MockFileSystem fs) : ResourceLibrary(id) {
+public class MockResourceLibrary(MockFileSystem fs) : ResourceLibrary {
     public MockFileSystem FileSystem { get; } = fs;
 
     public override bool Contains(ResourceID rid) {

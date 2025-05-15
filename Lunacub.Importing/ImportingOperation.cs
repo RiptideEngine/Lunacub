@@ -18,4 +18,6 @@ public readonly struct ImportingOperation<T> where T : class {
         Rid = rid;
         Task = task;
     }
+
+    public TaskAwaiter<ResourceHandle<T>> GetAwaiter() => Task.GetAwaiter();
 }

@@ -6,7 +6,8 @@ public enum ReleaseStatus {
     NotDisposed,
     Null,
     
-    ResourceNotImported = -1,
+    InvalidResource = -1,
     ResourceIncompatible = -2,
+    UnregisteredResourceID = -3,
     Unspecified = int.MinValue,
 }

@@ -10,6 +10,11 @@ public sealed class MemoryResourceProvider : ResourceProvider {
         _content = content.IsDefault ? ImmutableArray<byte>.Empty : content;
         _lastWriteTime = lastWriteTime;
     }
+
+    public MemoryResourceProvider(ReadOnlySpan<byte> content, DateTime lastWriteTime) {
+        _content = [..content];
+        _lastWriteTime = lastWriteTime;
+    }
     
     public override DateTime GetLastWriteTime() => _lastWriteTime;
     public override Stream GetStream() => new MemoryStream(ImmutableCollectionsMarshal.AsArray(_content)!, false);
