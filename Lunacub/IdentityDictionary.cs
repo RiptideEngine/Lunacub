@@ -1,10 +1,12 @@
-﻿using System.Collections;
+﻿namespace Caxivitual.Lunacub;
 
-namespace Caxivitual.Lunacub;
-
+/// <summary>
+/// Represents a <see cref="Dictionary{TKey, TValue}"/> that uses <see cref="string"/> as key.
+/// </summary>
+/// <typeparam name="T">The type of the values in the dictionary.</typeparam>
 [ExcludeFromCodeCoverage]
-public abstract class IdentityDictionary<T>(IEqualityComparer<string> comparer) : IDictionary<string, T> {
-    protected readonly Dictionary<string, T> _dict = new(comparer);
+public abstract class IdentityDictionary<T> : IDictionary<string, T> {
+    protected readonly Dictionary<string, T> _dict;
     
     public int Count => _dict.Count;
     
@@ -12,7 +14,15 @@ public abstract class IdentityDictionary<T>(IEqualityComparer<string> comparer) 
     ICollection<T> IDictionary<string, T>.Values => ((IDictionary<string, T>)_dict).Values;
 
     bool ICollection<KeyValuePair<string, T>>.IsReadOnly => false;
-
+    
+    protected IdentityDictionary(IEqualityComparer<string> comparer) {
+        if (comparer is not IAlternateEqualityComparer<ReadOnlySpan<char>, string?>) {
+            throw new ArgumentException(string.Format(ExceptionMessages.RequiresComparerImplementsAlternateLookup, "ReadOnlySpan<char>", "string"), nameof(comparer));
+        }
+            
+        _dict = new(comparer);
+    }
+    
     public abstract void Add(string key, T value);
     
     public abstract bool TryAdd(string key, T value);
