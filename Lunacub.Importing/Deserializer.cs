@@ -6,7 +6,7 @@ public abstract class Deserializer {
     public virtual bool Streaming => false;
 
     public abstract object DeserializeObject(Stream dataStream, Stream optionStream, DeserializationContext context);
-    public virtual void ResolveDependencies(object instance, DeserializationContext context) { }
+    public virtual void ResolveDependencies(object deserializedObject, DeserializationContext context) { }
 }
 
 public abstract class Deserializer<T> : Deserializer where T : class {
@@ -16,8 +16,8 @@ public abstract class Deserializer<T> : Deserializer where T : class {
         return Deserialize(dataStream, optionStream, context);
     }
 
-    public sealed override void ResolveDependencies(object instance, DeserializationContext context) {
-        ResolveDependencies((T)instance, context);
+    public sealed override void ResolveDependencies(object deserializedObject, DeserializationContext context) {
+        ResolveDependencies((T)deserializedObject, context);
     }
 
     protected abstract T Deserialize(Stream dataStream, Stream optionStream, DeserializationContext context);

@@ -1,5 +1,6 @@
 ﻿using Caxivitual.Lunacub.Compilation;
 using Caxivitual.Lunacub.Exceptions;
+using Caxivitual.Lunacub.Importing.Extensions;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Text.Json;

@@ -1,12 +1,17 @@
 ﻿using System.Buffers;
 
-namespace Caxivitual.Lunacub.Importing;
+namespace Caxivitual.Lunacub.Importing.Extensions;
 
-internal static class Helpers {
-    public static int CopyTo(this Stream source, Stream destination, int amount, int bufferSize = 4096) {
+internal static class StreamExtensions {
+    private const int DefaultBufferSize = 81920;
+    
+    public static int CopyTo(this Stream source, Stream destination, int amount, int bufferSize = DefaultBufferSize) {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(destination);
+        
         int oldAmount = amount;
         byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-
+        
         try {
             while (amount > 0) {
                 int amountToRead = int.Min(buffer.Length, amount);
@@ -24,7 +29,10 @@ internal static class Helpers {
         return oldAmount - amount;
     }
     
-    public static async ValueTask<int> CopyToAsync(this Stream source, Stream destination, int amount, CancellationToken token, int bufferSize = 4096) {
+    public static async ValueTask<int> CopyToAsync(this Stream source, Stream destination, int amount, CancellationToken token, int bufferSize = DefaultBufferSize) {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(destination);
+        
         int oldAmount = amount;
         byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
 
