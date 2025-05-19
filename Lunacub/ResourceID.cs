@@ -180,10 +180,6 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
         };
     }
     
-    /// <summary>
-    /// Returns the hash code for this instance.
-    /// </summary>
-    /// <returns>A 32-bit signed integer hash code.</returns>
     public override int GetHashCode() => Value.GetHashCode();
     
     public static bool operator ==(ResourceID left, ResourceID right) => left.Equals(right);

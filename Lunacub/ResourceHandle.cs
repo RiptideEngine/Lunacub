@@ -81,10 +81,6 @@ public readonly struct ResourceHandle : IEquatable<ResourceHandle> {
     /// <seealso cref="Equals(ResourceHandle)"/>
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is ResourceHandle other && Equals(other);
     
-    /// <summary>
-    /// Returns the hash code for this instance.
-    /// </summary>
-    /// <returns>A 32-bit signed integer hash code.</returns>
     public override int GetHashCode() => HashCode.Combine(Rid, Value);
     
     public static bool operator ==(ResourceHandle left, ResourceHandle right) => left.Equals(right);

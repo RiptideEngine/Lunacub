@@ -1,10 +1,8 @@
-﻿using System.Runtime.CompilerServices;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Caxivitual.Lunacub;
 
-[ExcludeFromCodeCoverage]
 internal sealed class ResourceIDConverter : JsonConverter<ResourceID> {
     public override void Write(Utf8JsonWriter writer, ResourceID value, JsonSerializerOptions options) {
         JsonSerializer.Serialize(writer, Unsafe.BitCast<ResourceID, UInt128>(value), options);

@@ -1,5 +1,8 @@
 ﻿namespace Caxivitual.Lunacub.Building.Collections;
 
+/// <summary>
+/// Represents a dictionary of <see cref="Importer"/> that uses <see cref="string"/> as key.
+/// </summary>
 [ExcludeFromCodeCoverage]
 public sealed class ImporterDictionary : IdentityDictionary<Importer> {
     internal ImporterDictionary() : base(StringComparer.Ordinal) { }

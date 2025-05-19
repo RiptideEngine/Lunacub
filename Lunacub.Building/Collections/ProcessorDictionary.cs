@@ -1,5 +1,8 @@
 ﻿namespace Caxivitual.Lunacub.Building.Collections;
 
+/// <summary>
+/// Represents a dictionary of <see cref="Processor"/> that uses <see cref="string"/> as key.
+/// </summary>
 [ExcludeFromCodeCoverage]
 public sealed class ProcessorDictionary : IdentityDictionary<Processor> {
     internal ProcessorDictionary() : base(StringComparer.Ordinal) { }

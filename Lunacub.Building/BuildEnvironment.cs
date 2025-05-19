@@ -2,16 +2,49 @@
 
 namespace Caxivitual.Lunacub.Building;
 
+/// <summary>
+/// Represents the environment that stores all the <see cref="Importer"/>, <see cref="Processor"/>, etc... needed to
+/// build resources.
+/// </summary>
 public sealed partial class BuildEnvironment : IDisposable {
+    /// <summary>
+    /// Gets the dictionary of <see cref="Importer"/>.
+    /// </summary>
     public ImporterDictionary Importers { get; } = [];
+    
+    /// <summary>
+    /// Gets the dictionary of <see cref="Processor"/>.
+    /// </summary>
     public ProcessorDictionary Processors { get; } = [];
+    
+    /// <summary>
+    /// Gets the collection of <see cref="SerializerFactory"/>.
+    /// </summary>
     public SerializerFactoryCollection SerializerFactories { get; } = [];
-    public OutputSystem Output { get; }
+    
+    /// <summary>
+    /// Gets the collection of resources need to be built.
+    /// </summary>
     public ResourceDictionary Resources { get; }
+    
+    /// <summary>
+    /// Gets the <see cref="OutputSystem"/> instance.
+    /// </summary>
+    public OutputSystem Output { get; }
+    
+    /// <summary>
+    /// Gets the collection that stores the <see cref="IncrementalInfo"/>.
+    /// </summary>
     internal IncrementalInfoStorage IncrementalInfos { get; }
     
     private bool _disposed;
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="BuildEnvironment"/> with empty <see cref="Importers"/>,
+    /// <see cref="Processors"/>, <see cref="SerializerFactories"/>, <see cref="Resources"/> and has the provided
+    /// <see cref="OutputSystem"/> object.
+    /// </summary>
+    /// <param name="output">The <see cref="OutputSystem"/> object for the instance to use.</param>
     public BuildEnvironment(OutputSystem output) {
         Output = output;
         Resources = new();

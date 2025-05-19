@@ -4,6 +4,13 @@ using System.Runtime.ExceptionServices;
 namespace Caxivitual.Lunacub.Building;
 
 partial class BuildEnvironment {
+    /// <summary>
+    /// Build all the resources in <see cref="Resources"/> using the objects in <see cref="Importers"/>,
+    /// <see cref="Processors"/> and <see cref="SerializerFactories"/>.
+    /// </summary>
+    /// <returns>
+    ///     A <see cref="BuildingResult"/> structure that contains the build informations and resource build results.
+    /// </returns>
     public BuildingResult BuildResources() {
         DateTime start = DateTime.Now;
 
@@ -16,6 +23,13 @@ partial class BuildEnvironment {
         return new(start, DateTime.Now, results);
     }
 
+    /// <summary>
+    /// Build the specific resource with the specified ID along with its dependencies registered in <see cref="Resources"/>.
+    /// </summary>
+    /// <param name="rid">ID of the resource to build.</param>
+    /// <returns>
+    ///     A <see cref="BuildingResult"/> structure that contains the build informations and resource build results.
+    /// </returns>
     public BuildingResult BuildResource(ResourceID rid) {
         DateTime start = DateTime.Now;
         

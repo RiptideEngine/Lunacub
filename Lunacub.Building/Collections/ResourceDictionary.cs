@@ -1,5 +1,8 @@
 ﻿namespace Caxivitual.Lunacub.Building.Collections;
 
+/// <summary>
+/// Represents a collection that contains all the resources need to be built.
+/// </summary>
 public sealed class ResourceDictionary : IDictionary<ResourceID, ResourceDictionary.BuildingResource>, IDisposable {
     private readonly ReaderWriterLockSlim _lock;
     private readonly Dictionary<ResourceID, BuildingResource> _dict;
@@ -147,6 +150,7 @@ public sealed class ResourceDictionary : IDictionary<ResourceID, ResourceDiction
         GC.SuppressFinalize(this);
     }
 
+    /// <inheritdoc cref="IEnumerable{T}.GetEnumerator"/>
     public Dictionary<ResourceID, BuildingResource>.Enumerator GetEnumerator() => _dict.GetEnumerator();
     
     IEnumerator<KeyValuePair<ResourceID, BuildingResource>> IEnumerable<KeyValuePair<ResourceID, BuildingResource>>.GetEnumerator() => _dict.GetEnumerator();
@@ -166,8 +170,18 @@ public sealed class ResourceDictionary : IDictionary<ResourceID, ResourceDiction
         }
     }
 
-    public readonly record struct BuildingResource {
+    /// <summary>
+    /// A structure that contains a building options and a <see cref="ResourceProvider"/> instance.
+    /// </summary>
+    public readonly struct BuildingResource : IEquatable<BuildingResource> {
+        /// <summary>
+        /// Gets the resource provider instance.
+        /// </summary>
         public required ResourceProvider Provider { get; init; }
+        
+        /// <summary>
+        /// Gets the resource building options.
+        /// </summary>
         public required BuildingOptions Options { get; init; }
         
         [SetsRequiredMembers]
@@ -180,5 +194,13 @@ public sealed class ResourceDictionary : IDictionary<ResourceID, ResourceDiction
             provider = Provider;
             options = Options;
         }
+
+        public bool Equals(BuildingResource other) {
+            return Provider == other.Provider && Options == other.Options;
+        }
+
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is BuildingResource other && Equals(other);
+
+        public override int GetHashCode() => HashCode.Combine(Provider, Options);
     }
 }

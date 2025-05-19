@@ -1,5 +1,8 @@
 ﻿namespace Caxivitual.Lunacub.Building.Collections;
 
+/// <summary>
+/// Represents a collection of <see cref="SerializerFactory"/>.
+/// </summary>
 [ExcludeFromCodeCoverage]
 public sealed class SerializerFactoryCollection : Collection<SerializerFactory> {
     internal SerializerFactoryCollection() {}
