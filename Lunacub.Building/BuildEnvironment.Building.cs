@@ -33,7 +33,7 @@ partial class BuildEnvironment {
     public BuildingResult BuildResource(ResourceID rid) {
         DateTime start = DateTime.Now;
         
-        if (!Resources.TryGetValue(rid, out ResourceDictionary.BuildingResource buildingResource)) {
+        if (!Resources.TryGetValue(rid, out BuildingResource buildingResource)) {
             return new(start, start, new Dictionary<ResourceID, ResourceBuildingResult> {
                 [rid] = new(BuildStatus.ResourceNotFound),
             });
@@ -46,12 +46,12 @@ partial class BuildEnvironment {
         return new(start, DateTime.Now, results);
     }
 
-    private void BuildResource(ResourceID rid, in ResourceDictionary.BuildingResource buildingResource, Dictionary<ResourceID, ResourceBuildingResult> results) {
+    private void BuildResource(ResourceID rid, in BuildingResource buildingResource, Dictionary<ResourceID, ResourceBuildingResult> results) {
         if (results.ContainsKey(rid)) return;
 
         (ResourceProvider provider, BuildingOptions options) = buildingResource;
 
-        DateTime resourceLastWriteTime = provider.GetLastWriteTime();
+        DateTime resourceLastWriteTime = provider.LastWriteTime;
         
         // If resource has been built before, and have old report, we can begin checking for caching.
         if (Output.GetResourceLastBuildTime(rid) is { } resourceLastBuildTime && IncrementalInfos.TryGet(rid, out var previousReport)) {
@@ -139,7 +139,7 @@ partial class BuildEnvironment {
         }
         
         foreach (var reference in importingContext.References) {
-            if (!Resources.TryGetValue(reference, out ResourceDictionary.BuildingResource buildingReference)) continue;
+            if (!Resources.TryGetValue(reference, out BuildingResource buildingReference)) continue;
 
             BuildResource(reference, buildingReference, results);
         }

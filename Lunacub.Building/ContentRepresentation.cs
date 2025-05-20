@@ -1,5 +1,8 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
+/// <summary>
+/// Provides the base class that represents a resource that being built by <see cref="BuildEnvironment"/>. 
+/// </summary>
 public abstract class ContentRepresentation : IDisposable {
     private bool _disposed;
 
