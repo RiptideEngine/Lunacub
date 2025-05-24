@@ -3,18 +3,19 @@
 namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
-/// Represents the environment that stores all the <see cref="Importer"/>, <see cref="Processor"/>, etc... needed to
-/// build resources.
+/// Represents the environment that stores all the components needed to build resources.
 /// </summary>
 public sealed partial class BuildEnvironment : IDisposable {
     /// <summary>
-    /// Gets the dictionary of <see cref="Importer"/>.
+    /// Gets the dictionary of <see cref="Importer"/> that compiling resources request.
     /// </summary>
+    /// <seealso cref="BuildingOptions.ImporterName"/>
     public ImporterDictionary Importers { get; } = [];
     
     /// <summary>
-    /// Gets the dictionary of <see cref="Processor"/>.
+    /// Gets the dictionary of <see cref="Processor"/> that compiling resources request.
     /// </summary>
+    /// <seealso cref="BuildingOptions.ProcessorName"/>
     public ProcessorDictionary Processors { get; } = [];
     
     /// <summary>

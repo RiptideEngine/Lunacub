@@ -34,7 +34,7 @@ public sealed class DisposableResourceSerializerFactory : SerializerFactory {
 }
 
 public sealed class DisposableResourceDeserializer : Deserializer<DisposableResource> {
-    protected override DisposableResource Deserialize(Stream dataStream, Stream optionsStream, DeserializationContext context) {
-        return new();
+    protected override Task<DisposableResource> DeserializeAsync(Stream dataStream, Stream optionsStream, DeserializationContext context, CancellationToken cancellationToken) {
+        return Task.FromResult(new DisposableResource());
     }
 }

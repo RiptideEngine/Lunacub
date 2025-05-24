@@ -9,12 +9,15 @@ namespace Caxivitual.Lunacub.Importing;
 
 partial class ResourceCache {
     private async Task<ResourceHandle> ImportSingleResource(ResourceID rid) {
-        // Fast and dirty way to replicate.
+        // Fast and dirty way.
         return new(rid, await ImportSingleResource<object>(rid));
     }
     
     private async Task<ResourceHandle<T>> ImportSingleResource<T>(ResourceID rid) where T : class {
-        if (!_environment.Libraries.ContainResource(rid)) return new(rid, null);
+        if (!_environment.Libraries.ContainResource(rid)) {
+            Logging.UnregisteredResource(_environment.Logger, rid);
+            return new(rid, null);
+        }
 
         Task<object?> importingTask;
         
@@ -28,6 +31,8 @@ partial class ResourceCache {
                 container.ReferenceCount++;
                 importingTask = container.FullImportTask;
             } else {
+                Logging.BeginImport(_environment.Logger, rid);
+                
                 container = new(rid, 1);
                 container.VesselImportTask = ImportResourceVessel(rid, typeof(T), container.CancellationTokenSource.Token);
 
@@ -44,8 +49,7 @@ partial class ResourceCache {
     
     private ResourceContainer? ImportDependencyResource(ResourceID rid, HashSet<ResourceID> stack) {
         if (!_environment.Libraries.ContainResource(rid)) {
-            _environment.Logger.LogWarning(Logging.ImportUnregisteredDependencyEvent, "Importing unregistered dependency resource {rid}.", rid);
-            
+            Logging.UnregisteredDependencyResource(_environment.Logger, rid);
             return null;
         }
 
@@ -117,7 +121,7 @@ partial class ResourceCache {
                     Debug.Assert(dependencyContainer.VesselImportTask != null);
                     return await dependencyContainer.VesselImportTask;
                 } catch (Exception e) {
-                    _environment.Logger.LogError(Logging.DependencyImportExceptionOccuredEvent, e, "Exception occured while importing dependency resource {rid}.", rid);
+                    // _environment.Logger.LogError(Logging.DependencyImportExceptionOccuredEvent, e, "Exception occured while importing dependency resource {rid}.", rid);
                     return default;
                 }
             }));
@@ -127,7 +131,7 @@ partial class ResourceCache {
             try {
                 deserializer.ResolveDependencies(deserialized, context);
             } catch (Exception e) {
-                _environment.Logger.LogError(Logging.ResolveDependenciesEvent, e, "Exception occured while resolving dependencies.");
+                // _environment.Logger.LogError(Logging.ResolveDependenciesEvent, e, "Exception occured while resolving dependencies.");
             }
             
             // Wait for the dependencies to fully finishing import (filter the stack to prevent deadlock).
@@ -141,7 +145,7 @@ partial class ResourceCache {
                 try {
                     return await x.FullImportTask;
                 } catch (Exception e) {
-                    _environment.Logger.LogError(Logging.DependencyImportExceptionOccuredEvent, e, "Exception occured while importing dependency resource {rid}.", rid);
+                    // _environment.Logger.LogError(Logging.DependencyImportExceptionOccuredEvent, e, "Exception occured while importing dependency resource {rid}.", rid);
                     return null;
                 }
             }));
@@ -168,7 +172,7 @@ partial class ResourceCache {
         }
     }
     
-    private async Task<DeserializeResult> ImportResourceVesselV1(Type type, Stream resourceStream, CompiledResourceLayout layout, CancellationToken cancelToken) {
+    private async Task<DeserializeResult> ImportResourceVesselV1(Type type, Stream resourceStream, CompiledResourceLayout layout, CancellationToken cancellationToken) {
         bool disposeResourceStream = true;
         
         try {
@@ -198,7 +202,7 @@ partial class ResourceCache {
                 return default;
             }
             
-            await using Stream optionsStream = await CopyOptionsStreamAsync(resourceStream, layout, cancelToken);
+            await using Stream optionsStream = await CopyOptionsStreamAsync(resourceStream, layout, cancellationToken);
 
             resourceStream.Seek(dataChunkInfo.ContentOffset, SeekOrigin.Begin);
             optionsStream.Seek(0, SeekOrigin.Begin);
@@ -206,7 +210,7 @@ partial class ResourceCache {
             await using PartialReadStream dataStream = new(resourceStream, dataChunkInfo.ContentOffset, dataChunkInfo.Length, ownStream: false);
             DeserializationContext context = new();
             
-            object deserialized = deserializer.DeserializeObject(dataStream, optionsStream, context);
+            object deserialized = await deserializer.DeserializeObjectAsync(dataStream, optionsStream, context, cancellationToken);
             
             if (deserializer.Streaming) {
                 disposeResourceStream = false;

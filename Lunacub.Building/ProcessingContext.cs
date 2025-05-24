@@ -15,4 +15,6 @@ public sealed class ProcessingContext {
     internal ProcessingContext(IImportOptions? options) {
         Options = options;
     }
+    
+    // TODO: Build time generated resources.
 }

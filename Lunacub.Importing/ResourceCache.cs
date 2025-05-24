@@ -59,7 +59,7 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
         _containerLock.Wait();
         try {
             if (!_importedReleaseCache.TryGetValue(rid.Value!, out var container)) return ReleaseStatus.InvalidResource;
-            if (container.Rid != rid.Rid) return ReleaseStatus.ResourceIncompatible;
+            if (container.Rid != rid.Rid) return ReleaseStatus.IdIncompatible;
             
             Debug.Assert(container.FullImportTask.Status == TaskStatus.RanToCompletion);
             Debug.Assert(ReferenceEquals(container.FullImportTask.Result, rid.Value));
@@ -91,7 +91,7 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
     public ReleaseStatus Release(ResourceID rid) {
         _containerLock.Wait();
         try {
-            if (!_resourceContainers.TryGetValue(rid, out var container)) return ReleaseStatus.UnregisteredResourceID;
+            if (!_resourceContainers.TryGetValue(rid, out var container)) return ReleaseStatus.NotImported;
             
             if (DecrementResourceContainerReference(ref container.ReferenceCount) != 0) return ReleaseStatus.Success;
 

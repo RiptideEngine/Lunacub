@@ -35,11 +35,9 @@ public sealed class SimpleResourceSerializerFactory : SerializerFactory {
 }
 
 public sealed class SimpleResourceDeserializer : Deserializer<SimpleResource> {
-    protected override SimpleResource Deserialize(Stream dataStream, Stream optionsStream, DeserializationContext context) {
+    protected override Task<SimpleResource> DeserializeAsync(Stream dataStream, Stream optionsStream, DeserializationContext context, CancellationToken cancellationToken) {
         using var reader = new BinaryReader(dataStream, Encoding.UTF8, true);
         
-        return new() {
-            Value = reader.ReadInt32(),
-        };
+        return Task.FromResult(new SimpleResource { Value = reader.ReadInt32() });
     }
 }

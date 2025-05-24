@@ -4,12 +4,30 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Caxivitual.Lunacub.Importing;
 
+/// <summary>
+/// Represents the environment that handles the resource importing and caching processes.
+/// </summary>
 public sealed partial class ImportEnvironment : IDisposable {
+    /// <summary>
+    /// The compiled resource entrypoints.
+    /// </summary>
     public ResourceLibraryCollection Libraries { get; }
+    
+    /// <summary>
+    /// Gets the dictionary of <see cref="Deserializer"/> that compiled resources request.
+    /// </summary>
     public DeserializerDictionary Deserializers { get; }
+    
+    /// <summary>
+    /// Gets the collection of <see cref="Disposer"/> that handles resource disposal.
+    /// </summary>
     public DisposerCollection Disposers { get; }
 
     private ILogger _logger;
+    
+    /// <summary>
+    /// Gets the logging object that used for error reporting purpose.
+    /// </summary>
     public ILogger Logger {
         get => _logger;
         
@@ -18,27 +36,23 @@ public sealed partial class ImportEnvironment : IDisposable {
         // ReSharper restore NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
     }
     
+    /// <summary>
+    /// Gets the statistics object for debugging purpose.
+    /// </summary>
     public Statistics Statistics { get; } = new();
     
     private bool _disposed;
     
+    /// <summary>
+    /// Initializes a new instance of <see cref="ImportEnvironment"/> with empty components and null logger.
+    /// </summary>
     public ImportEnvironment() {
-        Libraries = new();
+        Libraries = [];
         Deserializers = [];
         Disposers = [];
         _resourceCache = new(this);
         _logger = NullLogger.Instance;
     }
-    
-    // public ResourceHandle Import(ResourceID rid) => Import<object>(rid);
-    //
-    // public ResourceHandle<T> Import<T>(ResourceID rid) where T : class {
-    //     return _resources.Import<T>(rid);
-    // }
-    //
-    // public void ImportFromTags(string query, ICollection<ResourceHandle> outputList) {
-    //     _resources.ImportFromTags(query, outputList);
-    // }
 
     private void Dispose(bool disposing) {
         if (_disposed) return;

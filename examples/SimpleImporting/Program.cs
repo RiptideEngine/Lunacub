@@ -1,11 +1,14 @@
-﻿using Caxivitual.Lunacub.Building.Collections;
-using Caxivitual.Lunacub.Building.Core;
+﻿using Caxivitual.Lunacub.Building.Core;
 using Caxivitual.Lunacub.Importing.Core;
-using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace Caxivitual.Lunacub.Examples.SimpleResourceImporting;
 
 internal static class Program {
+    private static readonly ILogger _logger = LoggerFactory.Create(builder => {
+        builder.AddConsole();
+    }).CreateLogger("Program");
+    
     private static async Task Main(string[] args) {
         string reportDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Outputs", "Reports");
         string resOutputDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Outputs", "Resources");
@@ -18,7 +21,7 @@ internal static class Program {
     }
 
     private static void BuildResources(string reportDirectory, string outputDirectory) {
-        Console.WriteLine("Building resources...");
+        _logger.LogInformation("Building resources...");
 
         using BuildEnvironment env = new(new FileOutputSystem(reportDirectory, outputDirectory)) {
             Importers = {
@@ -40,8 +43,7 @@ internal static class Program {
         var result = env.BuildResources();
 
         foreach ((var rid, var resourceResult) in result.ResourceResults) {
-            Console.WriteLine($"Resource '{rid}' build status: {resourceResult.Status}.");
-            resourceResult.Exception?.Throw();
+            _logger.LogError(resourceResult.Exception?.SourceException, "Resource '{rid}' build status: {status}.", rid, resourceResult.Status);
         }
     }
     
@@ -53,8 +55,8 @@ internal static class Program {
         };
         importEnvironment.Libraries.Add(new FileResourceLibrary(resourceDirectory));
         
-        ResourceHandle<SimpleResource> handle = await importEnvironment.ImportAsync<SimpleResource>(0).Task;
+        ResourceHandle<SimpleResource> handle = await importEnvironment.Import<SimpleResource>(0).Task;
         
-        Console.WriteLine("Imported: " + handle.Value);
+        _logger.LogInformation("Imported: {value}.", handle.Value);
     }
 }

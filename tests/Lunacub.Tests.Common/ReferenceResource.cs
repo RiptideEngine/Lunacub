@@ -49,14 +49,12 @@ public sealed class ReferenceResourceSerializerFactory : SerializerFactory {
 }
 
 public sealed class ReferenceResourceDeserializer : Deserializer<ReferenceResource> {
-    protected override ReferenceResource Deserialize(Stream dataStream, Stream optionsStream, DeserializationContext context) {
+    protected override Task<ReferenceResource> DeserializeAsync(Stream dataStream, Stream optionsStream, DeserializationContext context, CancellationToken cancellationToken) {
         using var reader = new BinaryReader(dataStream, Encoding.UTF8, true);
         
         context.RequestReference<ReferenceResource>(nameof(ReferenceResource.Reference), reader.ReadResourceID());
         
-        return new() {
-            Value = reader.ReadInt32(),
-        };
+        return Task.FromResult(new ReferenceResource { Value = reader.ReadInt32() });
     }
 
     protected override void ResolveDependencies(ReferenceResource instance, DeserializationContext context) {

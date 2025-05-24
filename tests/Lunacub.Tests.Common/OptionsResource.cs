@@ -1,5 +1,8 @@
-﻿using System.Collections.Immutable;
+﻿using System.Buffers;
+using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Caxivitual.Lunacub.Tests.Common;
 
@@ -74,27 +77,42 @@ public sealed class OptionsResourceSerializerFactory : SerializerFactory {
 }
 
 public sealed class OptionsResourceDeserializer : Deserializer<OptionsResource> {
-    protected override OptionsResource Deserialize(Stream dataStream, Stream optionStream, DeserializationContext context) {
+    protected override async Task<OptionsResource> DeserializeAsync(Stream dataStream, Stream optionStream, DeserializationContext context, CancellationToken cancellationToken) {
         using BinaryReader optionsReader = new(optionStream, Encoding.UTF8, leaveOpen: true);
         OutputType outputType = (OutputType)optionsReader.ReadInt32();
 
         switch (outputType) {
             case Common.OutputType.Json:
-                return new(JsonSerializer.Deserialize<ImmutableArray<int>>(dataStream));
-            
+            {
+                var buffer = await JsonSerializer.DeserializeAsync<ImmutableArray<int>>(dataStream, cancellationToken: cancellationToken);
+                return new(buffer);
+            }
+
             case Common.OutputType.Binary:
+            {
                 Debug.Assert(dataStream.Length % 4 == 0);
 
-                using (BinaryReader dataReader = new(dataStream, Encoding.UTF8, leaveOpen: true)) {
-                    var builder = ImmutableArray.CreateBuilder<int>((int)(dataStream.Length / 4));
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(256);
+                int[] finalBuffer = new int[buffer.Length / 4];
+                int index = 0;
 
-                    for (int i = 0, e = (int)(dataStream.Length / 4); i < e; i++) {
-                        builder.Add(dataReader.ReadInt32());
+                try {
+                    while (true) {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        int read = await dataStream.ReadAsync(buffer, cancellationToken);
+                        if (read == 0) break;
+
+                        MemoryMarshal.Cast<byte, int>(buffer.AsSpan(0, read)).CopyTo(finalBuffer.AsSpan(index));
+                        index += read / 4;
                     }
-
-                    return new(builder.MoveToImmutable());
+                } finally {
+                    ArrayPool<byte>.Shared.Return(buffer);
                 }
-                
+
+                return new(ImmutableCollectionsMarshal.AsImmutableArray(finalBuffer));
+            }
+
             default: throw new NotSupportedException("Unsupported serialization type.");
         }
     }

@@ -29,7 +29,7 @@ partial class ResourceCache {
         _containerLock.Wait();
 
         try {
-            if (!_resourceContainers.TryGetValue(rid, out ResourceContainer? value)) return ResourceStatus.None;
+            if (!_resourceContainers.TryGetValue(rid, out ResourceContainer? value)) return ResourceStatus.NotImported;
             
             return value.FullImportTask.IsCompletedSuccessfully ? ResourceStatus.Imported : ResourceStatus.Importing;
         } finally {

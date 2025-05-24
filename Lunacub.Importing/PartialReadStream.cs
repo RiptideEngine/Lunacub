@@ -1,6 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
-internal class PartialReadStream : Stream {
+internal sealed class PartialReadStream : Stream {
     private Stream _baseStream;
     private readonly bool _ownStream;
     private readonly long _basePosition;

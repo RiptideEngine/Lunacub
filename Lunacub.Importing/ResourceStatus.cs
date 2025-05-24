@@ -1,7 +1,8 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
 internal enum ResourceStatus {
-    None = 0,
-    Importing = 1,
-    Imported = 2,
+    Unregistered = 0,
+    NotImported = 1,
+    Importing = 2,
+    Imported = 3,
 }

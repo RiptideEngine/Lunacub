@@ -7,9 +7,7 @@ namespace ReferenceImporting;
 
 internal static class Program {
     private static readonly ILogger _logger = LoggerFactory.Create(builder => {
-        builder.AddSimpleConsole(options => {
-            options.SingleLine = true;
-        });
+        builder.AddConsole();
     }).CreateLogger("Program");
     
     private static async Task Main(string[] args) {
@@ -71,7 +69,7 @@ internal static class Program {
         importEnvironment.Logger = _logger;
         importEnvironment.Libraries.Add(new FileResourceLibrary(resourceDirectory));
 
-        ResourceHandle<ReferenceResource> handle = await importEnvironment.ImportAsync<ReferenceResource>(1).Task;
+        ResourceHandle<ReferenceResource> handle = await importEnvironment.Import<ReferenceResource>(1).Task;
         
         _logger.LogInformation("resource.Value: {value}", handle.Value!.Value);
         _logger.LogInformation("resource.Reference.Value: {refValue}", handle.Value!.Reference!.Value);
