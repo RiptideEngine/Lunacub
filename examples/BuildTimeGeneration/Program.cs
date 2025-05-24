@@ -77,8 +77,9 @@ internal static class Program {
             }
         };
         
-        ResourceHandle<TextureAtlas> handle = await importEnvironment.Import<TextureAtlas>(3).Task;
+        // ResourceHandle<TextureAtlas> handle = await importEnvironment.Import<TextureAtlas>(3).Task;
+        ResourceHandle<Texture> handle = await importEnvironment.Import<Texture>(1).Task;
         
-        _logger.LogInformation("Imported: {value}.", handle.Value.Name);
+        _logger.LogInformation("Name: {atlasName}", handle.Value);
     }
 }

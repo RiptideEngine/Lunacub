@@ -17,7 +17,7 @@ public sealed class TextureSerializerFactory : SerializerFactory {
 
         public override void SerializeObject(Stream outputStream) {
             using var writer = new BinaryWriter(outputStream, Encoding.UTF8, leaveOpen: true);
-            Texture texture = (Texture)SerializingObject;
+            var texture = (TextureDTO)SerializingObject;
             
             writer.Write(texture.Name);
             writer.Write(texture.Sprites.Length);
