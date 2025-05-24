@@ -14,6 +14,8 @@ partial class ResourceCache {
     }
     
     private async Task<ResourceHandle<T>> ImportSingleResource<T>(ResourceID rid) where T : class {
+        if (rid == ResourceID.Null) return new(rid, null);
+        
         if (!_environment.Libraries.ContainResource(rid)) {
             Logging.UnregisteredResource(_environment.Logger, rid);
             return new(rid, null);
@@ -48,6 +50,8 @@ partial class ResourceCache {
     }
     
     private ResourceContainer? ImportDependencyResource(ResourceID rid, HashSet<ResourceID> stack) {
+        if (rid == ResourceID.Null) return null;
+        
         if (!_environment.Libraries.ContainResource(rid)) {
             Logging.UnregisteredDependencyResource(_environment.Logger, rid);
             return null;

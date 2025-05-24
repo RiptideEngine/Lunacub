@@ -52,10 +52,13 @@ internal static class Program {
             Deserializers = {
                 [nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer(),
             },
+            Logger = _logger,
+            Libraries = {
+                new FileResourceLibrary(resourceDirectory)
+            }
         };
-        importEnvironment.Libraries.Add(new FileResourceLibrary(resourceDirectory));
         
-        ResourceHandle<SimpleResource> handle = await importEnvironment.Import<SimpleResource>(0).Task;
+        ResourceHandle<SimpleResource> handle = await importEnvironment.Import<SimpleResource>(1).Task;
         
         _logger.LogInformation("Imported: {value}.", handle.Value);
     }

@@ -14,16 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Resources\Resource1.json" />
-      <Content Include="Resources\Resource1.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-      <None Remove="Resources\Resource2.json" />
-      <Content Include="Resources\Resource2.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-      <None Remove="Resources\Resource3.json" />
-      <Content Include="Resources\Resource3.json">
+      <Content Include="Resources\**">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
     </ItemGroup>

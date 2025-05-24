@@ -1,9 +1,8 @@
 ﻿using Caxivitual.Lunacub.Building.Core;
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
-namespace ReferenceImporting;
+namespace Caxivitual.Lunacub.Examples.BuildTimeGenerating;
 
 internal static class Program {
     private static readonly ILogger _logger = LoggerFactory.Create(builder => {
@@ -20,66 +19,66 @@ internal static class Program {
         BuildResources(reportDir, resOutputDir);
         await ImportResource(resOutputDir);
     }
-    
+
     private static void BuildResources(string reportDirectory, string outputDirectory) {
         _logger.LogInformation("Building resources...");
-        
+
         using BuildEnvironment env = new(new FileOutputSystem(reportDirectory, outputDirectory)) {
             Importers = {
-                [nameof(ReferenceResourceImporter)] = new ReferenceResourceImporter(),
+                [nameof(TextureImporter)] = new TextureImporter(),
+                [nameof(TextureAtlasImporter)] = new TextureAtlasImporter(),
+            },
+            Processors = {
+                [nameof(TextureAtlasProcessor)] = new TextureAtlasProcessor(),
             },
             SerializerFactories = {
-                new ReferenceResourceSerializerFactory(),
+                new TextureSerializerFactory(),
+                new TextureAtlasSerializerFactory(),
             },
             Resources = {
                 [1] = new() {
-                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource1.json")),
+                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Texture1.json")),
                     Options = new() {
-                        ImporterName = nameof(ReferenceResourceImporter),
+                        ImporterName = nameof(TextureImporter)
                     },
                 },
                 [2] = new() {
-                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource2.json")),
+                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Texture2.json")),
                     Options = new() {
-                        ImporterName = nameof(ReferenceResourceImporter),
+                        ImporterName = nameof(TextureImporter)
                     },
                 },
                 [3] = new() {
-                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource3.json")),
+                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Atlas.json")),
                     Options = new() {
-                        ImporterName = nameof(ReferenceResourceImporter),
+                        ImporterName = nameof(TextureAtlasImporter),
+                        ProcessorName = nameof(TextureAtlasProcessor),
                     },
                 },
             },
         };
 
         var result = env.BuildResources();
-        
-        Debug.Assert(result.ResourceResults.Count == 3);
 
         foreach ((var rid, var resourceResult) in result.ResourceResults) {
-            _logger.LogInformation("Resource '{rid}' build status: {status}.", rid, resourceResult.Status);
-            resourceResult.Exception?.Throw();
+            _logger.LogError(resourceResult.Exception?.SourceException, "Resource '{rid}' build status: {status}.", rid, resourceResult.Status);
         }
     }
     
     private static async Task ImportResource(string resourceDirectory) {
-        using ImportEnvironment importEnvironment = new ImportEnvironment() {
+        using ImportEnvironment importEnvironment = new ImportEnvironment {
             Deserializers = {
-                [nameof(ReferenceResourceDeserializer)] = new ReferenceResourceDeserializer(),
+                [nameof(TextureDeserializer)] = new TextureDeserializer(),
+                [nameof(TextureAtlasDeserializer)] = new TextureAtlasDeserializer(),
             },
             Logger = _logger,
             Libraries = {
                 new FileResourceLibrary(resourceDirectory)
-            },
+            }
         };
-
-        ResourceHandle<ReferenceResource> handle = await importEnvironment.Import<ReferenceResource>(1).Task;
         
-        _logger.LogInformation("resource.Value: {value}", handle.Value!.Value);
-        _logger.LogInformation("resource.Reference.Value: {refValue}", handle.Value!.Reference!.Value);
-        _logger.LogInformation("resource.Reference.Reference.Value: {referefValue}", handle.Value!.Reference!.Reference!.Value);
-
-        await Task.Delay(100);
+        ResourceHandle<TextureAtlas> handle = await importEnvironment.Import<TextureAtlas>(3).Task;
+        
+        _logger.LogInformation("Imported: {value}.", handle.Value.Name);
     }
 }

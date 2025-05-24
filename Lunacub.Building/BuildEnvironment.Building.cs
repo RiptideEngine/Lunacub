@@ -109,7 +109,7 @@ partial class BuildEnvironment {
             ContentRepresentation processed;
 
             try {
-                processed = processor.Process(imported, new(options.Options));
+                processed = processor.Process(imported, new(this, options.Options));
             } catch (Exception e) {
                 results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
                 return;
