@@ -20,7 +20,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleImporting", "examples
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReferenceImporting", "examples\ReferenceImporting\ReferenceImporting.csproj", "{B80B8216-3AF7-42D8-BFEB-68E5ED35C09A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildTimeGenerating", "examples\BuildTimeGenerating\BuildTimeGenerating.csproj", "{5CFB7BB1-D6DC-429E-9D5D-DA7849044BC2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildTimeGeneration", "examples\BuildTimeGeneration\BuildTimeGeneration.csproj", "{5CFB7BB1-D6DC-429E-9D5D-DA7849044BC2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

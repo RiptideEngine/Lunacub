@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace Caxivitual.Lunacub.Examples.BuildTimeGenerating;
+namespace Caxivitual.Lunacub.Examples.BuildTimeGeneration;
 
 public sealed class TextureImporter : Importer<Texture> {
     protected override Texture Import(Stream stream, ImportingContext context) {

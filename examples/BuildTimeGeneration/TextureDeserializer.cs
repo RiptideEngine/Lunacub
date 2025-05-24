@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Caxivitual.Lunacub.Examples.BuildTimeGenerating;
+namespace Caxivitual.Lunacub.Examples.BuildTimeGeneration;
 
 public sealed class TextureDeserializer : Deserializer<Texture> {
     protected override Task<Texture> DeserializeAsync(Stream dataStream, Stream optionStream, DeserializationContext context, CancellationToken cancellationToken) {

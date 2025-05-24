@@ -1,4 +1,4 @@
-﻿namespace Caxivitual.Lunacub.Examples.BuildTimeGenerating;
+﻿namespace Caxivitual.Lunacub.Examples.BuildTimeGeneration;
 
 public sealed class TextureAtlasProcessor : Processor<TextureAtlasDTO, TextureAtlasDTO> {
     protected override TextureAtlasDTO Process(TextureAtlasDTO input, ProcessingContext context) {

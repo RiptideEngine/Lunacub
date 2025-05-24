@@ -1,4 +1,4 @@
-﻿namespace Caxivitual.Lunacub.Examples.BuildTimeGenerating;
+﻿namespace Caxivitual.Lunacub.Examples.BuildTimeGeneration;
 
 // Typically, Atlas should be built from collection of Sprites, but use Textures for demo purpose.
 public sealed class TextureAtlas {

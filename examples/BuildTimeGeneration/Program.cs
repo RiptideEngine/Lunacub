@@ -2,7 +2,7 @@
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
 
-namespace Caxivitual.Lunacub.Examples.BuildTimeGenerating;
+namespace Caxivitual.Lunacub.Examples.BuildTimeGeneration;
 
 internal static class Program {
     private static readonly ILogger _logger = LoggerFactory.Create(builder => {

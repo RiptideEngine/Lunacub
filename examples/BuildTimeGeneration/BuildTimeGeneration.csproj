@@ -5,8 +5,8 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Caxivitual.Lunacub.Examples.BuildTimeGenerating</AssemblyName>
-        <RootNamespace>Caxivitual.Lunacub.Examples.BuildTimeGenerating</RootNamespace>
+        <AssemblyName>Caxivitual.Lunacub.Examples.BuildTimeGeneration</AssemblyName>
+        <RootNamespace>Caxivitual.Lunacub.Examples.BuildTimeGeneration</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Caxivitual.Lunacub.Examples.BuildTimeGenerating;
+namespace Caxivitual.Lunacub.Examples.BuildTimeGeneration;
 
 public sealed class TextureSerializerFactory : SerializerFactory {
     public override bool CanSerialize(Type representationType) => representationType == typeof(Texture);
