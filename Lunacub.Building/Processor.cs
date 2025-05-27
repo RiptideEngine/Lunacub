@@ -1,7 +1,8 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
-/// Provides the base class that handles the process of converting a resource into a different type.
+/// Provides the base class that handles the process of processing a <see cref="ContentRepresentation"/> and convert it
+/// into a different <see cref="ContentRepresentation"/> type before serialization.
 /// </summary>
 public abstract class Processor {
     internal static Processor Passthrough { get; } = new PassthroughProcessor();
@@ -12,8 +13,8 @@ public abstract class Processor {
 }
 
 /// <inheritdoc cref="Processor"/>
-/// <typeparam name="TInput"></typeparam>
-/// <typeparam name="TOutput"></typeparam>
+/// <typeparam name="TInput">The type of object that the processor will operate on, must derived from <see cref="ContentRepresentation"/>.</typeparam>
+/// <typeparam name="TOutput">The type of object that the processor will output, must derived from <see cref="ContentRepresentation"/>.</typeparam>
 public abstract class Processor<TInput, TOutput> : Processor where TInput : ContentRepresentation where TOutput : ContentRepresentation {
     internal override sealed bool CanProcess(ContentRepresentation input) => input is TInput t && CanProcess(t);
     

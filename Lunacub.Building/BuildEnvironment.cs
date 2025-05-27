@@ -5,6 +5,7 @@ namespace Caxivitual.Lunacub.Building;
 /// <summary>
 /// Represents the environment that stores all the components needed to build resources.
 /// </summary>
+/// <remarks>This class is not thread-safe.</remarks>
 public sealed partial class BuildEnvironment : IDisposable {
     /// <summary>
     /// Gets the dictionary of <see cref="Importer"/> that compiling resources request.
