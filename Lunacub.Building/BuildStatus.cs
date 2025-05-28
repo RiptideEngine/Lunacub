@@ -49,7 +49,13 @@ public enum BuildStatus {
     ProcessingFailed = -6,
     
     /// <summary>
+    /// Indicates that the resource provider returned an invalid <see cref="Stream"/> instance.
+    /// </summary>
+    /// <see cref="ResourceProvider.GetStream"/>
+    InvalidResourceStream = -7,
+    
+    /// <summary>
     /// Indicates that the resource failed to be compiled and output due to an exception.
     /// </summary>
-    CompilationFailed = -7,
+    CompilationFailed = -8,
 }

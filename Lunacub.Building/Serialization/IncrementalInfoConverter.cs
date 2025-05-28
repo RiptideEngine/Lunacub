@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Building.Serialization;
+﻿using System.Collections.Frozen;
+
+namespace Caxivitual.Lunacub.Building.Serialization;
 
 [ExcludeFromCodeCoverage]
 internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> {
@@ -9,14 +11,15 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
 
         DateTime sourceLastWriteTime = default;
         BuildingOptions buildingOptions = default;
+        IReadOnlySet<ResourceID> dependencies = FrozenSet<ResourceID>.Empty;
             
         while (reader.Read()) {
             if (reader.TokenType == JsonTokenType.EndObject) {
-                return new(sourceLastWriteTime, buildingOptions);
+                return new(sourceLastWriteTime, buildingOptions, dependencies);
             }
 
             if (reader.TokenType != JsonTokenType.PropertyName) {
-                throw new JsonException();
+                throw new JsonException("Expected property name.");
             }
 
             string? propertyName = reader.GetString();
@@ -30,19 +33,26 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
                 case "Options":
                     buildingOptions = JsonSerializer.Deserialize<BuildingOptions>(ref reader, options);
                     break;
+                
+                case "Dependencies":
+                    dependencies = JsonSerializer.Deserialize<HashSet<ResourceID>>(ref reader, options) is { } set ? set.ToFrozenSet() : FrozenSet<ResourceID>.Empty;
+                    break;
             }
         }
 
         throw new JsonException();
     }
     
-    public override void Write(Utf8JsonWriter writer, IncrementalInfo report, JsonSerializerOptions options) {
+    public override void Write(Utf8JsonWriter writer, IncrementalInfo info, JsonSerializerOptions options) {
         writer.WriteStartObject();
         
-        writer.WriteString("SourceLastWriteTime", report.SourceLastWriteTime);
+        writer.WriteString("SourceLastWriteTime", info.SourceLastWriteTime);
         
         writer.WritePropertyName("Options");
-        JsonSerializer.Serialize(writer, report.Options, options);
+        JsonSerializer.Serialize(writer, info.Options, options);
+        
+        writer.WritePropertyName("Dependencies");
+        JsonSerializer.Serialize(writer, info.Dependencies, options);
         
         writer.WriteEndObject();
     }

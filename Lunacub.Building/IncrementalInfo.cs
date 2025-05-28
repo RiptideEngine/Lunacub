@@ -1,5 +1,6 @@
 ﻿using Caxivitual.Lunacub.Building.Serialization;
 using Caxivitual.Lunacub.Building.Collections;
+using System.Collections.Frozen;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -19,15 +20,30 @@ public readonly struct IncrementalInfo {
     /// </summary>
     /// <see cref="BuildingResource.Options"/>
     public readonly BuildingOptions Options;
+    
+    /// <summary>
+    /// A set of <see cref="ResourceID"/> that contains the resources that the resource depends on.
+    /// </summary>
+    public readonly IReadOnlySet<ResourceID> Dependencies;
 
     /// <summary>
-    /// Initializes a new instance of <see cref="IncrementalInfo"/> with a specified source resource last write time
-    /// and options.
+    /// Initializes a new instance of <see cref="IncrementalInfo"/> with empty dependencies, specified source resource
+    /// last write time and options.
     /// </summary>
     /// <param name="sourceLastWriteTime">The last write time of the source resource data.</param>
     /// <param name="options">The previously build options of the resource.</param>
-    public IncrementalInfo(DateTime sourceLastWriteTime, BuildingOptions options) {
+    public IncrementalInfo(DateTime sourceLastWriteTime, BuildingOptions options) : this(sourceLastWriteTime, options, FrozenSet<ResourceID>.Empty) {}
+    
+    /// <summary>
+    /// Initializes a new instance of <see cref="IncrementalInfo"/> with a specified source resource last write time, options,
+    /// dependencies and dependents.
+    /// </summary>
+    /// <param name="sourceLastWriteTime">The last write time of the source resource data.</param>
+    /// <param name="options">The previously build options of the resource.</param>
+    /// <param name="dependencies">A set of <see cref="ResourceID"/> that contains the resources that the resource depends on.</param>
+    public IncrementalInfo(DateTime sourceLastWriteTime, BuildingOptions options, IReadOnlySet<ResourceID> dependencies) {
         SourceLastWriteTime = sourceLastWriteTime;
         Options = options;
+        Dependencies = dependencies;
     }
 }

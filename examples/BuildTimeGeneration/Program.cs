@@ -57,9 +57,9 @@ internal static class Program {
                 },
             },
         };
-
+        
         var result = env.BuildResources();
-
+        
         foreach ((var rid, var resourceResult) in result.ResourceResults) {
             _logger.LogError(resourceResult.Exception?.SourceException, "Resource '{rid}' build status: {status}.", rid, resourceResult.Status);
         }
@@ -77,8 +77,7 @@ internal static class Program {
             }
         };
         
-        // ResourceHandle<TextureAtlas> handle = await importEnvironment.Import<TextureAtlas>(3).Task;
-        ResourceHandle<Texture> handle = await importEnvironment.Import<Texture>(1).Task;
+        ResourceHandle<TextureAtlas> handle = await importEnvironment.Import<TextureAtlas>(3).Task;
         
         _logger.LogInformation("Name: {atlasName}", handle.Value);
     }

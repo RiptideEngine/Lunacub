@@ -12,13 +12,20 @@ public sealed class ProcessingContext {
     public BuildEnvironment Environment { get; }
 
     /// <summary>
-    /// User-provided options that can be used during the processing process.
+    /// Gets user-provided options that can be used during the processing process.
     /// </summary>
     /// <seealso cref="BuildingResource.Options"/>
     public IImportOptions? Options { get; }
+    
+    /// <summary>
+    /// Gets the dependency resources requested from importing stage.
+    /// </summary>
+    /// <seealso cref="Importer.GetDependencies"/>
+    public IReadOnlyDictionary<ResourceID, ContentRepresentation> Dependencies { get; }
 
-    internal ProcessingContext(BuildEnvironment environment, IImportOptions? options) {
+    internal ProcessingContext(BuildEnvironment environment, IImportOptions? options, IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies) {
         Environment = environment;
         Options = options;
+        Dependencies = dependencies;
     }
 }

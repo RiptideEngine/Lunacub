@@ -22,6 +22,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReferenceImporting", "examp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildTimeGeneration", "examples\BuildTimeGeneration\BuildTimeGeneration.csproj", "{5CFB7BB1-D6DC-429E-9D5D-DA7849044BC2}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "experiments", "experiments", "{68841973-385E-473A-9FF0-07316A72BFF6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyExperiments", "experiments\DependencyExperiments\DependencyExperiments.csproj", "{676804AA-8BD2-470C-BD0D-7B51F6F79328}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -68,10 +72,15 @@ Global
 		{5CFB7BB1-D6DC-429E-9D5D-DA7849044BC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5CFB7BB1-D6DC-429E-9D5D-DA7849044BC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5CFB7BB1-D6DC-429E-9D5D-DA7849044BC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{676804AA-8BD2-470C-BD0D-7B51F6F79328}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{676804AA-8BD2-470C-BD0D-7B51F6F79328}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{676804AA-8BD2-470C-BD0D-7B51F6F79328}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{676804AA-8BD2-470C-BD0D-7B51F6F79328}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{D250027C-8D8F-4DE5-A961-E6AFEE52DFDD} = {BD303699-F202-42F4-B61F-8D17F82567F4}
 		{B80B8216-3AF7-42D8-BFEB-68E5ED35C09A} = {BD303699-F202-42F4-B61F-8D17F82567F4}
 		{5CFB7BB1-D6DC-429E-9D5D-DA7849044BC2} = {BD303699-F202-42F4-B61F-8D17F82567F4}
+		{676804AA-8BD2-470C-BD0D-7B51F6F79328} = {68841973-385E-473A-9FF0-07316A72BFF6}
 	EndGlobalSection
 EndGlobal
