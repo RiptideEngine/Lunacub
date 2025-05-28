@@ -1,5 +1,4 @@
 ﻿using Caxivitual.Lunacub.Building.Collections;
-using System.Collections.Frozen;
 using System.Runtime.ExceptionServices;
 
 namespace Caxivitual.Lunacub.Building;
@@ -125,8 +124,8 @@ partial class BuildEnvironment {
 
         try {
             Importer? importer;
-            ImportingContext importingContext;
-            ContentRepresentation imported, processed;
+            ImportingContext? importingContext;
+            ContentRepresentation? imported, processed;
             Dictionary<ResourceID, ContentRepresentation> dependencies;
             Processor? processor;
             string? processorName;
@@ -134,11 +133,8 @@ partial class BuildEnvironment {
             if (AreDependenciesCacheable(info.Dependencies)) {
                 if (IsResourceCacheable(rid, resourceLastWriteTime, options, out _)) {
                     results.Add(rid, new(BuildStatus.Cached));
-                    info.Cached = true;
                     return;
                 }
-
-                info.Cached = false;
 
                 // Import the resource first.
                 if (!Importers.TryGetValue(options.ImporterName, out importer)) {
@@ -146,19 +142,8 @@ partial class BuildEnvironment {
                     return;
                 }
 
-                using (Stream stream = provider.GetStream()) {
-                    if (stream is not { CanRead: true, CanSeek: true }) {
-                        results.Add(rid, new(BuildStatus.InvalidResourceStream));
-                        return;
-                    }
-
-                    try {
-                        importingContext = new(options.Options);
-                        imported = importer.ImportObject(stream, importingContext);
-                    } catch (Exception e) {
-                        results.Add(rid, new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
-                        return;
-                    }
+                if (!Import(rid, provider, options, results, out importingContext, out imported)) {
+                    return;
                 }
 
                 // Process the imported resource.
@@ -203,19 +188,7 @@ partial class BuildEnvironment {
                 }
 
                 // Do the actual process.
-                processorName = options.ProcessorName;
-
-                if (string.IsNullOrWhiteSpace(processorName)) {
-                    processor = Processor.Passthrough;
-                } else if (!Processors.TryGetValue(processorName, out processor)) {
-                    results.Add(rid, new(BuildStatus.UnknownProcessor));
-                    return;
-                }
-                
-                try {
-                    processed = processor.Process(imported, new(this, options.Options, dependencies));
-                } catch (Exception e) {
-                    results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
+                if (!Process(imported, options, dependencies, rid, results, out processed)) {
                     return;
                 }
 
@@ -230,7 +203,6 @@ partial class BuildEnvironment {
 
                 results.Add(rid, new(BuildStatus.Success));
                 IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, info.Dependencies));
-                info.Visited = true;
 
                 if (importingContext.References.Count != 0) {
                     throw new NotImplementedException("Reference is not implemented.");
@@ -242,7 +214,6 @@ partial class BuildEnvironment {
             // The resource and its dependencies need to be rebuilt, recursively rebuild the resource.
             // Import the dependencies.
             dependencies = [];
-            info.Cached = false;
 
             foreach (var dependencyRid in info.Dependencies) {
                 BuildDependencyResource(graph, dependencyRid, results, out var dependencyInfo);
@@ -257,38 +228,15 @@ partial class BuildEnvironment {
             }
 
             // Import the resource.
-            using (Stream stream = provider.GetStream()) {
-                if (stream is not { CanRead: true, CanSeek: true }) {
-                    results.Add(rid, new(BuildStatus.InvalidResourceStream));
-                    return;
-                }
-
-                try {
-                    importingContext = new(options.Options);
-                    imported = importer.ImportObject(stream, importingContext);
-                } catch (Exception e) {
-                    results.Add(rid, new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
-                    return;
-                }
+            if (!Import(rid, provider, options, results, out importingContext, out imported)) {
+                return;
             }
 
             // Processing.
-            processorName = options.ProcessorName;
-                
-            if (string.IsNullOrWhiteSpace(processorName)) {
-                processor = Processor.Passthrough;
-            } else if (!Processors.TryGetValue(processorName, out processor)) {
-                results.Add(rid, new(BuildStatus.UnknownProcessor));
+            if (!Process(imported, options, dependencies, rid, results, out processed)) {
                 return;
             }
-                
-            try {
-                processed = processor.Process(imported, new(this, options.Options, dependencies));
-            } catch (Exception e) {
-                results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
-                return;
-            }
-
+            
             // Compile.
             try {
                 SerializeProcessedObject(processed, rid, options);
@@ -301,7 +249,6 @@ partial class BuildEnvironment {
                 
             results.Add(rid, new(BuildStatus.Success));
             IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, info.Dependencies));
-            info.Visited = true;
                 
             // if (importingContext.References.Count != 0) {
             //     throw new NotImplementedException("Reference is not implemented.");
@@ -315,9 +262,7 @@ partial class BuildEnvironment {
         bool getInfo = graph.TryGetValue(rid, out info!);
         Debug.Assert(getInfo);
 
-        if (info.Visited) return;
-
-        info.Visited = true;
+        if (results.ContainsKey(rid)) return;
 
         bool getResource = Resources.TryGetValue(rid, out var resource);
         Debug.Assert(getResource);
@@ -327,8 +272,8 @@ partial class BuildEnvironment {
 
         try {
             Importer? importer;
-            ImportingContext importingContext;
-            ContentRepresentation processed;
+            ImportingContext? importingContext;
+            ContentRepresentation? processed;
             Dictionary<ResourceID, ContentRepresentation> dependencies;
             Processor? processor;
             string? processorName;
@@ -336,32 +281,13 @@ partial class BuildEnvironment {
             if (AreDependenciesCacheable(info.Dependencies)) {
                 if (IsResourceCacheable(rid, resourceLastWriteTime, options, out _)) {
                     results.Add(rid, new(BuildStatus.Cached));
-                    info.Cached = true;
                     return;
                 }
 
-                info.Cached = false;
-
                 // Import the resource first.
                 if (info.ContentRepresentation == null) {
-                    if (!Importers.TryGetValue(options.ImporterName, out importer)) {
-                        results.Add(rid, new(BuildStatus.UnknownImporter));
+                    if (!Import(rid, provider, options, results, out importingContext, out info.ContentRepresentation)) {
                         return;
-                    }
-
-                    using (Stream stream = provider.GetStream()) {
-                        if (stream is not { CanRead: true, CanSeek: true }) {
-                            results.Add(rid, new(BuildStatus.InvalidResourceStream));
-                            return;
-                        }
-
-                        try {
-                            importingContext = new(options.Options);
-                            info.ContentRepresentation = importer.ImportObject(stream, importingContext);
-                        } catch (Exception e) {
-                            results.Add(rid, new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
-                            return;
-                        }
                     }
                 }
 
@@ -405,22 +331,10 @@ partial class BuildEnvironment {
                 }
 
                 // Do the actual process.
-                processorName = options.ProcessorName;
-
-                if (string.IsNullOrWhiteSpace(processorName)) {
-                    processor = Processor.Passthrough;
-                } else if (!Processors.TryGetValue(processorName, out processor)) {
-                    results.Add(rid, new(BuildStatus.UnknownProcessor));
+                if (!Process(info.ContentRepresentation, options, dependencies, rid, results, out processed)) {
                     return;
                 }
                 
-                try {
-                    processed = processor.Process(info.ContentRepresentation, new(this, options.Options, dependencies));
-                } catch (Exception e) {
-                    results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
-                    return;
-                }
-
                 try {
                     SerializeProcessedObject(processed, rid, options);
                 } catch (Exception e) {
@@ -443,7 +357,6 @@ partial class BuildEnvironment {
             // The resource and its dependencies need to be rebuilt, recursively rebuild the resource.
             // Import the dependencies.
             dependencies = [];
-            info.Cached = false;
 
             foreach (var dependencyRid in info.Dependencies) {
                 BuildDependencyResource(graph, dependencyRid, results, out var dependencyInfo);
@@ -451,43 +364,15 @@ partial class BuildEnvironment {
                 if (dependencyInfo.ImportFailed || dependencyInfo.ContentRepresentation is not { } representation) continue;
                 dependencies.Add(dependencyRid, representation);
             }
-            
-            if (!Importers.TryGetValue(options.ImporterName, out importer)) {
-                results.Add(rid, new(BuildStatus.UnknownImporter));
-                return;
-            }
 
-            // Import the resource.
-            ContentRepresentation imported;
-            using (Stream stream = provider.GetStream()) {
-                if (stream is not { CanRead: true, CanSeek: true }) {
-                    results.Add(rid, new(BuildStatus.InvalidResourceStream));
-                    return;
-                }
-
-                try {
-                    importingContext = new(options.Options);
-                    imported = importer.ImportObject(stream, importingContext);
-                } catch (Exception e) {
-                    results.Add(rid, new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
+            if (info.ContentRepresentation == null) {
+                if (!Import(rid, provider, options, results, out importingContext, out info.ContentRepresentation)) {
                     return;
                 }
             }
             
             // Processing.
-            processorName = options.ProcessorName;
-                
-            if (string.IsNullOrWhiteSpace(processorName)) {
-                processor = Processor.Passthrough;
-            } else if (!Processors.TryGetValue(processorName, out processor)) {
-                results.Add(rid, new(BuildStatus.UnknownProcessor));
-                return;
-            }
-                
-            try {
-                processed = processor.Process(imported, new(this, options.Options, dependencies));
-            } catch (Exception e) {
-                results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
+            if (!Process(info.ContentRepresentation, options, dependencies, rid, results, out processed)) {
                 return;
             }
 
@@ -504,9 +389,9 @@ partial class BuildEnvironment {
             results.Add(rid, new(BuildStatus.Success));
             IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, info.Dependencies));
                 
-            if (importingContext.References.Count != 0) {
-                throw new NotImplementedException("Reference is not implemented.");
-            }
+            // if (importingContext.References.Count != 0) {
+            //     throw new NotImplementedException("Reference is not implemented.");
+            // }
         } finally {
             ReleaseDependencies(graph, info.Dependencies);
         }
@@ -540,201 +425,6 @@ partial class BuildEnvironment {
         }
     }
     
-    // private void BuildDependencyResource(Dictionary<ResourceID, VertexInfo> graph, ResourceID rid, Dictionary<ResourceID, ResourceBuildingResult> results) {
-    //     bool getInfos = graph.TryGetValue(rid, out var info);
-    //     Debug.Assert(getInfos);
-    //     
-    //     Debug.Assert(info!.State != VertexState.Cleaned);
-    //
-    //     if (info.State != VertexState.Unvisited) return;
-    //     
-    //     bool getResource = Resources.TryGetValue(rid, out var resource);
-    //     Debug.Assert(getResource);
-    //     
-    //     (ResourceProvider provider, BuildingOptions options) = resource;
-    //     DateTime resourceLastWriteTime = provider.LastWriteTime;
-    //
-    //     if (info.Dependencies.Count == 0) {
-    //         if (IsResourceCacheable(rid, resourceLastWriteTime, options, out _)) {
-    //             results.Add(rid, new(BuildStatus.Cached));
-    //             info.State = VertexState.Cached;
-    //             return;
-    //         }
-    //
-    //         info.State = VertexState.Rebuilt;
-    //         
-    //         if (!Importers.TryGetValue(options.ImporterName, out Importer? importer)) {
-    //             results.Add(rid, new(BuildStatus.UnknownImporter));
-    //             return;
-    //         }
-    //         
-    //         ImportingContext importingContext;
-    //         ContentRepresentation imported;
-    //
-    //         using Stream stream = provider.GetStream();
-    //
-    //         if (stream is not { CanRead: true, CanSeek: true }) {
-    //             results.Add(rid, new(BuildStatus.InvalidResourceStream));
-    //             return;
-    //         }
-    //         
-    //         try {
-    //             importingContext = new(options.Options);
-    //             imported = importer.ImportObject(stream, importingContext);
-    //         } catch (Exception e) {
-    //             results.Add(rid, new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
-    //             return;
-    //         }
-    //
-    //         info.ContentRepresentation = imported;
-    //         
-    //         Processor? processor;
-    //         string? processorName = options.ProcessorName;
-    //         
-    //         if (string.IsNullOrWhiteSpace(processorName)) {
-    //             processor = Processor.Passthrough;
-    //         } else if (!Processors.TryGetValue(processorName, out processor)) {
-    //             results.Add(rid, new(BuildStatus.UnknownProcessor));
-    //             return;
-    //         }
-    //         
-    //         ContentRepresentation processed;
-    //         try {
-    //             processed = processor.Process(imported, new(this, options.Options, FrozenDictionary<ResourceID, ContentRepresentation>.Empty));
-    //         } catch (Exception e) {
-    //             results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
-    //             return;
-    //         }
-    //         
-    //         try {
-    //             SerializeProcessedObject(processed, rid, options);
-    //         } catch (Exception e) {
-    //             results.Add(rid, new(BuildStatus.CompilationFailed, ExceptionDispatchInfo.Capture(e)));
-    //             return;
-    //         } finally {
-    //             processed.Dispose();
-    //         }
-    //         
-    //         results.Add(rid, new(BuildStatus.Success));
-    //         IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, info.Dependencies));
-    //         
-    //         if (importingContext.References.Count != 0) {
-    //             throw new NotImplementedException("Reference building is not implemented.");
-    //         }
-    //
-    //         return;
-    //     }
-    //     
-    //     // Got dependencies, walkthrough more troublesome route.
-    //     Dictionary<ResourceID, ContentRepresentation> dependencyRepresentations = [];
-    //     bool rebuild = false;
-    //
-    //     try {
-    //         if (IsResourceCacheable(rid, resourceLastWriteTime, options, out _)) {
-    //             foreach (var dependencyId in info.Dependencies) {
-    //                 BuildDependencyResource(graph, dependencyId, results);
-    //                 rebuild |= graph[dependencyId].State == VertexState.Rebuilt;
-    //                 
-    //                 if (graph[dependencyId].ContentRepresentation is not { } representation) continue;
-    //                 dependencyRepresentations.Add(dependencyId, representation);
-    //             }
-    //         } else {
-    //             foreach (var dependencyId in info.Dependencies) {
-    //                 BuildDependencyResource(graph, dependencyId, results);
-    //                 
-    //                 if (graph[dependencyId].ContentRepresentation is not { } representation) continue;
-    //                 dependencyRepresentations.Add(dependencyId, representation);
-    //             }
-    //
-    //             rebuild = true;
-    //         }
-    //
-    //         if (!rebuild) {
-    //             results.Add(rid, new(BuildStatus.Cached));
-    //             info.State = VertexState.Cached;
-    //             return;
-    //         }
-    //         
-    //         info.State = VertexState.Rebuilt;
-    //         
-    //         if (!Importers.TryGetValue(options.ImporterName, out Importer? importer)) {
-    //             results.Add(rid, new(BuildStatus.UnknownImporter));
-    //             return;
-    //         }
-    //         
-    //         ImportingContext importingContext;
-    //         ContentRepresentation imported;
-    //
-    //         using Stream stream = provider.GetStream();
-    //
-    //         if (stream is not { CanRead: true, CanSeek: true }) {
-    //             results.Add(rid, new(BuildStatus.InvalidResourceStream));
-    //             return;
-    //         }
-    //         
-    //         try {
-    //             importingContext = new(options.Options);
-    //             imported = importer.ImportObject(stream, importingContext);
-    //         } catch (Exception e) {
-    //             results.Add(rid, new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
-    //             return;
-    //         }
-    //         
-    //         info.ContentRepresentation = imported;
-    //         
-    //         Processor? processor;
-    //         string? processorName = options.ProcessorName;
-    //         
-    //         if (string.IsNullOrWhiteSpace(processorName)) {
-    //             processor = Processor.Passthrough;
-    //         } else if (!Processors.TryGetValue(processorName, out processor)) {
-    //             results.Add(rid, new(BuildStatus.UnknownProcessor));
-    //             return;
-    //         }
-    //         
-    //         if (!processor.CanProcess(imported)) {
-    //             results.Add(rid, new(BuildStatus.CannotProcess));
-    //             return;
-    //         }
-    //
-    //         ContentRepresentation processed;
-    //         try {
-    //             processed = processor.Process(imported, new(this, options.Options, dependencyRepresentations));
-    //         } catch (Exception e) {
-    //             results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
-    //             return;
-    //         }
-    //         
-    //         try {
-    //             SerializeProcessedObject(processed, rid, options);
-    //         } catch (Exception e) {
-    //             results.Add(rid, new(BuildStatus.CompilationFailed, ExceptionDispatchInfo.Capture(e)));
-    //             return;
-    //         } finally {
-    //             processed.Dispose();
-    //         }
-    //         
-    //         results.Add(rid, new(BuildStatus.Success));
-    //         IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, info.Dependencies));
-    //         
-    //         if (importingContext.References.Count != 0) {
-    //             throw new NotImplementedException("Reference building is not implemented.");
-    //         }
-    //     } finally {
-    //         foreach ((var dependencyId, var representation) in dependencyRepresentations) {
-    //             var dependencyInfos = graph[dependencyId];
-    //             
-    //             int refcount = --dependencyInfos.RefCount;
-    //             Debug.Assert(refcount >= 0);
-    //
-    //             if (refcount == 0) {
-    //                 representation.Dispose();
-    //                 dependencyInfos.State = VertexState.Cleaned;
-    //             }
-    //         }
-    //     }
-    // }
-    
     private bool IsResourceCacheable(ResourceID rid, DateTime resourceLastWriteTime, BuildingOptions currentOptions, out IncrementalInfo previousIncrementalInfo) {
         // If resource has been built before, and have old report, we can begin checking for caching.
         if (Output.GetResourceLastBuildTime(rid) is { } resourceLastBuildTime && IncrementalInfos.TryGet(rid, out previousIncrementalInfo)) {
@@ -753,41 +443,65 @@ partial class BuildEnvironment {
         previousIncrementalInfo = default;
         return false;
     }
-    //
-    // private bool ImportAndProcess(Dictionary<ResourceID, ResourceBuildingResult> results, Stream stream, ResourceID rid, BuildingOptions options, Importer importer, IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencyRepresentations, ImportingContext importingContext, [NotNullWhen(true)] out ContentRepresentation? processed) {
-    //     using (ContentRepresentation imported = importer.ImportObject(stream, importingContext)) {
-    //         string? processorName = options.ProcessorName;
-    //     
-    //         Processor? processor;
-    //     
-    //         if (string.IsNullOrWhiteSpace(processorName)) {
-    //             processor = Processor.Passthrough;
-    //         } else if (!Processors.TryGetValue(processorName, out processor)) {
-    //             results.Add(rid, new(BuildStatus.UnknownProcessor));
-    //             
-    //             processed = null;
-    //             return false;
-    //         }
-    //     
-    //         if (!processor.CanProcess(imported)) {
-    //             results.Add(rid, new(BuildStatus.CannotProcess));
-    //             
-    //             processed = null;
-    //             return false;
-    //         }
-    //     
-    //         try {
-    //             processed = processor.Process(imported, new(this, options.Options, dependencyRepresentations));
-    //             return true;
-    //         } catch (Exception e) {
-    //             results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
-    //             
-    //             processed = null;
-    //             return false;
-    //         }
-    //     }
-    // }
-    //
+
+    private bool Import(ResourceID rid, ResourceProvider provider, BuildingOptions options, Dictionary<ResourceID, ResourceBuildingResult> results, [NotNullWhen(true)] out ImportingContext? context, [NotNullWhen(true)] out ContentRepresentation? imported) {
+        if (!Importers.TryGetValue(options.ImporterName, out var importer)) {
+            results.Add(rid, new(BuildStatus.UnknownImporter));
+
+            context = null;
+            imported = null;
+            return false;
+        }
+        
+        using (Stream stream = provider.GetStream()) {
+            if (stream is not { CanRead: true, CanSeek: true }) {
+                results.Add(rid, new(BuildStatus.InvalidResourceStream));
+
+                context = null;
+                imported = null;
+                return false;
+            }
+
+            try {
+                context = new(options.Options);
+                imported = importer.ImportObject(stream, context);
+
+                return true;
+            } catch (Exception e) {
+                results.Add(rid, new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
+                
+                context = null;
+                imported = null;
+                return false;
+            }
+        }
+    }
+
+    private bool Process(ContentRepresentation imported, BuildingOptions options, IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies, ResourceID rid, Dictionary<ResourceID, ResourceBuildingResult> results, [NotNullWhen(true)] out ContentRepresentation? processed) {
+        Processor? processor;
+
+        string? processorName = options.ProcessorName;
+        
+        if (string.IsNullOrWhiteSpace(processorName)) {
+            processor = Processor.Passthrough;
+        } else if (!Processors.TryGetValue(processorName, out processor)) {
+            results.Add(rid, new(BuildStatus.UnknownProcessor));
+
+            processed = null;
+            return false;
+        }
+                
+        try {
+            processed = processor.Process(imported, new(this, options.Options, dependencies));
+            return true;
+        } catch (Exception e) {
+            results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
+
+            processed = null;
+            return false;
+        }
+    }
+
     private void SerializeProcessedObject(ContentRepresentation processed, ResourceID rid, BuildingOptions options) {
         if (SerializerFactories.GetSerializableFactory(processed.GetType()) is not { } factory) {
             throw new InvalidOperationException(string.Format(ExceptionMessages.NoSuitableSerializer, processed.GetType()));
@@ -805,8 +519,6 @@ partial class BuildEnvironment {
         public int RefCount;
         public ContentRepresentation? ContentRepresentation;
         public bool ImportFailed;
-        public bool Cached;
-        public bool Visited;
     
         public VertexInfo(IReadOnlySet<ResourceID> dependencies, HashSet<ResourceID> dependents) {
             Dependencies = dependencies;
