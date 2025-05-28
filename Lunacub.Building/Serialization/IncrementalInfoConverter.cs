@@ -26,16 +26,20 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
             reader.Read();
 
             switch (propertyName) {
-                case "SourceLastWriteTime":
+                case nameof(IncrementalInfo.SourceLastWriteTime):
                     sourceLastWriteTime= reader.GetDateTime();
                     break;
                     
-                case "Options":
+                case nameof(IncrementalInfo.Options):
                     buildingOptions = JsonSerializer.Deserialize<BuildingOptions>(ref reader, options);
                     break;
                 
-                case "Dependencies":
+                case nameof(IncrementalInfo.Dependencies):
                     dependencies = JsonSerializer.Deserialize<HashSet<ResourceID>>(ref reader, options) is { } set ? set.ToFrozenSet() : FrozenSet<ResourceID>.Empty;
+                    break;
+                
+                default:
+                    reader.Skip();
                     break;
             }
         }

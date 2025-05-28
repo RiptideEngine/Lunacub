@@ -40,6 +40,10 @@ internal sealed class BuildingOptionsConverter : JsonConverter<BuildingOptions> 
                 case nameof(BuildingOptions.Options):
                     buildOptions = JsonSerializer.Deserialize<IImportOptions>(ref reader, options);
                     break;
+                
+                default:
+                    reader.Skip();
+                    break;
             }
         }
 
