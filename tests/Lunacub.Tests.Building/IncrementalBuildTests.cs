@@ -22,7 +22,7 @@ public class IncrementalBuildTests : IClassFixture<ComponentsFixture>, IDisposab
     }
     
     [Fact]
-    public void Build_Normal_ShouldNotRebuild() {
+    public void BuildResources_Normal_ShouldNotRebuild() {
         _environment.Resources.Add(1, new() {
             Provider = new MemoryResourceProvider("""{"Value":1}"""u8, DateTime.MinValue),
             Options = new() {
@@ -35,7 +35,7 @@ public class IncrementalBuildTests : IClassFixture<ComponentsFixture>, IDisposab
     }
 
     [Fact]
-    public void Build_RemoveIncrementalInfo_ShouldRebuild() {
+    public void BuildResources_RemoveIncrementalInfo_ShouldRebuild() {
         _environment.Resources.Add(1, new() {
             Provider = new MemoryResourceProvider("""{"Value":1}"""u8, DateTime.MinValue),
             Options = new() {

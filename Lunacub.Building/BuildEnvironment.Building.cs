@@ -9,22 +9,24 @@ partial class BuildEnvironment {
         DateTime begin = DateTime.Now;
         Dictionary<ResourceID, ResourceBuildingResult> results = [];
 
+        // Build dependency graph and build all the resources that play part in it.
         Dictionary<ResourceID, VertexInfo> vertices = BuildDependencyGraph();
-        
-        foreach ((_, var info) in vertices) {
-            info.RefCount = info.Dependents.Count;
-        }
-        
-        // Enumerate through root nodes
-        foreach ((var rid, var info) in vertices) {
-            if (info.Dependents.Count != 0) continue;
-        
-            BuildRootResource(vertices, rid, info, results);
-        }
+        try {
+            foreach ((_, var info) in vertices) {
+                info.RefCount = info.Dependents.Count;
+            }
 
-        foreach ((var id, var info) in vertices) {
-            Console.WriteLine(id + ": " + info.State + ", " + info.RefCount);
+            // Enumerate through root nodes
+            foreach ((var rid, var info) in vertices) {
+                if (info.Dependents.Count != 0) continue;
+
+                BuildRootResource(vertices, rid, info, results);
+            }
+        } finally {
+            Debug.Assert(vertices.Values.All(x => x.RefCount == 0));
         }
+        
+        // Build the remain resources.
 
         return new(begin, DateTime.Now, results);
     }
@@ -42,7 +44,15 @@ partial class BuildEnvironment {
         bool rebuild = false;
 
         try {
-            if (IsResourceNeedRebuild(rid, resourceLastWriteTime, options, out _)) {
+            if (IsResourceCacheable(rid, resourceLastWriteTime, options, out _)) {
+                foreach (var dependencyId in info.Dependencies) {
+                    BuildDependencyResource(graph, dependencyId, results);
+                    rebuild |= graph[dependencyId].State == VertexState.Rebuilt;
+                    
+                    if (graph[dependencyId].ContentRepresentation is not { } representation) continue;
+                    dependencyRepresentations.Add(dependencyId, representation);
+                }
+            } else {
                 foreach (var dependencyId in info.Dependencies) {
                     BuildDependencyResource(graph, dependencyId, results);
                     
@@ -51,14 +61,6 @@ partial class BuildEnvironment {
                 }
 
                 rebuild = true;
-            } else {
-                foreach (var dependencyId in info.Dependencies) {
-                    BuildDependencyResource(graph, dependencyId, results);
-                    rebuild |= graph[dependencyId].State == VertexState.Rebuilt;
-                    
-                    if (graph[dependencyId].ContentRepresentation is not { } representation) continue;
-                    dependencyRepresentations.Add(dependencyId, representation);
-                }
             }
 
             if (!rebuild) {
@@ -160,7 +162,7 @@ partial class BuildEnvironment {
         DateTime resourceLastWriteTime = provider.LastWriteTime;
 
         if (info.Dependencies.Count == 0) {
-            if (!IsResourceNeedRebuild(rid, resourceLastWriteTime, options, out _)) {
+            if (IsResourceCacheable(rid, resourceLastWriteTime, options, out _)) {
                 results.Add(rid, new(BuildStatus.Cached));
                 info.State = VertexState.Cached;
                 return;
@@ -235,7 +237,15 @@ partial class BuildEnvironment {
         bool rebuild = false;
 
         try {
-            if (IsResourceNeedRebuild(rid, resourceLastWriteTime, options, out _)) {
+            if (IsResourceCacheable(rid, resourceLastWriteTime, options, out _)) {
+                foreach (var dependencyId in info.Dependencies) {
+                    BuildDependencyResource(graph, dependencyId, results);
+                    rebuild |= graph[dependencyId].State == VertexState.Rebuilt;
+                    
+                    if (graph[dependencyId].ContentRepresentation is not { } representation) continue;
+                    dependencyRepresentations.Add(dependencyId, representation);
+                }
+            } else {
                 foreach (var dependencyId in info.Dependencies) {
                     BuildDependencyResource(graph, dependencyId, results);
                     
@@ -244,14 +254,6 @@ partial class BuildEnvironment {
                 }
 
                 rebuild = true;
-            } else {
-                foreach (var dependencyId in info.Dependencies) {
-                    BuildDependencyResource(graph, dependencyId, results);
-                    rebuild |= graph[dependencyId].State == VertexState.Rebuilt;
-                    
-                    if (graph[dependencyId].ContentRepresentation is not { } representation) continue;
-                    dependencyRepresentations.Add(dependencyId, representation);
-                }
             }
 
             if (!rebuild) {
@@ -340,32 +342,6 @@ partial class BuildEnvironment {
                 }
             }
         }
-        
-        // bool rebuild = false;
-        // if (IsResourceNeedRebuild(rid, resourceLastWriteTime, options, out _)) {
-        //     foreach (var dependency in info!.Dependencies) {
-        //         BuildDependencyResource(graph, rid, results);
-        //             
-        //         if (graph[dependency].ContentRepresentation is not { } representation) continue;
-        //         dependencyRepresentations.Add(dependency, representation);
-        //     }
-        //
-        //     rebuild = true;
-        // } else {
-        //     foreach (var dependency in info!.Dependencies) {
-        //         BuildDependencyResource(graph, rid, results);
-        //         rebuild |= graph[dependency].Rebuilt;
-        //             
-        //         if (graph[dependency].ContentRepresentation is not { } representation) continue;
-        //         dependencyRepresentations.Add(dependency, representation);
-        //     }
-        // }
-        
-        // if (IsResourceNeedRebuild(rid, provider.LastWriteTime, options, out var incrementalInfo)) {
-        //     graph[rid].Rebuilt = true;
-        // } else {
-        //     graph[rid].Rebuilt = false;
-        // }
     }
     
     private Dictionary<ResourceID, VertexInfo> BuildDependencyGraph() {
@@ -453,7 +429,7 @@ partial class BuildEnvironment {
         }
     }
     
-    private bool IsResourceNeedRebuild(ResourceID rid, DateTime resourceLastWriteTime, BuildingOptions currentOptions, out IncrementalInfo previousIncrementalInfo) {
+    private bool IsResourceCacheable(ResourceID rid, DateTime resourceLastWriteTime, BuildingOptions currentOptions, out IncrementalInfo previousIncrementalInfo) {
         // If resource has been built before, and have old report, we can begin checking for caching.
         if (Output.GetResourceLastBuildTime(rid) is { } resourceLastBuildTime && IncrementalInfos.TryGet(rid, out previousIncrementalInfo)) {
             // Check if resource's last write time is the same as the time stored in report.
@@ -461,15 +437,15 @@ partial class BuildEnvironment {
             if (resourceLastWriteTime == previousIncrementalInfo.SourceLastWriteTime && resourceLastBuildTime > resourceLastWriteTime) {
                 // If the options are equal, no need to rebuild.
                 if (currentOptions.Equals(previousIncrementalInfo.Options)) {
-                    return false;
+                    return true;
                 }
             }
-
-            return true;
+    
+            return false;
         }
-
+    
         previousIncrementalInfo = default;
-        return true;
+        return false;
     }
 
     private bool ImportAndProcess(Dictionary<ResourceID, ResourceBuildingResult> results, Stream stream, ResourceID rid, BuildingOptions options, Importer importer, IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencyRepresentations, ImportingContext importingContext, [NotNullWhen(true)] out ContentRepresentation? processed) {
