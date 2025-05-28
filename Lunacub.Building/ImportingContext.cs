@@ -8,6 +8,8 @@ namespace Caxivitual.Lunacub.Building;
 /// </summary>
 public sealed class ImportingContext {
     private readonly HashSet<ResourceID> _references;
+    
+    // TODO: Move References to processor?
     internal IReadOnlyCollection<ResourceID> References => _references;
     
     /// <summary>
