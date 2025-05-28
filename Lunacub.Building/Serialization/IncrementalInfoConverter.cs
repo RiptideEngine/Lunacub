@@ -50,12 +50,12 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
     public override void Write(Utf8JsonWriter writer, IncrementalInfo info, JsonSerializerOptions options) {
         writer.WriteStartObject();
         
-        writer.WriteString("SourceLastWriteTime", info.SourceLastWriteTime);
+        writer.WriteString(nameof(IncrementalInfo.SourceLastWriteTime), info.SourceLastWriteTime);
         
-        writer.WritePropertyName("Options");
+        writer.WritePropertyName(nameof(IncrementalInfo.Options));
         JsonSerializer.Serialize(writer, info.Options, options);
         
-        writer.WritePropertyName("Dependencies");
+        writer.WritePropertyName(nameof(IncrementalInfo.Dependencies));
         JsonSerializer.Serialize(writer, info.Dependencies, options);
         
         writer.WriteEndObject();
