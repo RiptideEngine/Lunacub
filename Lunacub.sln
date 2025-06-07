@@ -24,6 +24,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "experiments", "experiments"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyImporting", "examples\DependencyImporting\DependencyImporting.csproj", "{4B05A58A-F336-43BE-A145-2CC88F92AF82}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunacub.Building.SourceGenerator", "Lunacub.Building.SourceGenerator\Lunacub.Building.SourceGenerator.csproj", "{7ED47A65-8E42-4EE7-A10B-899BEAF6BF3A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -70,6 +72,10 @@ Global
 		{4B05A58A-F336-43BE-A145-2CC88F92AF82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4B05A58A-F336-43BE-A145-2CC88F92AF82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4B05A58A-F336-43BE-A145-2CC88F92AF82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7ED47A65-8E42-4EE7-A10B-899BEAF6BF3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7ED47A65-8E42-4EE7-A10B-899BEAF6BF3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7ED47A65-8E42-4EE7-A10B-899BEAF6BF3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7ED47A65-8E42-4EE7-A10B-899BEAF6BF3A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{D250027C-8D8F-4DE5-A961-E6AFEE52DFDD} = {BD303699-F202-42F4-B61F-8D17F82567F4}
