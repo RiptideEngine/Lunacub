@@ -2,7 +2,7 @@
 
 namespace Caxivitual.Lunacub.Examples.ReferenceImporting;
 
-public sealed class ReferenceResourceImporter : Importer<ReferenceResourceDTO> {
+public sealed partial class ReferenceResourceImporter : Importer<ReferenceResourceDTO> {
     private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerOptions.Default) {
         IncludeFields = true,
     };

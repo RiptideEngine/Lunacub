@@ -2,7 +2,7 @@
 
 namespace Caxivitual.Lunacub.Examples.SimpleImporting;
 
-public sealed class SimpleResourceImporter : Importer<SimpleResourceDTO> {
+public sealed partial class SimpleResourceImporter : Importer<SimpleResourceDTO> {
     private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerOptions.Default) {
         IncludeFields = true,
     };

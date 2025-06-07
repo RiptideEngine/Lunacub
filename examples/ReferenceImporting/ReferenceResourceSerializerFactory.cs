@@ -2,14 +2,14 @@
 
 namespace Caxivitual.Lunacub.Examples.ReferenceImporting;
 
-public sealed class ReferenceResourceSerializerFactory : SerializerFactory {
+public sealed partial class ReferenceResourceSerializerFactory : SerializerFactory {
     public override bool CanSerialize(Type representationType) => representationType == typeof(ReferenceResourceDTO);
 
     protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
     }
 
-    private sealed class SerializerCore : Serializer {
+    private sealed partial class SerializerCore : Serializer {
         public override string DeserializerName => nameof(ReferenceResourceDeserializer);
         
         public SerializerCore(ContentRepresentation contentRepresentation, SerializationContext context) : base(contentRepresentation, context) { }
