@@ -5,18 +5,18 @@ public class ProcessorOfTTests {
     public void CanProcess_CorrectType_ReturnsTrue() {
         SimpleResourceProcessor processor = new();
 
-        processor.CanProcess(new SimpleResourceDTO()).Should().BeTrue();
+        processor.CanProcess(new ResourceWithValueDTO()).Should().BeTrue();
     }
 
     [Fact]
     public void CanProcess_IncorrectType_ReturnsFalse() {
         SimpleResourceProcessor processor = new();
 
-        processor.CanProcess(new ReferenceResourceDTO()).Should().BeFalse();
+        processor.CanProcess(new ResourceWithReferenceDTO()).Should().BeFalse();
     }
 
-    private sealed class SimpleResourceProcessor : Processor<SimpleResourceDTO, SimpleResourceDTO> {
-        protected override SimpleResourceDTO Process(SimpleResourceDTO input, ProcessingContext context) {
+    private sealed class SimpleResourceProcessor : Processor<ResourceWithValueDTO, ResourceWithValueDTO> {
+        protected override ResourceWithValueDTO Process(ResourceWithValueDTO input, ProcessingContext context) {
             return new();
         }
     }

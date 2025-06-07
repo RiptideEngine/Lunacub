@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace ReferenceImporting;
+namespace Caxivitual.Lunacub.Examples.ReferenceImporting;
 
 public sealed class ReferenceResourceDeserializer : Deserializer<ReferenceResource> {
     public override bool Streaming => false;
@@ -8,11 +8,11 @@ public sealed class ReferenceResourceDeserializer : Deserializer<ReferenceResour
     protected override Task<ReferenceResource> DeserializeAsync(Stream dataStream, Stream optionStream, DeserializationContext context, CancellationToken cancellationToken) {
         using BinaryReader br = new BinaryReader(dataStream, Encoding.UTF8, true);
         
-        context.RequestReference<ReferenceResource>(nameof(ReferenceResource.Reference), br.ReadResourceID());
+        context.RequestReference<ReferenceResource>(1, br.ReadResourceID());
         return Task.FromResult(new ReferenceResource { Value = br.ReadInt32() });
     }
 
-    protected override void ResolveDependencies(ReferenceResource instance, DeserializationContext context) {
-        instance.Reference = context.GetReference<ReferenceResource>(nameof(ReferenceResource.Reference));
+    protected override void ResolveReferences(ReferenceResource instance, DeserializationContext context) {
+        instance.Reference = context.GetReference<ReferenceResource>(1);
     }
 }

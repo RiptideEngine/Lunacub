@@ -1,4 +1,5 @@
 ﻿using Caxivitual.Lunacub.Building.Collections;
+using Microsoft.Extensions.Logging;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -11,8 +12,14 @@ public sealed class SerializationContext {
     /// </summary>
     /// <seealso cref="BuildingResource.Options"/>
     public IImportOptions? Options { get; }
+    
+    /// <summary>
+    /// Gets the <see cref="ILogger"/> instance used for debugging and reporting.
+    /// </summary>
+    public ILogger Logger { get; }
 
-    internal SerializationContext(IImportOptions? options) {
+    internal SerializationContext(IImportOptions? options, ILogger logger) {
         Options = options;
+        Logger = logger;
     }
 }

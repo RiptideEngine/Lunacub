@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace ReferenceImporting;
+namespace Caxivitual.Lunacub.Examples.ReferenceImporting;
 
 public sealed class ReferenceResourceSerializerFactory : SerializerFactory {
     public override bool CanSerialize(Type representationType) => representationType == typeof(ReferenceResourceDTO);

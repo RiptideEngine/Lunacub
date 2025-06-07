@@ -1,4 +1,6 @@
 ﻿using Caxivitual.Lunacub.Building.Collections;
+using Microsoft.Extensions.Logging;
+using System.Collections.Frozen;
 using System.Runtime.ExceptionServices;
 
 namespace Caxivitual.Lunacub.Building;
@@ -9,75 +11,82 @@ partial class BuildEnvironment {
         Dictionary<ResourceID, ResourceBuildingResult> results = [];
     
         // Build dependency graph and build all the resources that play part in it.
-        Dictionary<ResourceID, VertexInfo> vertices = BuildDependencyGraph();
+        Dictionary<ResourceID, VertexInfo> graph = BuildDependencyGraph(results);
         try {
-            foreach ((_, var info) in vertices) {
-                info.RefCount = info.Dependents.Count;
+            foreach ((_, var info) in graph) {
+                info.SetReferenceCount(info.DependentIds.Count);
             }
     
             // Enumerate through root nodes
-            foreach ((var rid, var info) in vertices) {
-                if (info.Dependents.Count != 0) continue;
+            foreach ((var rid, var info) in graph) {
+                if (info.DependentIds.Count != 0) continue;
     
-                BuildRootResource(vertices, rid, info, results);
+                BuildResourceInDependecyGraph(rid, info, graph, results);
             }
         } finally {
-            Debug.Assert(vertices.Values.All(x => x.RefCount == 0));
+            Debug.Assert(graph.Values.All(x => x.RefCount == 0));
         }
         
         // TODO: Build the remain resources.
-    
+        foreach ((var rid, var resource) in Resources) {
+            BuildSingularResource(rid, resource, results, graph);
+        }
+        
         return new(begin, DateTime.Now, results);
     }
     
-    private Dictionary<ResourceID, VertexInfo> BuildDependencyGraph() {
+    private Dictionary<ResourceID, VertexInfo> BuildDependencyGraph(Dictionary<ResourceID, ResourceBuildingResult> results) {
         Dictionary<ResourceID, VertexInfo> outputVertices = [];
         
         // Collecting edges.
         foreach ((var rid, var resource) in Resources) {
-            CollectRecursively(outputVertices, rid, resource);
+            CollectRecursively(outputVertices, rid, resource, results);
         }
     
         ValidateGraph(outputVertices);
         
         return outputVertices;
     
-        void CollectRecursively(Dictionary<ResourceID, VertexInfo> receiver, ResourceID rid, BuildingResource resource) {
+        void CollectRecursively(Dictionary<ResourceID, VertexInfo> receiver, ResourceID rid, BuildingResource resource, Dictionary<ResourceID, ResourceBuildingResult> results) {
             if (receiver.ContainsKey(rid)) return;
     
             if (!Importers.TryGetValue(resource.Options.ImporterName, out Importer? importer)) {
-                throw new ArgumentException($"Failed to get importer '{resource.Options.ImporterName}' for resource '{rid}'.");
+                results.Add(rid, new(BuildStatus.UnknownImporter));
+                return;
             }
             
             using var stream = resource.Provider.GetStream();
             var dependencies = importer.GetDependencies(stream).Where(FilterContainsResource).ToHashSet();
-    
+            dependencies.Remove(rid);   // Fix self-dependent.
+            
             if (dependencies.Count == 0) return;
             
             receiver.Add(rid, new(dependencies, []));
     
             foreach (var dependency in dependencies) {
-                CollectRecursivelyWithDependent(receiver, dependency, rid);
+                CollectRecursivelyWithDependent(receiver, dependency, rid, results);
             }
         }
         
-        void CollectRecursivelyWithDependent(Dictionary<ResourceID, VertexInfo> receiver, ResourceID rid, ResourceID dependent) {
+        void CollectRecursivelyWithDependent(Dictionary<ResourceID, VertexInfo> receiver, ResourceID rid, ResourceID dependent, Dictionary<ResourceID, ResourceBuildingResult> results) {
             if (receiver.TryGetValue(rid, out var edges)) {
-                edges.Dependents.Add(dependent);
+                edges.DependentIds.Add(dependent);
             } else {
                 if (!Resources.TryGetValue(rid, out var resource)) return;
                 
                 if (!Importers.TryGetValue(resource.Options.ImporterName, out Importer? importer)) {
-                    throw new ArgumentException($"Failed to get importer '{resource.Options.ImporterName}' for resource '{rid}'.");
+                    results.Add(rid, new(BuildStatus.UnknownImporter));
+                    return;
                 }
     
                 using var stream = resource.Provider.GetStream();
                 var dependencies = importer.GetDependencies(stream).Where(FilterContainsResource).ToHashSet();
-    
+                dependencies.Remove(rid);   // Fix self-dependent.
+                
                 receiver.Add(rid, new(dependencies, [dependent]));
                 
                 foreach (var dependency in dependencies) {
-                    CollectRecursivelyWithDependent(receiver, dependency, rid);
+                    CollectRecursivelyWithDependent(receiver, dependency, rid, results);
                 }
             }
         }
@@ -100,10 +109,10 @@ partial class BuildEnvironment {
                 path.Push(rid);
                 
                 if (!temporaryMark.Add(rid)) {
-                    throw new InvalidOperationException($"Cyclic dependency detected: {string.Join(" -> ", path.Reverse())}.");
+                    throw new InvalidOperationException($"Circular dependency detected: {string.Join(" -> ", path.Reverse())}.");
                 }
                 
-                foreach (var dependencyID in vertices[rid].Dependencies) {
+                foreach (var dependencyID in vertices[rid].DependencyIds) {
                     Visit(dependencyID, vertices, temporaryMark, permanentMark, path);
                 }
                 
@@ -112,86 +121,52 @@ partial class BuildEnvironment {
             }
         }
     }
-    
-    private void BuildRootResource(Dictionary<ResourceID, VertexInfo> graph, ResourceID rid, VertexInfo info, Dictionary<ResourceID, ResourceBuildingResult> results) {
-        Debug.Assert(info.RefCount == 0);
-        
-        bool getResource = Resources.TryGetValue(rid, out var resource);
-        Debug.Assert(getResource);
 
-        (ResourceProvider provider, BuildingOptions options) = resource;
+    private void BuildResourceInDependecyGraph(ResourceID rid, VertexInfo vertexInfo, Dictionary<ResourceID, VertexInfo> graph, Dictionary<ResourceID, ResourceBuildingResult> results) {
+        Debug.Assert(graph.ContainsKey(rid));
+        bool tryget = Resources.TryGetValue(rid, out var buildingResource);
+        Debug.Assert(tryget);
+
+        if (vertexInfo.Visited) return;
+        
+        bool rebuild = false;
+        foreach (var dependencyId in vertexInfo.DependencyIds) {
+            tryget = graph.TryGetValue(dependencyId, out var dependencyVertexInfo);
+            Debug.Assert(tryget);
+            
+            BuildResourceInDependecyGraph(dependencyId, dependencyVertexInfo!, graph, results);
+
+            if (!dependencyVertexInfo!.Cached) {
+                rebuild = true;
+            }
+        }
+
+        (ResourceProvider provider, BuildingOptions options) = buildingResource;
         DateTime resourceLastWriteTime = provider.LastWriteTime;
 
-        try {
-            Importer? importer;
-            ImportingContext? importingContext;
-            ContentRepresentation? imported, processed;
-            Dictionary<ResourceID, ContentRepresentation> dependencies;
-            Processor? processor;
-            string? processorName;
+        if (rebuild || !IsResourceCacheable(rid, resourceLastWriteTime, options, vertexInfo.DependencyIds, out _)) {
+            vertexInfo.Cached = false;
             
-            if (AreDependenciesCacheable(info.Dependencies)) {
-                if (IsResourceCacheable(rid, resourceLastWriteTime, options, out _)) {
-                    results.Add(rid, new(BuildStatus.Cached));
+            // Rebuild resources.
+            
+            // Import if haven't.
+            if (vertexInfo.ImportOutput == null) {
+                if (!Import(rid, provider, options, results, out ContentRepresentation? importOutput, out ImportingContext? context)) {
+                    vertexInfo.FaultyImport = true;
                     return;
                 }
+                
+                vertexInfo.SetImported(importOutput, context);
+            }
 
-                // Import the resource first.
-                if (!Importers.TryGetValue(options.ImporterName, out importer)) {
-                    results.Add(rid, new(BuildStatus.UnknownImporter));
+            // Collect the dependencies.
+            Dictionary<ResourceID, ContentRepresentation> dependencies = CollectDependencies(vertexInfo.DependencyIds, graph, results);
+
+            try {
+                if (!Process(rid, vertexInfo.ImportOutput, options, dependencies, results, out ContentRepresentation? processed)) {
                     return;
                 }
-
-                if (!Import(rid, provider, options, results, out importingContext, out imported)) {
-                    return;
-                }
-
-                // Process the imported resource.
-                // Import the dependencies.
-                dependencies = [];
-
-                foreach (var dependencyRid in info.Dependencies) {
-                    bool getInfo = graph.TryGetValue(dependencyRid, out var dependencyInfo);
-                    Debug.Assert(getInfo);
-
-                    if (dependencyInfo!.ContentRepresentation is { } representation) {
-                        dependencies.Add(dependencyRid, representation);
-                        continue;
-                    }
-
-                    if (dependencyInfo.ImportFailed) {
-                        continue;
-                    }
-
-                    getResource = Resources.TryGetValue(dependencyRid, out var dependencyResource);
-                    Debug.Assert(getResource);
-
-                    (ResourceProvider dependencyProvider, BuildingOptions dependencyOptions) = dependencyResource;
-
-                    if (!Importers.TryGetValue(dependencyOptions.ImporterName, out importer)) {
-                        dependencyInfo.ImportFailed = true;
-                        continue;
-                    }
-
-                    using (Stream stream = dependencyProvider.GetStream()) {
-                        if (stream is not { CanRead: true, CanSeek: true }) continue;
-
-                        try {
-                            ContentRepresentation importedDependency = importer.ImportObject(stream, new(dependencyOptions.Options));
-
-                            dependencies.Add(dependencyRid, importedDependency);
-                            dependencyInfo.ContentRepresentation = importedDependency;
-                        } catch (Exception) {
-                            // TODO: Logging? Encapsulating?
-                        }
-                    }
-                }
-
-                // Do the actual process.
-                if (!Process(imported, options, dependencies, rid, results, out processed)) {
-                    return;
-                }
-
+                
                 try {
                     SerializeProcessedObject(processed, rid, options);
                 } catch (Exception e) {
@@ -200,232 +175,110 @@ partial class BuildEnvironment {
                 } finally {
                     processed.Dispose();
                 }
-
+                
                 results.Add(rid, new(BuildStatus.Success));
-                IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, info.Dependencies));
-
-                if (importingContext.References.Count != 0) {
-                    throw new NotImplementedException("Reference is not implemented.");
-                }
-
-                return;
-            }
-        
-            // The resource and its dependencies need to be rebuilt, recursively rebuild the resource.
-            // Import the dependencies.
-            dependencies = [];
-
-            foreach (var dependencyRid in info.Dependencies) {
-                BuildDependencyResource(graph, dependencyRid, results, out var dependencyInfo);
-
-                if (dependencyInfo.ImportFailed || dependencyInfo.ContentRepresentation is not { } representation) continue;
-                dependencies.Add(dependencyRid, representation);
-            }
-            
-            if (!Importers.TryGetValue(options.ImporterName, out importer)) {
-                results.Add(rid, new(BuildStatus.UnknownImporter));
-                return;
-            }
-
-            // Import the resource.
-            if (!Import(rid, provider, options, results, out importingContext, out imported)) {
-                return;
-            }
-
-            // Processing.
-            if (!Process(imported, options, dependencies, rid, results, out processed)) {
-                return;
-            }
-            
-            // Compile.
-            try {
-                SerializeProcessedObject(processed, rid, options);
-            } catch (Exception e) {
-                results.Add(rid, new(BuildStatus.CompilationFailed, ExceptionDispatchInfo.Capture(e)));
-                return;
+                IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, vertexInfo.DependencyIds));
             } finally {
-                processed.Dispose();
+                ReleaseDependencies(vertexInfo.DependencyIds, graph);
             }
+        } else {
+            // Cache the resource.
+            vertexInfo.Cached = true;
+            results.Add(rid, new(BuildStatus.Cached));
+            
+            ReleaseDependencies(vertexInfo.DependencyIds, graph);
+        }
+        
+        vertexInfo.Visited = true;
+
+        static void ReleaseDependencies(IReadOnlyCollection<ResourceID> dependencyIds, Dictionary<ResourceID, VertexInfo> graph) {
+            foreach (var dependencyId in dependencyIds) {
+                bool tryget = graph.TryGetValue(dependencyId, out var dependencyVertexInfo);
+                Debug.Assert(tryget);
                 
-            results.Add(rid, new(BuildStatus.Success));
-            IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, info.Dependencies));
-                
-            // if (importingContext.References.Count != 0) {
-            //     throw new NotImplementedException("Reference is not implemented.");
-            // }
-        } finally {
-            ReleaseDependencies(graph, info.Dependencies);
+                dependencyVertexInfo?.Release();
+            }
         }
     }
     
-    private void BuildDependencyResource(Dictionary<ResourceID, VertexInfo> graph, ResourceID rid, Dictionary<ResourceID, ResourceBuildingResult> results, out VertexInfo info) {
-        bool getInfo = graph.TryGetValue(rid, out info!);
-        Debug.Assert(getInfo);
+    Dictionary<ResourceID, ContentRepresentation> CollectDependencies(IReadOnlySet<ResourceID> dependencyIds, Dictionary<ResourceID, VertexInfo> graph, Dictionary<ResourceID, ResourceBuildingResult> results) {
+        Dictionary<ResourceID, ContentRepresentation> dependencies = new(dependencyIds.Count);
+            
+        foreach (var dependencyId in dependencyIds) {
+            bool tryget = graph.TryGetValue(dependencyId, out var dependencyVertexInfo);
+            Debug.Assert(tryget);
+            Debug.Assert(dependencyVertexInfo!.Visited);
 
+            if (dependencyVertexInfo.FaultyImport) {
+                continue;
+            }
+                
+            if (dependencyVertexInfo.Cached) {
+                Debug.Assert(dependencyVertexInfo.ImportOutput == null);
+                    
+                tryget = Resources.TryGetValue(dependencyId, out var dependencyResource);
+                Debug.Assert(tryget);
+                
+                (ResourceProvider provider, BuildingOptions options) = dependencyResource;
+                
+                if (!Import(dependencyId, provider, options, results, out ContentRepresentation? importOutput, out ImportingContext? context)) {
+                    dependencyVertexInfo.FaultyImport = true;
+                    continue;
+                }
+                
+                dependencyVertexInfo.SetImported(importOutput, context);
+                dependencies.Add(dependencyId, importOutput);
+                continue;
+            }
+                
+            Debug.Assert(dependencyVertexInfo.ImportOutput != null);
+            dependencies.Add(dependencyId, dependencyVertexInfo.ImportOutput);
+        }
+            
+        return dependencies;
+    }
+    
+    private void BuildSingularResource(ResourceID rid, BuildingResource resource, Dictionary<ResourceID, ResourceBuildingResult> results, Dictionary<ResourceID, VertexInfo> graph) {
+        if (graph.ContainsKey(rid)) return;
+        
         if (results.ContainsKey(rid)) return;
-
-        bool getResource = Resources.TryGetValue(rid, out var resource);
-        Debug.Assert(getResource);
-
+        
         (ResourceProvider provider, BuildingOptions options) = resource;
         DateTime resourceLastWriteTime = provider.LastWriteTime;
-
-        try {
-            Importer? importer;
-            ImportingContext? importingContext;
-            ContentRepresentation? processed;
-            Dictionary<ResourceID, ContentRepresentation> dependencies;
-            Processor? processor;
-            string? processorName;
-            
-            if (AreDependenciesCacheable(info.Dependencies)) {
-                if (IsResourceCacheable(rid, resourceLastWriteTime, options, out _)) {
-                    results.Add(rid, new(BuildStatus.Cached));
-                    return;
-                }
-
-                // Import the resource first.
-                if (info.ContentRepresentation == null) {
-                    if (!Import(rid, provider, options, results, out importingContext, out info.ContentRepresentation)) {
-                        return;
-                    }
-                }
-
-                // Process the imported resource.
-                // Import the dependencies.
-                dependencies = [];
-
-                foreach (var dependencyRid in info.Dependencies) {
-                    getInfo = graph.TryGetValue(dependencyRid, out var dependencyInfo);
-                    Debug.Assert(getInfo);
-
-                    if (dependencyInfo!.ContentRepresentation is { } representation) {
-                        dependencies.Add(dependencyRid, representation);
-                        continue;
-                    }
-
-                    if (dependencyInfo.ImportFailed) continue;
-
-                    getResource = Resources.TryGetValue(dependencyRid, out var dependencyResource);
-                    Debug.Assert(getResource);
-
-                    (ResourceProvider dependencyProvider, BuildingOptions dependencyOptions) = dependencyResource;
-
-                    if (!Importers.TryGetValue(dependencyOptions.ImporterName, out importer)) {
-                        dependencyInfo.ImportFailed = true;
-                        continue;
-                    }
-
-                    using (Stream stream = dependencyProvider.GetStream()) {
-                        if (stream is not { CanRead: true, CanSeek: true }) continue;
-
-                        try {
-                            ContentRepresentation importedDependency = importer.ImportObject(stream, new(dependencyOptions.Options));
-
-                            dependencies.Add(dependencyRid, importedDependency);
-                            dependencyInfo.ContentRepresentation = importedDependency;
-                        } catch (Exception) {
-                            // TODO: Logging? Encapsulating?
-                        }
-                    }
-                }
-
-                // Do the actual process.
-                if (!Process(info.ContentRepresentation, options, dependencies, rid, results, out processed)) {
-                    return;
-                }
-                
-                try {
-                    SerializeProcessedObject(processed, rid, options);
-                } catch (Exception e) {
-                    results.Add(rid, new(BuildStatus.CompilationFailed, ExceptionDispatchInfo.Capture(e)));
-                    return;
-                } finally {
-                    processed.Dispose();
-                }
-
-                results.Add(rid, new(BuildStatus.Success));
-                IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, info.Dependencies));
-
-                // if (importingContext.References.Count != 0) {
-                //     throw new NotImplementedException("Reference is not implemented.");
-                // }
-
-                return;
-            }
         
-            // The resource and its dependencies need to be rebuilt, recursively rebuild the resource.
-            // Import the dependencies.
-            dependencies = [];
+        if (IsResourceCacheable(rid, resourceLastWriteTime, options, FrozenSet<ResourceID>.Empty, out _)) {
+            results.Add(rid, new(BuildStatus.Cached));
+            return;
+        }
 
-            foreach (var dependencyRid in info.Dependencies) {
-                BuildDependencyResource(graph, dependencyRid, results, out var dependencyInfo);
+        if (!Import(rid, provider, options, results, out var imported, out var context)) {
+            return;
+        }
 
-                if (dependencyInfo.ImportFailed || dependencyInfo.ContentRepresentation is not { } representation) continue;
-                dependencies.Add(dependencyRid, representation);
-            }
-
-            if (info.ContentRepresentation == null) {
-                if (!Import(rid, provider, options, results, out importingContext, out info.ContentRepresentation)) {
-                    return;
-                }
-            }
-            
-            // Processing.
-            if (!Process(info.ContentRepresentation, options, dependencies, rid, results, out processed)) {
-                return;
-            }
-
-            // Compile.
-            try {
-                SerializeProcessedObject(processed, rid, options);
-            } catch (Exception e) {
-                results.Add(rid, new(BuildStatus.CompilationFailed, ExceptionDispatchInfo.Capture(e)));
-                return;
-            } finally {
-                processed.Dispose();
-            }
-                
-            results.Add(rid, new(BuildStatus.Success));
-            IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, info.Dependencies));
-                
-            // if (importingContext.References.Count != 0) {
-            //     throw new NotImplementedException("Reference is not implemented.");
-            // }
+        if (!Process(rid, imported, options, FrozenDictionary<ResourceID, ContentRepresentation>.Empty, results, out var processed)) {
+            return;
+        }
+        
+        try {
+            SerializeProcessedObject(processed, rid, options);
+        } catch (Exception e) {
+            results.Add(rid, new(BuildStatus.CompilationFailed, ExceptionDispatchInfo.Capture(e)));
+            return;
         } finally {
-            ReleaseDependencies(graph, info.Dependencies);
+            processed.Dispose();
         }
-    }
 
-    private bool AreDependenciesCacheable(IEnumerable<ResourceID> dependencyRids) {
-        foreach (var dependencyRid in dependencyRids) {
-            bool getResource = Resources.TryGetValue(dependencyRid, out var resource);
-            Debug.Assert(getResource);
+        results.Add(rid, new(BuildStatus.Success));
+        IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, FrozenSet<ResourceID>.Empty));
+
+        foreach (var reference in context.References) {
+            if (!Resources.TryGetValue(reference, out var referenceResource)) continue;
             
-            (ResourceProvider provider, BuildingOptions options) = resource;
-            DateTime resourceLastWriteTime = provider.LastWriteTime;
-
-            if (!IsResourceCacheable(dependencyRid, resourceLastWriteTime, options, out _)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-
-    private static void ReleaseDependencies(Dictionary<ResourceID, VertexInfo> graph, IEnumerable<ResourceID> dependencyRids) {
-        foreach (var dependencyRid in dependencyRids) {
-            bool getInfo = graph.TryGetValue(dependencyRid, out var info);
-            Debug.Assert(getInfo);
-
-            if (--info!.RefCount == 0) {
-                info.ContentRepresentation?.Dispose();
-            }
+            BuildSingularResource(reference, referenceResource, results, graph);
         }
     }
     
-    private bool IsResourceCacheable(ResourceID rid, DateTime resourceLastWriteTime, BuildingOptions currentOptions, out IncrementalInfo previousIncrementalInfo) {
+    private bool IsResourceCacheable(ResourceID rid, DateTime resourceLastWriteTime, BuildingOptions currentOptions, IReadOnlySet<ResourceID> currentDependencies, out IncrementalInfo previousIncrementalInfo) {
         // If resource has been built before, and have old report, we can begin checking for caching.
         if (Output.GetResourceLastBuildTime(rid) is { } resourceLastBuildTime && IncrementalInfos.TryGet(rid, out previousIncrementalInfo)) {
             // Check if resource's last write time is the same as the time stored in report.
@@ -433,7 +286,9 @@ partial class BuildEnvironment {
             if (resourceLastWriteTime == previousIncrementalInfo.SourceLastWriteTime && resourceLastBuildTime > resourceLastWriteTime) {
                 // If the options are equal, no need to rebuild.
                 if (currentOptions.Equals(previousIncrementalInfo.Options)) {
-                    return true;
+                    if (previousIncrementalInfo.Dependencies.SequenceEqual(currentDependencies)) {
+                        return true;
+                    }
                 }
             }
     
@@ -444,7 +299,7 @@ partial class BuildEnvironment {
         return false;
     }
 
-    private bool Import(ResourceID rid, ResourceProvider provider, BuildingOptions options, Dictionary<ResourceID, ResourceBuildingResult> results, [NotNullWhen(true)] out ImportingContext? context, [NotNullWhen(true)] out ContentRepresentation? imported) {
+    private bool Import(ResourceID rid, ResourceProvider provider, BuildingOptions options, Dictionary<ResourceID, ResourceBuildingResult> results, [NotNullWhen(true)] out ContentRepresentation? imported, [NotNullWhen(true)] out ImportingContext? context) {
         if (!Importers.TryGetValue(options.ImporterName, out var importer)) {
             results.Add(rid, new(BuildStatus.UnknownImporter));
 
@@ -477,7 +332,7 @@ partial class BuildEnvironment {
         }
     }
 
-    private bool Process(ContentRepresentation imported, BuildingOptions options, IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies, ResourceID rid, Dictionary<ResourceID, ResourceBuildingResult> results, [NotNullWhen(true)] out ContentRepresentation? processed) {
+    private bool Process(ResourceID rid, ContentRepresentation imported, BuildingOptions options, IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies, Dictionary<ResourceID, ResourceBuildingResult> results, [NotNullWhen(true)] out ContentRepresentation? processed) {
         Processor? processor;
 
         string? processorName = options.ProcessorName;
@@ -492,7 +347,7 @@ partial class BuildEnvironment {
         }
                 
         try {
-            processed = processor.Process(imported, new(this, options.Options, dependencies));
+            processed = processor.Process(imported, new(this, options.Options, dependencies, Logger));
             return true;
         } catch (Exception e) {
             results.Add(rid, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
@@ -508,22 +363,49 @@ partial class BuildEnvironment {
         }
                 
         using MemoryStream ms = new(4096);
-        CompileHelpers.Compile(factory.InternalCreateSerializer(processed, new(options.Options)), ms, options.Tags);
+        CompileHelpers.Compile(factory.InternalCreateSerializer(processed, new(options.Options, Logger)), ms, options.Tags);
         ms.Position = 0;
         Output.CopyCompiledResourceOutput(ms, rid);
     }
     
     private record VertexInfo {
-        public readonly IReadOnlySet<ResourceID> Dependencies;
-        public readonly HashSet<ResourceID> Dependents;
-        public int RefCount;
-        public ContentRepresentation? ContentRepresentation;
-        public bool ImportFailed;
+        public readonly IReadOnlySet<ResourceID> DependencyIds;
+        public readonly HashSet<ResourceID> DependentIds;
+        public int RefCount { get; private set; }
+
+        public bool Visited;
+        public bool FaultyImport;
+        public bool Cached;
+        
+        public ContentRepresentation? ImportOutput { get; private set; }
+        public ImportingContext? ImportingContext { get; private set; }
     
-        public VertexInfo(IReadOnlySet<ResourceID> dependencies, HashSet<ResourceID> dependents) {
-            Dependencies = dependencies;
-            Dependents = dependents;
-            ContentRepresentation = null;
+        public VertexInfo(IReadOnlySet<ResourceID> dependencyIds, HashSet<ResourceID> dependentIds) {
+            DependencyIds = dependencyIds;
+            DependentIds = dependentIds;
+            ImportOutput = null;
+        }
+
+        public void SetReferenceCount(int count) {
+            Debug.Assert(RefCount == 0);
+            
+            RefCount = count;
+        }
+
+        public void Release() {
+            if (--RefCount != 0) return;
+
+            ImportOutput?.Dispose();
+            ImportOutput = null;
+            ImportingContext = null;
+        }
+
+        [MemberNotNull(nameof(ImportOutput), nameof(ImportingContext))]
+        public void SetImported(ContentRepresentation importOutput, ImportingContext context) {
+            Debug.Assert(ImportOutput == null);
+            
+            ImportOutput = importOutput;
+            ImportingContext = context;
         }
     }
 }

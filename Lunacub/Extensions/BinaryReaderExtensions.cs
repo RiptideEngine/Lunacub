@@ -21,4 +21,8 @@ public static class BinaryReaderExtensions {
             return output;
         }
     }
+
+    public static void ReadReinterpret<T>(this BinaryReader reader, Span<T> output) where T : unmanaged {
+        reader.BaseStream.ReadExactly(MemoryMarshal.AsBytes(output));
+    }
 }

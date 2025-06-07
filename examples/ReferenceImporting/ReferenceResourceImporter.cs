@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace ReferenceImporting;
+namespace Caxivitual.Lunacub.Examples.ReferenceImporting;
 
 public sealed class ReferenceResourceImporter : Importer<ReferenceResourceDTO> {
     private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerOptions.Default) {

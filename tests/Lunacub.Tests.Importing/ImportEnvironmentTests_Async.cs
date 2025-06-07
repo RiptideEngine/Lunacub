@@ -10,9 +10,9 @@
 //         Dictionary<ResourceID, (DateTime, ImmutableArray<byte>)> compiledResources = [];
 //         
 //         using BuildEnvironment buildEnv = new(new MemoryOutputSystem(new Dictionary<ResourceID, IncrementalInfo>(), compiledResources));
-//         buildEnv.Importers.Add(nameof(SimpleResourceImporter), new SimpleResourceImporter());
+//         buildEnv.Importers.Add(nameof(ResourceWithValueImporter), new ResourceWithValueImporter());
 //         buildEnv.SerializerFactories.Add(new SimpleResourceSerializerFactory());
-//         buildEnv.Resources.Add(new("e0b8066bf60043c5a0c3a7782363427d"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "SimpleResource.json"), new(nameof(SimpleResourceImporter)));
+//         buildEnv.Resources.Add(new("e0b8066bf60043c5a0c3a7782363427d"), Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "SimpleResource.json"), new(nameof(ResourceWithValueImporter)));
 //
 //         var result = buildEnv.BuildResources();
 //         result.ResourceResults.Should().ContainSingle().Which.Key.Should().Be(new ResourceID("e0b8066bf60043c5a0c3a7782363427d"));

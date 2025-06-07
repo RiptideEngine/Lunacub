@@ -112,8 +112,8 @@ partial class ResourceCache {
             _environment.Statistics.IncrementUniqueResourceCount();
             
             // Import dependencies references.
-            Dictionary<string, ResourceContainer> importedDependencies = [];
-            foreach ((string property, DeserializationContext.RequestingDependency requesting) in context.RequestingDependencies) {
+            Dictionary<ReferencePropertyKey, ResourceContainer> importedDependencies = [];
+            foreach ((ReferencePropertyKey property, DeserializationContext.RequestingDependency requesting) in context.RequestingDependencies) {
                 if (ImportDependencyResource(requesting.Rid, stack) is not { } dependencyContainer) continue;
                 
                 importedDependencies.Add(property, dependencyContainer);
@@ -130,10 +130,10 @@ partial class ResourceCache {
                 }
             }));
                     
-            context.Dependencies = importedDependencies.Where(x => x.Value.VesselImportTask!.IsCompletedSuccessfully).Select(x => KeyValuePair.Create(x.Key, x.Value.VesselImportTask.Result.Output)).Where(x => x.Value != null!).ToDictionary()!;
+            context.References = importedDependencies.Where(x => x.Value.VesselImportTask!.IsCompletedSuccessfully).Select(x => KeyValuePair.Create(x.Key, x.Value.VesselImportTask.Result.Output)).Where(x => x.Value != null!).ToDictionary()!;
             
             try {
-                deserializer.ResolveDependencies(deserialized, context);
+                deserializer.ResolveReferences(deserialized, context);
             } catch (Exception e) {
                 // _environment.Logger.LogError(Logging.ResolveDependenciesEvent, e, "Exception occured while resolving dependencies.");
             }

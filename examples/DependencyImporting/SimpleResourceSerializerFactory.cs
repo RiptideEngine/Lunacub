@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Caxivitual.Lunacub.Examples.SimpleImporting;
+namespace Caxivitual.Lunacub.Examples.DependencyImporting;
 
 public sealed class SimpleResourceSerializerFactory : SerializerFactory {
     public override bool CanSerialize(Type representationType) => representationType == typeof(SimpleResourceDTO);
@@ -18,9 +18,7 @@ public sealed class SimpleResourceSerializerFactory : SerializerFactory {
             SimpleResourceDTO dto = (SimpleResourceDTO)SerializingObject;
 
             using BinaryWriter writer = new(outputStream, Encoding.UTF8, true);
-            writer.Write(dto.Integer);
-            writer.Write(dto.Single);
-            writer.Write(dto.Vector);
+            writer.Write(dto.Value);
         }
     }
 }

@@ -5,14 +5,14 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Caxivitual.Lunacub.Examples.BuildTimeGeneration</AssemblyName>
-        <RootNamespace>Caxivitual.Lunacub.Examples.BuildTimeGeneration</RootNamespace>
+        <AssemblyName>Caxivitual.Lunacub.Examples.DependencyImporting</AssemblyName>
+        <RootNamespace>Caxivitual.Lunacub.Examples.DependencyImporting</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Lunacub.Building\Lunacub.Building.csproj" />
-      <ProjectReference Include="..\..\Lunacub.Importing\Lunacub.Importing.csproj" />
-      <ProjectReference Include="..\..\Lunacub\Lunacub.csproj" />
+        <ProjectReference Include="..\..\Lunacub.Building\Lunacub.Building.csproj" />
+        <ProjectReference Include="..\..\Lunacub.Importing\Lunacub.Importing.csproj" />
+        <ProjectReference Include="..\..\Lunacub\Lunacub.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -25,4 +25,5 @@
         <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.4" />
         <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.4" />
     </ItemGroup>
+
 </Project>

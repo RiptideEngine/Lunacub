@@ -2,8 +2,9 @@
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using System.Text.Json;
 
-namespace Caxivitual.Lunacub.Examples.ReferenceImporting;
+namespace Caxivitual.Lunacub.Examples.DependencyImporting;
 
 internal static class Program {
     private static readonly ILogger _logger = LoggerFactory.Create(builder => {
@@ -25,29 +26,42 @@ internal static class Program {
         _logger.LogInformation("Building resources...");
         
         using BuildEnvironment env = new(new FileOutputSystem(reportDirectory, outputDirectory)) {
+            Logger = _logger,
             Importers = {
-                [nameof(ReferenceResourceImporter)] = new ReferenceResourceImporter(),
+                [nameof(SimpleResourceImporter)] = new SimpleResourceImporter(),
+                [nameof(MergingResourceImporter)] = new MergingResourceImporter(),
+            },
+            Processors = {
+                [nameof(MergingResourceProcessor)] = new MergingResourceProcessor(),
             },
             SerializerFactories = {
-                new ReferenceResourceSerializerFactory(),
+                new SimpleResourceSerializerFactory(),
+                new MergingResourceSerializerFactory(),
             },
             Resources = {
                 [1] = new() {
                     Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource1.json")),
                     Options = new() {
-                        ImporterName = nameof(ReferenceResourceImporter),
+                        ImporterName = nameof(SimpleResourceImporter),
                     },
                 },
                 [2] = new() {
                     Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource2.json")),
                     Options = new() {
-                        ImporterName = nameof(ReferenceResourceImporter),
+                        ImporterName = nameof(SimpleResourceImporter),
                     },
                 },
                 [3] = new() {
                     Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource3.json")),
                     Options = new() {
-                        ImporterName = nameof(ReferenceResourceImporter),
+                        ImporterName = nameof(SimpleResourceImporter),
+                    },
+                },
+                [4] = new() {
+                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "MergingResource.json")),
+                    Options = new() {
+                        ImporterName = nameof(MergingResourceImporter),
+                        ProcessorName = nameof(MergingResourceProcessor),
                     },
                 },
             },
@@ -55,7 +69,7 @@ internal static class Program {
 
         var result = env.BuildResources();
         
-        Debug.Assert(result.ResourceResults.Count == 3);
+        Debug.Assert(result.ResourceResults.Count == 4);
 
         foreach ((var rid, var resourceResult) in result.ResourceResults) {
             _logger.LogInformation("Resource '{rid}' build status: {status}.", rid, resourceResult.Status);
@@ -64,21 +78,20 @@ internal static class Program {
     }
     
     private static async Task ImportResource(string resourceDirectory) {
-        using ImportEnvironment importEnvironment = new ImportEnvironment() {
+        using ImportEnvironment importEnvironment = new ImportEnvironment {
             Deserializers = {
-                [nameof(ReferenceResourceDeserializer)] = new ReferenceResourceDeserializer(),
+                [nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer(),
+                [nameof(MergingResourceDeserializer)] = new MergingResourceDeserializer(),
             },
             Logger = _logger,
             Libraries = {
-                new FileResourceLibrary(resourceDirectory)
+                new FileResourceLibrary(resourceDirectory),
             },
         };
 
-        ResourceHandle<ReferenceResource> handle = await importEnvironment.Import<ReferenceResource>(1).Task;
+        ResourceHandle<MergingResource> handle = await importEnvironment.Import<MergingResource>(4).Task;
         
-        _logger.LogInformation("resource.Value: {value}", handle.Value!.Value);
-        _logger.LogInformation("resource.Reference.Value: {refValue}", handle.Value!.Reference!.Value);
-        _logger.LogInformation("resource.Reference.Reference.Value: {referefValue}", handle.Value!.Reference!.Reference!.Value);
+        _logger.LogInformation("Values: {values}", string.Join(", ", handle.Value!.Values));
 
         await Task.Delay(100);
     }

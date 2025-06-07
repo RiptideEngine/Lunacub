@@ -1,28 +1,31 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
 public sealed class DeserializationContext {
-    private readonly Dictionary<string, RequestingDependency> _requestingDependencies;
-    internal IReadOnlyDictionary<string, RequestingDependency> RequestingDependencies => _requestingDependencies;
-    internal Dictionary<string, object?>? Dependencies { get; set; }
+    private readonly Dictionary<ReferencePropertyKey, RequestingDependency> _requestingDependencies;
+    internal IReadOnlyDictionary<ReferencePropertyKey, RequestingDependency> RequestingDependencies => _requestingDependencies;
+    internal Dictionary<ReferencePropertyKey, object?>? References { get; set; }
+    
+    public Dictionary<object, object> ValueContainer { get; }
 
     internal DeserializationContext() {
-        _requestingDependencies = new(StringComparer.Ordinal);
+        _requestingDependencies = [];
+        ValueContainer = [];
     }
 
-    public void RequestReference(string property, ResourceID rid, Type resourceType) {
+    public void RequestReference(ReferencePropertyKey propertyKey, ResourceID rid, Type resourceType) {
         if (resourceType.IsValueType || rid == ResourceID.Null || resourceType.IsGenericTypeDefinition) return;
         
-        _requestingDependencies.Add(property, new(rid, resourceType));
+        _requestingDependencies.Add(propertyKey, new(rid, resourceType));
     }
     
-    public void RequestReference<T>(string property, ResourceID rid) where T : class {
+    public void RequestReference<T>(ReferencePropertyKey propertyKey, ResourceID rid) where T : class {
         if (rid == ResourceID.Null) return;
         
-        _requestingDependencies.Add(property, new(rid, typeof(T)));
+        _requestingDependencies.Add(propertyKey, new(rid, typeof(T)));
     }
     
-    public T? GetReference<T>(ReadOnlySpan<char> property) where T : class {
-        if (Dependencies != null && Dependencies.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(property, out object? dependency) && dependency is T t) {
+    public T? GetReference<T>(ReferencePropertyKey propertyKey) where T : class {
+        if (References != null && References.TryGetValue(propertyKey, out object? dependency) && dependency is T t) {
             return t;
         }
 

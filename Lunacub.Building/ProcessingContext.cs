@@ -1,4 +1,5 @@
 ﻿using Caxivitual.Lunacub.Building.Collections;
+using Microsoft.Extensions.Logging;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -22,10 +23,16 @@ public sealed class ProcessingContext {
     /// </summary>
     /// <seealso cref="Importer.GetDependencies"/>
     public IReadOnlyDictionary<ResourceID, ContentRepresentation> Dependencies { get; }
-
-    internal ProcessingContext(BuildEnvironment environment, IImportOptions? options, IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies) {
+    
+    /// <summary>
+    /// Gets the <see cref="ILogger"/> instance used for debugging and reporting.
+    /// </summary>
+    public ILogger Logger { get; }
+    
+    internal ProcessingContext(BuildEnvironment environment, IImportOptions? options, IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies, ILogger logger) {
         Environment = environment;
         Options = options;
         Dependencies = dependencies;
+        Logger = logger;
     }
 }

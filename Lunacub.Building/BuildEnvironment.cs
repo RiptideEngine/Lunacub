@@ -1,4 +1,6 @@
 ﻿using Caxivitual.Lunacub.Building.Collections;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -39,6 +41,11 @@ public sealed partial class BuildEnvironment : IDisposable {
     /// </summary>
     internal IncrementalInfoStorage IncrementalInfos { get; }
     
+    /// <summary>
+    /// Gets and sets the <see cref="ILogger"/> instance used for debugging and reporting purpose.
+    /// </summary>
+    public ILogger Logger { get; set; }
+    
     private bool _disposed;
 
     /// <summary>
@@ -51,6 +58,7 @@ public sealed partial class BuildEnvironment : IDisposable {
         Output = output;
         Resources = new();
         IncrementalInfos = new(output);
+        Logger = NullLogger.Instance;
     }
 
     private void Dispose(bool disposing) {
