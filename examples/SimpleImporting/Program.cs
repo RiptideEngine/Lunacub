@@ -63,10 +63,4 @@ internal static partial class Program {
         
         _logger.LogInformation("Imported: {value}.", handle.Value);
     }
-
-    [GeneratedRegex("^0[1-9]\\d{8}$")]
-    private static partial Regex Test();
-    
-    [GeneratedRegex("Test")]
-    private static partial Regex Test2();
 }
