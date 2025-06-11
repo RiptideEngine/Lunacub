@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Caxivitual.Lunacub.Examples.DependencyImporting;
 
-public sealed class MergingResourceImporter : Importer<MergingResourceDTO> {
+public sealed partial class MergingResourceImporter : Importer<MergingResourceDTO> {
     public override IReadOnlyCollection<ResourceID> GetDependencies(Stream stream) {
         // Typically you will deserialize into a surrogate type that only contains the dependency informations,
         // but we will just deserialize as the DTO as a quick and dirty way.

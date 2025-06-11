@@ -2,7 +2,7 @@
 
 namespace Caxivitual.Lunacub.Examples.DependencyImporting;
 
-public sealed class MergingResourceProcessor : Processor<MergingResourceDTO, ProcessedMergingResourceDTO> {
+public sealed partial class MergingResourceProcessor : Processor<MergingResourceDTO, ProcessedMergingResourceDTO> {
     protected override ProcessedMergingResourceDTO Process(MergingResourceDTO input, ProcessingContext context) {
         List<int> values = [];
         

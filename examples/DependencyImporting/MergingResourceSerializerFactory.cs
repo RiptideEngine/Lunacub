@@ -2,14 +2,14 @@
 
 namespace Caxivitual.Lunacub.Examples.DependencyImporting;
 
-public sealed class MergingResourceSerializerFactory : SerializerFactory {
+public sealed partial class MergingResourceSerializerFactory : SerializerFactory {
     public override bool CanSerialize(Type representationType) => representationType == typeof(ProcessedMergingResourceDTO);
 
     protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
     }
 
-    private class SerializerCore : Serializer {
+    private partial class SerializerCore : Serializer {
         public override string DeserializerName => nameof(MergingResourceDeserializer);
 
         public SerializerCore(ContentRepresentation serializingObject, SerializationContext context) : base(serializingObject, context) { }

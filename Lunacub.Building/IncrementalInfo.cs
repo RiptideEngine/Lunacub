@@ -1,6 +1,7 @@
 ﻿using Caxivitual.Lunacub.Building.Serialization;
 using Caxivitual.Lunacub.Building.Collections;
 using System.Collections.Frozen;
+using Caxivitual.Lunacub.Building.Attributes;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -25,6 +26,11 @@ public readonly struct IncrementalInfo {
     /// A set of <see cref="ResourceID"/> that contains the resources that the resource depends on.
     /// </summary>
     public readonly IReadOnlySet<ResourceID> Dependencies;
+
+    /// <summary>
+    /// Contains the versioning strings of <see cref="Importer"/>, <see cref="Processor"/>, <see cref="SerializerFactory"/> and <see cref="Serializer"/> defined by <see cref="VersionAttribute"/>.
+    /// </summary>
+    public readonly ComponentVersions ComponentVersions;
 
     /// <summary>
     /// Initializes a new instance of <see cref="IncrementalInfo"/> with empty dependencies, specified source resource
