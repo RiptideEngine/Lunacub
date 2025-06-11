@@ -71,9 +71,9 @@ namespace Caxivitual.Lunacub.Building {
         /// <summary>
         ///   Looks up a localized string similar to No suitable serializer for resource type &apos;{0}&apos; found...
         /// </summary>
-        internal static string NoSuitableSerializer {
+        internal static string NoSuitableSerializerFactory {
             get {
-                return ResourceManager.GetString("NoSuitableSerializer", resourceCulture);
+                return ResourceManager.GetString("NoSuitableSerializerFactory", resourceCulture);
             }
         }
         

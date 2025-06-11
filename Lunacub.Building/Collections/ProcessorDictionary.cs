@@ -32,16 +32,16 @@ public sealed class ProcessorDictionary : IdentityDictionary<Processor> {
         return _dict.Remove(key);
     }
 
-    public override bool Remove(string key, [NotNullWhen(true)] out Processor? value) {
-        return _dict.Remove(key, out value);
+    public override bool Remove(string key, [NotNullWhen(true)] out Processor? output) {
+        return _dict.Remove(key, out output);
     }
 
     public override bool Remove(ReadOnlySpan<char> key) {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().Remove(key);
     }
 
-    public override bool Remove(ReadOnlySpan<char> key, [NotNullWhen(true)] out Processor? value) {
-        return _dict.GetAlternateLookup<ReadOnlySpan<char>>().Remove(key, out _, out value);
+    public override bool Remove(ReadOnlySpan<char> key, [NotNullWhen(true)] out Processor? output) {
+        return _dict.GetAlternateLookup<ReadOnlySpan<char>>().Remove(key, out _, out output);
     }
 
     public override bool ContainsKey(string key) {
@@ -52,12 +52,12 @@ public sealed class ProcessorDictionary : IdentityDictionary<Processor> {
         return _dict.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(key);
     }
 
-    public override bool TryGetValue(string key, [MaybeNullWhen(false)] out Processor value) {
-        return _dict.TryGetValue(key, out value);
+    public override bool TryGetValue(string key, [MaybeNullWhen(false)] out Processor output) {
+        return _dict.TryGetValue(key, out output);
     }
     
-    public override bool TryGetValue(ReadOnlySpan<char> key, [MaybeNullWhen(false)] out Processor value) {
-        return _dict.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(key, out value);
+    public override bool TryGetValue(ReadOnlySpan<char> key, [MaybeNullWhen(false)] out Processor output) {
+        return _dict.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(key, out output);
     }
     
     public override Processor this[string key] {

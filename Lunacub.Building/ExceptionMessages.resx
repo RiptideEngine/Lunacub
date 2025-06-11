@@ -25,7 +25,7 @@
     <data name="UnregisteredProcessor" xml:space="preserve">
         <value>Failed to find Processor with key '{0}'.</value>
     </data>
-    <data name="NoSuitableSerializer" xml:space="preserve">
+    <data name="NoSuitableSerializerFactory" xml:space="preserve">
         <value>No suitable serializer for resource type '{0}' found..</value>
     </data>
     <data name="EmptyOrWhitespaceKey" xml:space="preserve">

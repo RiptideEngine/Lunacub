@@ -33,10 +33,10 @@ public abstract class IdentityDictionary<T> : IDictionary<string, T> {
     }
 
     public abstract bool Remove(string key);
-    public abstract bool Remove(string key, [NotNullWhen(true)] out T? value);
+    public abstract bool Remove(string key, [NotNullWhen(true)] out T? output);
     
     public abstract bool Remove(ReadOnlySpan<char> key);
-    public abstract bool Remove(ReadOnlySpan<char> key, [NotNullWhen(true)] out T? value);
+    public abstract bool Remove(ReadOnlySpan<char> key, [NotNullWhen(true)] out T? output);
     
     bool ICollection<KeyValuePair<string, T>>.Remove(KeyValuePair<string, T> kvp) {
         if (TryGetValue(kvp.Key, out T? value) && EqualityComparer<T>.Default.Equals(value, kvp.Value)) {
@@ -58,8 +58,8 @@ public abstract class IdentityDictionary<T> : IDictionary<string, T> {
         return TryGetValue(kvp.Key, out T? value) && EqualityComparer<T>.Default.Equals(value, kvp.Value);
     }
     
-    public abstract bool TryGetValue(string key, [MaybeNullWhen(false)] out T value);
-    public abstract bool TryGetValue(ReadOnlySpan<char> key, [MaybeNullWhen(false)] out T value);
+    public abstract bool TryGetValue(string key, [MaybeNullWhen(false)] out T output);
+    public abstract bool TryGetValue(ReadOnlySpan<char> key, [MaybeNullWhen(false)] out T output);
     
     public abstract T this[string key] { get; set; }
     public abstract T this[ReadOnlySpan<char> key] { get; set; }

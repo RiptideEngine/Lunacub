@@ -5,6 +5,8 @@
 /// into a different <see cref="ContentRepresentation"/> type before serialization.
 /// </summary>
 public abstract class Processor {
+    public virtual string? Version => null;
+    
     internal static Processor Passthrough { get; } = new PassthroughProcessor();
     
     internal abstract bool CanProcess(ContentRepresentation input);

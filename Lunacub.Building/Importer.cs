@@ -4,6 +4,8 @@
 /// Provides the base class that handles the importing process of a resource.
 /// </summary>
 public abstract class Importer {
+    public virtual string? Version => null;
+    
     public virtual IReadOnlyCollection<ResourceID> GetDependencies(Stream stream) => [];
     
     internal abstract ContentRepresentation ImportObject(Stream stream, ImportingContext context);

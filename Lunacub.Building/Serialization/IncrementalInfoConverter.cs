@@ -12,10 +12,11 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
         DateTime sourceLastWriteTime = default;
         BuildingOptions buildingOptions = default;
         IReadOnlySet<ResourceID> dependencies = FrozenSet<ResourceID>.Empty;
+        ComponentVersions componentVersions = default;
             
         while (reader.Read()) {
             if (reader.TokenType == JsonTokenType.EndObject) {
-                return new(sourceLastWriteTime, buildingOptions, dependencies);
+                return new(sourceLastWriteTime, buildingOptions, dependencies, componentVersions);
             }
 
             if (reader.TokenType != JsonTokenType.PropertyName) {
@@ -38,6 +39,10 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
                     dependencies = JsonSerializer.Deserialize<HashSet<ResourceID>>(ref reader, options) is { } set ? set.ToFrozenSet() : FrozenSet<ResourceID>.Empty;
                     break;
                 
+                case nameof(IncrementalInfo.ComponentVersions):
+                    componentVersions = JsonSerializer.Deserialize<ComponentVersions>(ref reader, options);
+                    break;
+                
                 default:
                     reader.Skip();
                     break;
@@ -57,6 +62,9 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
         
         writer.WritePropertyName(nameof(IncrementalInfo.Dependencies));
         JsonSerializer.Serialize(writer, info.Dependencies, options);
+        
+        writer.WritePropertyName(nameof(IncrementalInfo.ComponentVersions));
+        JsonSerializer.Serialize(writer, info.ComponentVersions, options);
         
         writer.WriteEndObject();
     }
