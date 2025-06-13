@@ -5,8 +5,8 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Caxivitual.Lunacub.Examples.ReferenceImporting</AssemblyName>
-        <RootNamespace>Caxivitual.Lunacub.Examples.ReferenceImporting</RootNamespace>
+        <AssemblyName>Caxivitual.Lunacub.Examples.ResourceReferencing</AssemblyName>
+        <RootNamespace>Caxivitual.Lunacub.Examples.ResourceReferencing</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

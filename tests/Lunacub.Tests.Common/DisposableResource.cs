@@ -12,8 +12,8 @@ public class DisposableResource : IDisposable {
 public sealed class DisposableResourceDTO : ContentRepresentation;
 
 public sealed class DisposableResourceImporter : Importer<DisposableResourceDTO> {
-    protected override DisposableResourceDTO Import(Stream stream, ImportingContext context) {
-        return JsonSerializer.Deserialize<DisposableResourceDTO>(stream)!;
+    protected override DisposableResourceDTO Import(Stream resourceStream, ImportingContext context) {
+        return JsonSerializer.Deserialize<DisposableResourceDTO>(resourceStream)!;
     }
 }
 

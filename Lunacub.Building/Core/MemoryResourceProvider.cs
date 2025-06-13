@@ -18,4 +18,12 @@ public sealed class MemoryResourceProvider : ResourceProvider {
     }
     
     public override Stream GetStream() => new MemoryStream(ImmutableCollectionsMarshal.AsArray(_content)!, false);
+
+    public static MemoryResourceProvider Create(string content, Encoding encoding, DateTime lastWriteTime) {
+        return new(encoding.GetBytes(content), lastWriteTime);
+    }
+
+    public static MemoryResourceProvider AsUtf8(string content, DateTime lastWriteTime) {
+        return Create(content, Encoding.UTF8, lastWriteTime);
+    }
 }

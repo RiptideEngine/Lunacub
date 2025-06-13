@@ -30,8 +30,8 @@ public sealed class ResourceWithOptionsDTO : ContentRepresentation {
 }
 
 public sealed class ResourceWithOptionsImporter : Importer<ResourceWithOptionsDTO> {
-    protected override ResourceWithOptionsDTO Import(Stream stream, ImportingContext context) {
-        return new(JsonSerializer.Deserialize<ImmutableArray<int>>(stream));
+    protected override ResourceWithOptionsDTO Import(Stream resourceStream, ImportingContext context) {
+        return new(JsonSerializer.Deserialize<ImmutableArray<int>>(resourceStream));
     }
 }
 

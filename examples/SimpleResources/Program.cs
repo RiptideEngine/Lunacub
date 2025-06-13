@@ -1,9 +1,8 @@
 ﻿using Caxivitual.Lunacub.Building.Core;
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
-using System.Text.RegularExpressions;
 
-namespace Caxivitual.Lunacub.Examples.SimpleImporting;
+namespace Caxivitual.Lunacub.Examples.SimpleResources;
 
 internal static partial class Program {
     private static readonly ILogger _logger = LoggerFactory.Create(builder => {

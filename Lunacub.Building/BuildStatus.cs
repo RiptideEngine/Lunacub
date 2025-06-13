@@ -55,7 +55,9 @@ public enum BuildStatus {
     InvalidResourceStream = -7,
     
     /// <summary>
-    /// Indicates that the resource failed to be compiled and output due to an exception.
+    /// Indicates that the resource failed to be serialized due to an exception.
     /// </summary>
-    CompilationFailed = -8,
+    SerializationFailed = -8,
+    
+    ExtractDependenciesFailed = -9,
 }

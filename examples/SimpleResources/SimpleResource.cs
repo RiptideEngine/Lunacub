@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Caxivitual.Lunacub.Examples.SimpleImporting;
+namespace Caxivitual.Lunacub.Examples.SimpleResources;
 
 public record SimpleResource(int Integer, float Single, Vector2 Vector);
 

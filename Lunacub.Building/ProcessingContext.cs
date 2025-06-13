@@ -21,8 +21,13 @@ public sealed class ProcessingContext {
     /// <summary>
     /// Gets the dependency resources requested from importing stage.
     /// </summary>
-    /// <seealso cref="Importer.GetDependencies"/>
+    /// <seealso cref="Importer.ExtractDependencies"/>
     public IReadOnlyDictionary<ResourceID, ContentRepresentation> Dependencies { get; }
+    
+    /// <summary>
+    /// Gets the dictionary that stores the generated resources to build in next pass.
+    /// </summary>
+    public Dictionary<ProceduralResourceID, BuildingProceduralResource> ProceduralResources { get; }
     
     /// <summary>
     /// Gets the <see cref="ILogger"/> instance used for debugging and reporting.
@@ -34,5 +39,6 @@ public sealed class ProcessingContext {
         Options = options;
         Dependencies = dependencies;
         Logger = logger;
+        ProceduralResources = [];
     }
 }

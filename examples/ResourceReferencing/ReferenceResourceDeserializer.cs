@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Caxivitual.Lunacub.Examples.ReferenceImporting;
+namespace Caxivitual.Lunacub.Examples.ResourceReferencing;
 
 public sealed class ReferenceResourceDeserializer : Deserializer<ReferenceResource> {
     public override bool Streaming => false;

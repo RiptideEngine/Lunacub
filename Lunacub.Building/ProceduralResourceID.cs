@@ -1,116 +1,108 @@
 ﻿using System.Globalization;
-using System.Text.Json.Serialization;
 
-namespace Caxivitual.Lunacub;
+namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
 /// Represents an identification number of a resource.
 /// </summary>
-[JsonConverter(typeof(ResourceIDConverter))]
 [CLSCompliant(false)]
-public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>, ISpanFormattable, IUtf8SpanFormattable, ISpanParsable<ResourceID>, IUtf8SpanParsable<ResourceID> {
+public readonly struct ProceduralResourceID : IEquatable<ProceduralResourceID>, IEquatable<UInt128>, ISpanFormattable, IUtf8SpanFormattable, ISpanParsable<ProceduralResourceID>, IUtf8SpanParsable<ProceduralResourceID> {
     /// <summary>
-    /// Represents a default or null value of the <see cref="ResourceID"/> type, used to signify the absence of a
-    /// valid resource identifier.
-    /// </summary>
-    public static ResourceID Null => default;
-
-    /// <summary>
-    /// The underlying 128-bit unsigned integer value of <see cref="ResourceID"/>.
+    /// The underlying 128-bit unsigned integer value of <see cref="ProceduralResourceID"/>.
     /// </summary>
     public UInt128 Value { get; }
     
     /// <summary>
-    /// Creates a new instance of <see cref="ResourceID"/> with the specified 128-bit unsigned integer value.
+    /// Creates a new instance of <see cref="ProceduralResourceID"/> with the specified 128-bit unsigned integer value.
     /// </summary>
-    /// <param name="value">The specified 128-bit unsigned integer value to create <see cref="ResourceID"/> from.</param>
-    public ResourceID(UInt128 value) {
+    /// <param name="value">The specified 128-bit unsigned integer value to create <see cref="ProceduralResourceID"/> from.</param>
+    public ProceduralResourceID(UInt128 value) {
         Value = value;
     }
 
     /// <summary>
-    /// Creates a random <see cref="ResourceID"/> instance.
+    /// Creates a random <see cref="ProceduralResourceID"/> instance.
     /// </summary>
-    /// <returns>A new <see cref="ResourceID"/> instance with random <see cref="Value"/>.</returns>
-    public static ResourceID Create() => Unsafe.BitCast<Guid, ResourceID>(Guid.NewGuid());
+    /// <returns>A new <see cref="ProceduralResourceID"/> instance with random <see cref="Value"/>.</returns>
+    public static ProceduralResourceID Create() => Unsafe.BitCast<Guid, ProceduralResourceID>(Guid.NewGuid());
 
     /// <summary>
-    /// Parses a string into a <see cref="ResourceID"/>.
+    /// Parses a string into a <see cref="ProceduralResourceID"/>.
     /// </summary>
     /// <param name="str">A string represents a 128-bit unsigned integer to parse.</param>
     /// <returns>The result of parsing <paramref name="str"/>.</returns>
-    public static ResourceID Parse(string str) => new(UInt128.Parse(str));
+    public static ProceduralResourceID Parse(string str) => new(UInt128.Parse(str));
 
     /// <summary>
-    /// Parse a string into a <see cref="ResourceID"/> with formatting information object.
+    /// Parse a string into a <see cref="ProceduralResourceID"/> with formatting information object.
     /// </summary>
     /// <param name="str">A string represents a 128-bit unsigned integer to parse.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="str"/>.</param>
     /// <returns></returns>
-    public static ResourceID Parse(string str, IFormatProvider? formatProvider) => new(UInt128.Parse(str, formatProvider));
+    public static ProceduralResourceID Parse(string str, IFormatProvider? formatProvider) => new(UInt128.Parse(str, formatProvider));
     
     /// <inheritdoc cref="Parse(ReadOnlySpan{char})"/>
-    public static ResourceID Parse(ReadOnlySpan<byte> span) => new(UInt128.Parse(span));
+    public static ProceduralResourceID Parse(ReadOnlySpan<byte> span) => new(UInt128.Parse(span));
 
     /// <inheritdoc cref="Parse(ReadOnlySpan{char},IFormatProvider?)"/>
-    public static ResourceID Parse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider) => new(UInt128.Parse(span, formatProvider));
+    public static ProceduralResourceID Parse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider) => new(UInt128.Parse(span, formatProvider));
     
     /// <summary>
-    /// Parses a span of characters into a <see cref="ResourceID"/>.
+    /// Parses a span of characters into a <see cref="ProceduralResourceID"/>.
     /// </summary>
     /// <param name="span">A span of character represents a 128-bit unsigned integer to parse.</param>
     /// <returns>The result of parsing <paramref name="span"/>.</returns>
-    public static ResourceID Parse(ReadOnlySpan<char> span) => new(UInt128.Parse(span));
+    public static ProceduralResourceID Parse(ReadOnlySpan<char> span) => new(UInt128.Parse(span));
 
     /// <summary>
-    /// Parses a span of characters into a <see cref="ResourceID"/> with formatting information object.
+    /// Parses a span of characters into a <see cref="ProceduralResourceID"/> with formatting information object.
     /// </summary>
     /// <param name="span">A span of character represents a 128-bit unsigned integer to parse.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="span"/>.</param>
     /// <returns>The result of parsing <paramref name="span"/>.</returns>
-    public static ResourceID Parse(ReadOnlySpan<char> span, IFormatProvider? formatProvider) => new(UInt128.Parse(span, formatProvider));
+    public static ProceduralResourceID Parse(ReadOnlySpan<char> span, IFormatProvider? formatProvider) => new(UInt128.Parse(span, formatProvider));
 
     /// <summary>
-    /// Tries to parse a string into a <see cref="ResourceID"/>.
+    /// Tries to parse a string into a <see cref="ProceduralResourceID"/>.
     /// </summary>
     /// <param name="str">A string represents a 128-bit unsigned integer to parse.</param>
     /// <param name="result">
     ///     When this method returns, contains the result of successfully parsing <paramref name="str"/>, or the default
-    ///     value of <see cref="ResourceID"/> if parsing failed.
+    ///     value of <see cref="ProceduralResourceID"/> if parsing failed.
     /// </param>
     /// <returns>
     ///     <see langword="true"/> if <paramref name="str"/> was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool TryParse([NotNullWhen(true)] string? str, out ResourceID result) => TryParse(str.AsSpan(), out result);
+    public static bool TryParse([NotNullWhen(true)] string? str, out ProceduralResourceID result) => TryParse(str.AsSpan(), out result);
 
     /// <summary>
-    /// Tries to parse a string into a <see cref="ResourceID"/>.
+    /// Tries to parse a string into a <see cref="ProceduralResourceID"/>.
     /// </summary>
     /// <param name="str">A string represents a 128-bit unsigned integer to parse.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="str"/>.</param>
     /// <param name="result">
     ///     When this method returns, contains the result of successfully parsing <paramref name="str"/>, or the default
-    ///     value of <see cref="ResourceID"/> if parsing failed.
+    ///     value of <see cref="ProceduralResourceID"/> if parsing failed.
     /// </param>
     /// <returns>
     ///     <see langword="true"/> if <paramref name="str"/> was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool TryParse([NotNullWhen(true)] string? str, IFormatProvider? formatProvider, out ResourceID result) {
+    public static bool TryParse([NotNullWhen(true)] string? str, IFormatProvider? formatProvider, out ProceduralResourceID result) {
         return TryParse(str.AsSpan(), out result);
     }
     
     /// <summary>
-    /// Tries to parse a span of character into a <see cref="ResourceID"/>.
+    /// Tries to parse a span of character into a <see cref="ProceduralResourceID"/>.
     /// </summary>
     /// <param name="span">A span of character represents a 128-bit unsigned integer to parse.</param>
     /// <param name="result">
     ///     When this method returns, contains the result of successfully parsing <paramref name="span"/>, or the default
-    ///     value of <see cref="ResourceID"/> if parsing failed.
+    ///     value of <see cref="ProceduralResourceID"/> if parsing failed.
     /// </param>
     /// <returns>
     ///     <see langword="true"/> if <paramref name="span"/> was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool TryParse(ReadOnlySpan<char> span, out ResourceID result) {
+    public static bool TryParse(ReadOnlySpan<char> span, out ProceduralResourceID result) {
         if (UInt128.TryParse(span, NumberStyles.HexNumber, null, out var value)) {
             result = new(value);
             return true;
@@ -121,18 +113,18 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     }
     
     /// <summary>
-    /// Tries to parse a span of character into a <see cref="ResourceID"/>.
+    /// Tries to parse a span of character into a <see cref="ProceduralResourceID"/>.
     /// </summary>
     /// <param name="span">A span of character represents a 128-bit unsigned integer to parse.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="span"/>.</param>
     /// <param name="result">
     ///     When this method returns, contains the result of successfully parsing <paramref name="span"/>, or the default
-    ///     value of <see cref="ResourceID"/> if parsing failed.
+    ///     value of <see cref="ProceduralResourceID"/> if parsing failed.
     /// </param>
     /// <returns>
     ///     <see langword="true"/> if <paramref name="span"/> was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool TryParse(ReadOnlySpan<char> span, IFormatProvider? formatProvider, out ResourceID result) {
+    public static bool TryParse(ReadOnlySpan<char> span, IFormatProvider? formatProvider, out ProceduralResourceID result) {
         if (UInt128.TryParse(span, NumberStyles.HexNumber, null, out var value)) {
             result = new(value);
             return true;
@@ -142,8 +134,8 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
         return false;
     }
     
-    /// <inheritdoc cref="TryParse(ReadOnlySpan{char},out Caxivitual.Lunacub.ResourceID)"/>
-    public static bool TryParse(ReadOnlySpan<byte> span, out ResourceID result) {
+    /// <inheritdoc cref="TryParse(ReadOnlySpan{char},out Caxivitual.Lunacub.Building.ProceduralResourceID)"/>
+    public static bool TryParse(ReadOnlySpan<byte> span, out ProceduralResourceID result) {
         if (UInt128.TryParse(span, NumberStyles.HexNumber, null, out var value)) {
             result = new(value);
             return true;
@@ -153,8 +145,8 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
         return false;
     }
     
-    /// <inheritdoc cref="TryParse(ReadOnlySpan{char},IFormatProvider?,out Caxivitual.Lunacub.ResourceID)"/>
-    public static bool TryParse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider, out ResourceID result) {
+    /// <inheritdoc cref="TryParse(ReadOnlySpan{char},IFormatProvider?,out Caxivitual.Lunacub.Building.ProceduralResourceID)"/>
+    public static bool TryParse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider, out ProceduralResourceID result) {
         if (UInt128.TryParse(span, NumberStyles.HexNumber, null, out var value)) {
             result = new(value);
             return true;
@@ -206,14 +198,14 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     }
 
     /// <summary>
-    /// Determines whether the specified <see cref="ResourceID"/> is equal to the current instance.
+    /// Determines whether the specified <see cref="ProceduralResourceID"/> is equal to the current instance.
     /// </summary>
-    /// <param name="other">The <see cref="ResourceID"/> to compare with the current instance.</param>
+    /// <param name="other">The <see cref="ProceduralResourceID"/> to compare with the current instance.</param>
     /// <returns>
-    ///     <see langword="true"/> if the specified <see cref="ResourceID"/> is equal to the current instance;
+    ///     <see langword="true"/> if the specified <see cref="ProceduralResourceID"/> is equal to the current instance;
     ///     otherwise, <see langword="false"/>.
     /// </returns>
-    public bool Equals(ResourceID other) => Value == other.Value;
+    public bool Equals(ProceduralResourceID other) => Value == other.Value;
     
     /// <summary>
     /// Determines whether the <see cref="Value"/> of the current instance is equal to the specified 128-bit unsigned
@@ -227,20 +219,20 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     public bool Equals(UInt128 other) => Value == other;
 
     /// <summary>
-    /// Determines whether this instance and a specified object, which can be either an instance of <see cref="ResourceID"/>
+    /// Determines whether this instance and a specified object, which can be either an instance of <see cref="ProceduralResourceID"/>
     /// or a 128-bit unsigned integer, are equal.
     /// </summary>
     /// <param name="other">The object to compare to.</param>
     /// <returns>
-    ///     <see langword="true"/> if <paramref name="other"/> is a <see cref="ResourceID"/> and is equal to the current instance,
+    ///     <see langword="true"/> if <paramref name="other"/> is a <see cref="ProceduralResourceID"/> and is equal to the current instance,
     ///     or if <paramref name="other"/> is a 128-bit unsigned integer and is equal to the <see cref="Value"/> of the current
     ///     instance; otherwise, <see langword="false"/>.
     /// </returns>
-    /// <seealso cref="Equals(ResourceID)"/>
+    /// <seealso cref="Equals(ProceduralResourceID)"/>
     /// <seealso cref="Equals(UInt128)"/>
     public override bool Equals([NotNullWhen(true)] object? other) {
         return other switch {
-            ResourceID rid => Equals(rid),
+            ProceduralResourceID rid => Equals(rid),
             UInt128 u128 => Equals(u128),
             _ => false,
         };
@@ -248,17 +240,17 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     
     public override int GetHashCode() => Value.GetHashCode();
     
-    public static bool operator ==(ResourceID left, ResourceID right) => left.Equals(right);
-    public static bool operator !=(ResourceID left, ResourceID right) => !left.Equals(right);
+    public static bool operator ==(ProceduralResourceID left, ProceduralResourceID right) => left.Equals(right);
+    public static bool operator !=(ProceduralResourceID left, ProceduralResourceID right) => !left.Equals(right);
     
-    public static implicit operator ResourceID(uint value) => new(value);
-    public static implicit operator ResourceID(ulong value) => new(value);
-    public static implicit operator ResourceID(UInt128 value) => new(value);
-    public static implicit operator UInt128(ResourceID value) => value.Value;
+    public static implicit operator ProceduralResourceID(uint value) => new(value);
+    public static implicit operator ProceduralResourceID(ulong value) => new(value);
+    public static implicit operator ProceduralResourceID(UInt128 value) => new(value);
+    public static implicit operator UInt128(ProceduralResourceID value) => value.Value;
 
     /// <summary>
     /// Returns the string representation of this instance in hexadecimal integer format.
     /// </summary>
-    /// <returns>A string that represents the current <see cref="ResourceID"/> in hexadecimal integer format.</returns>
+    /// <returns>A string that represents the current <see cref="ProceduralResourceID"/> in hexadecimal integer format.</returns>
     public override string ToString() => Value.ToString("X");
 }

@@ -10,6 +10,8 @@ public abstract class Processor {
     internal static Processor Passthrough { get; } = new PassthroughProcessor();
     
     internal abstract bool CanProcess(ContentRepresentation input);
+
+    // public abstract IReadOnlyDictionary<ProceduralResourceID, BuildingOptions> BuildProceduralResourceSchema();
     
     internal abstract ContentRepresentation Process(ContentRepresentation input, ProcessingContext context);
 }

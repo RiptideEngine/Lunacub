@@ -9,8 +9,8 @@ public sealed class ResourceWithValueDTO : ContentRepresentation {
 }
 
 public sealed class ResourceWithValueImporter : Importer<ResourceWithValueDTO> {
-    protected override ResourceWithValueDTO Import(Stream stream, ImportingContext context) {
-        return JsonSerializer.Deserialize<ResourceWithValueDTO>(stream)!;
+    protected override ResourceWithValueDTO Import(Stream resourceStream, ImportingContext context) {
+        return JsonSerializer.Deserialize<ResourceWithValueDTO>(resourceStream)!;
     }
 }
 

@@ -19,8 +19,8 @@ public sealed class ResourceWithDependenciesImporter : Importer<ResourceWithDepe
         return JsonSerializer.Deserialize<JsonObject>(stream)?[nameof(ResourceWithDependenciesDTO.Dependencies)]?.AsArray().Deserialize<ResourceID[]>() ?? [];
     }
 
-    protected override ResourceWithDependenciesDTO Import(Stream stream, ImportingContext context) {
-        ResourceWithDependenciesDTO imported = JsonSerializer.Deserialize<ResourceWithDependenciesDTO>(stream)!;
+    protected override ResourceWithDependenciesDTO Import(Stream resourceStream, ImportingContext context) {
+        ResourceWithDependenciesDTO imported = JsonSerializer.Deserialize<ResourceWithDependenciesDTO>(resourceStream)!;
 
         foreach (var dependency in imported.Dependencies) {
             context.AddReference(dependency);

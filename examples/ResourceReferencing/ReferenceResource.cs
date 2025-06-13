@@ -1,4 +1,4 @@
-﻿namespace Caxivitual.Lunacub.Examples.ReferenceImporting;
+﻿namespace Caxivitual.Lunacub.Examples.ResourceReferencing;
 
 public class ReferenceResource {
     public ReferenceResource? Reference { get; set; }

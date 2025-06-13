@@ -1,4 +1,4 @@
-﻿namespace Caxivitual.Lunacub.Building.Collections;
+﻿namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
 /// A structure that contains a building options and a <see cref="ResourceProvider"/> instance.
