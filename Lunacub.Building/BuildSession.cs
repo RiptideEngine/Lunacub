@@ -137,11 +137,11 @@ internal sealed class BuildSession {
             
             // Import if haven't.
             if (resourceVertex.ImportOutput == null) {
-                if (!Import(rid, provider, options, out ContentRepresentation? importOutput, out ImportingContext? context, out outputResult)) {
+                if (!Import(rid, provider, options, out ContentRepresentation? importOutput, out outputResult)) {
                     return;
                 }
                 
-                resourceVertex.SetImportResult(importOutput, context);
+                resourceVertex.SetImportResult(importOutput);
             }
             
             // Collect dependencies.
@@ -169,14 +169,6 @@ internal sealed class BuildSession {
                 }
             } finally {
                 ReleaseDependencies(resourceVertex.DependencyIds);
-            }
-            
-            Debug.Assert(resourceVertex.ImportingContext != null);
-        
-            foreach (var referenceId in resourceVertex.ImportingContext.ReferenceIds) {
-                if (!_graph.TryGetValue(referenceId, out var referenceResourceVertex)) continue;
-
-                BuildEnvironmentResource(referenceId, referenceResourceVertex, out _);
             }
         } finally {
             resourceVertex.Release();
@@ -213,8 +205,8 @@ internal sealed class BuildSession {
 
             (ResourceProvider provider, BuildingOptions options) = _environment.Resources[dependencyId];
 
-            if (Import(dependencyId, provider, options, out ContentRepresentation? imported, out ImportingContext? context, out _)) {
-                dependencyVertex.SetImportResult(imported, context);
+            if (Import(dependencyId, provider, options, out ContentRepresentation? imported, out _)) {
+                dependencyVertex.SetImportResult(imported);
                 dependencyCollection.Add(dependencyId, imported);
             }
         }
@@ -228,18 +220,17 @@ internal sealed class BuildSession {
         }
     }
     
-    private bool Import(ResourceID rid, ResourceProvider provider, BuildingOptions options, [NotNullWhen(true)] out ContentRepresentation? imported, [NotNullWhen(true)] out ImportingContext? context, out ResourceBuildingResult failureResult) {
+    private bool Import(ResourceID rid, ResourceProvider provider, BuildingOptions options, [NotNullWhen(true)] out ContentRepresentation? imported, out ResourceBuildingResult failureResult) {
         using (Stream stream = provider.GetStream()) {
             if (stream is not { CanRead: true, CanSeek: true }) {
                 Results.Add(rid, failureResult = new(BuildStatus.InvalidResourceStream));
 
-                context = null;
                 imported = null;
                 return false;
             }
 
             try {
-                context = new(options.Options);
+                ImportingContext context = new(options.Options);
                 imported = _environment.Importers[options.ImporterName].ImportObject(stream, context);
 
                 failureResult = default;
@@ -247,7 +238,6 @@ internal sealed class BuildSession {
             } catch (Exception e) {
                 Results.Add(rid, failureResult = new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
                 
-                context = null;
                 imported = null;
                 return false;
             }
@@ -358,7 +348,6 @@ internal sealed class BuildSession {
         public readonly IReadOnlySet<ResourceID> DependencyIds;
 
         public ContentRepresentation? ImportOutput { get; private set; }
-        public ImportingContext? ImportingContext { get; private set; }
         
         public int ReferenceCount;
 
@@ -367,12 +356,11 @@ internal sealed class BuildSession {
             ReferenceCount = 1;
         }
 
-        [MemberNotNull(nameof(ImportOutput), nameof(ImportingContext))]
-        public void SetImportResult(ContentRepresentation importOutput, ImportingContext context) {
+        [MemberNotNull(nameof(ImportOutput))]
+        public void SetImportResult(ContentRepresentation importOutput) {
             Debug.Assert(ReferenceCount > 0);
             
             ImportOutput = importOutput;
-            ImportingContext = context;
         }
         
         public void Release() {
@@ -380,7 +368,6 @@ internal sealed class BuildSession {
 
             ImportOutput?.Dispose();
             ImportOutput = null;
-            ImportingContext = null;
         }
     }
 }
