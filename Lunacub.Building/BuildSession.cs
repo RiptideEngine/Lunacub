@@ -1,5 +1,6 @@
 ﻿// ReSharper disable VariableHidesOuterVariable
 
+using Microsoft.Extensions.Logging;
 using System.Collections.Frozen;
 using System.IO.Hashing;
 using System.Runtime.ExceptionServices;
@@ -11,60 +12,17 @@ internal sealed class BuildSession {
 
     private readonly Dictionary<ResourceID, ResourceVertex> _graph;
     
-    public Dictionary<ResourceID, ResourceBuildingResult> Results { get; private set; }
+    public Dictionary<ResourceID, ResourceBuildingResult> Results { get; }
     
-    private readonly Dictionary<ResourceID, BuildingProceduralResource> _proceduralResources;
-
     public BuildSession(BuildEnvironment environment) {
         _environment = environment;
-        _graph = new();
+        _graph = new(_environment.Resources.Count);
         Results = new();
-        _proceduralResources = [];
     }
 
     public void Build() {
-        foreach ((var rid, var resource) in _environment.Resources) {
-            if (!_environment.Importers.TryGetValue(resource.Options.ImporterName, out var importer)) {
-                Results.Add(rid, new(BuildStatus.UnknownImporter));
-                continue;
-            }
-            
-            // TODO: Add an optimization flag in Importer to skip this part.
-            HashSet<ResourceID> dependencyIds;
-            
-            try {
-                using (Stream stream = resource.Provider.GetStream()) {
-                    dependencyIds = importer.ExtractDependencies(stream)
-                        .Intersect(((IDictionary<ResourceID, BuildingResource>)_environment.Resources).Keys)
-                        .ToHashSet();
-                    dependencyIds.Remove(rid);   // Preventing self-referencing break everything.
-                }
-            } catch (Exception e) {
-                Results.Add(rid, new(BuildStatus.ExtractDependenciesFailed, ExceptionDispatchInfo.Capture(e)));
-                continue;
-            }
-            
-            _graph.Add(rid, new(dependencyIds));
-        }
-        
-        // Validate dependency graph.
-        ValidateGraph();
-        
-        // Assigning reference count.
-        foreach ((_, var vertex) in _graph) {
-            foreach (var dependencyId in vertex.DependencyIds) {
-                _graph[dependencyId].ReferenceCount++;
-            }
-        }
-        
-        // Handle the building procedure.
-        foreach ((var rid, var vertex) in _graph) {
-            BuildEnvironmentResource(rid, vertex, out _);
-        }
-        
-        Debug.Assert(_graph.Values.All(x => x.ReferenceCount == 0));
-
-        BuildProceduralResources();
+        BuildEnvironmentResources(out var proceduralResources);
+        BuildProceduralResources(proceduralResources);
     }
 
     private void ValidateGraph() {
@@ -95,7 +53,55 @@ internal sealed class BuildSession {
         }
     }
 
-    private void BuildEnvironmentResource(ResourceID rid, ResourceVertex resourceVertex, out ResourceBuildingResult outputResult) {
+    private void BuildEnvironmentResources(out Dictionary<ResourceID, BuildingProceduralResource> proceduralResources) {
+        _environment.Logger.LogInformation("Building environment resources.");
+        
+        foreach ((var rid, var resource) in _environment.Resources) {
+            if (!_environment.Importers.TryGetValue(resource.Options.ImporterName, out var importer)) {
+                Results.Add(rid, new(BuildStatus.UnknownImporter));
+                continue;
+            }
+            
+            // TODO: Add an optimization flag in Importer to skip this part.
+            HashSet<ResourceID> dependencyIds;
+            
+            try {
+                using (Stream stream = resource.Provider.GetStream()) {
+                    dependencyIds = importer.ExtractDependencies(stream)
+                        .Intersect(((IDictionary<ResourceID, BuildingResource>)_environment.Resources).Keys)
+                        .ToHashSet();
+                    dependencyIds.Remove(rid);   // Preventing self-referencing break everything.
+                }
+            } catch (Exception e) {
+                Results.Add(rid, new(BuildStatus.ExtractDependenciesFailed, ExceptionDispatchInfo.Capture(e)));
+                continue;
+            }
+            
+            _graph.Add(rid, new(dependencyIds));
+        }
+        
+        // Validate dependency graph.
+        ValidateGraph();
+        
+        // Assigning reference count for dependencies.
+        foreach ((_, var vertex) in _graph) {
+            foreach (var dependencyId in vertex.DependencyIds) {
+                _graph[dependencyId].ReferenceCount++;
+            }
+
+            vertex.ReferenceCount++;    // Environment resources need the import output to process and serialize.
+        }
+
+        proceduralResources = [];
+        
+        // Handle the building procedure.
+        foreach ((var rid, var vertex) in _graph) {
+            BuildEnvironmentResource(rid, vertex, proceduralResources, out _);
+        }
+        
+        Debug.Assert(_graph.Values.All(x => x.ReferenceCount == 0));
+    }
+    private void BuildEnvironmentResource(ResourceID rid, ResourceVertex resourceVertex, Dictionary<ResourceID, BuildingProceduralResource> proceduralResources, out ResourceBuildingResult outputResult) {
         Debug.Assert(rid != ResourceID.Null);
         
         if (Results.TryGetValue(rid, out outputResult)) return;
@@ -105,7 +111,7 @@ internal sealed class BuildSession {
             bool tryget = _graph.TryGetValue(dependencyId, out var dependencyVertexInfo);
             Debug.Assert(tryget);
             
-            BuildEnvironmentResource(dependencyId, dependencyVertexInfo!, out ResourceBuildingResult dependencyResult);
+            BuildEnvironmentResource(dependencyId, dependencyVertexInfo!, proceduralResources, out ResourceBuildingResult dependencyResult);
 
             if (dependencyResult.Status == BuildStatus.Success) {
                 dependencyRebuilt = true;
@@ -117,101 +123,144 @@ internal sealed class BuildSession {
             DateTime resourceLastWriteTime = provider.LastWriteTime;
 
             Importer importer = _environment.Importers[options.ImporterName];
-            
-            Processor? processor;
-            if (string.IsNullOrEmpty(options.ProcessorName)) {
-                processor = Processor.Passthrough;
-            } else if (!_environment.Processors.TryGetValue(options.ProcessorName, out processor)) {
+
+            Processor? processor = null;
+
+            if (!string.IsNullOrEmpty(options.ProcessorName) && !_environment.Processors.TryGetValue(options.ProcessorName, out processor)) {
                 Results.Add(rid, outputResult = new(BuildStatus.UnknownProcessor));
                 return;
             }
-        
+            
             if (!dependencyRebuilt && IsResourceCacheable(rid, resourceLastWriteTime, options, resourceVertex.DependencyIds, out IncrementalInfo previousIncrementalInfo)) {
-                if (new ComponentVersions(importer.Version, processor.Version) == previousIncrementalInfo.ComponentVersions) {
+                if (new ComponentVersions(importer.Version, processor?.Version) == previousIncrementalInfo.ComponentVersions) {
                     Results.Add(rid, outputResult = new(BuildStatus.Cached));
-                    
-                    ReleaseDependencies(resourceVertex.DependencyIds);
                     return;
                 }
             }
             
             // Import if haven't.
             if (resourceVertex.ImportOutput == null) {
-                if (!Import(rid, provider, options, out ContentRepresentation? importOutput, out outputResult)) {
+                if (!Import(rid, provider, importer, options.Options, out ContentRepresentation? importOutput, out outputResult)) {
                     return;
                 }
                 
                 resourceVertex.SetImportResult(importOutput);
             }
-            
-            // Collect dependencies.
-            IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies = CollectDependencies(resourceVertex.DependencyIds);
 
-            try {
-                if (!Process(rid, resourceVertex.ImportOutput, options, dependencies, out ContentRepresentation? processed, out ProcessingContext? processingContext, out outputResult)) {
+            if (processor == null) {
+                try {
+                    SerializeProcessedObject(resourceVertex.ImportOutput, rid, options.Options, options.Tags);
+                } catch (Exception e) {
+                    Results.Add(rid, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
+                    return;
+                }
+            } else {
+                if (!processor.CanProcess(resourceVertex.ImportOutput)) {
+                    Results.Add(rid, outputResult = new(BuildStatus.Unprocessable));
+                    return;
+                }
+
+                ContentRepresentation processed;
+                IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies = CollectDependencies(resourceVertex.DependencyIds);
+                ProcessingContext processingContext;
+
+                try {
+                    processingContext = new(_environment, options.Options, dependencies, _environment.Logger);
+                    processed = processor.Process(resourceVertex.ImportOutput, processingContext);
+                } catch (Exception e) {
+                    Results.Add(rid, outputResult = new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
                     return;
                 }
 
                 try {
-                    SerializeProcessedObject(processed, rid, options);
+                    SerializeProcessedObject(processed, rid, options.Options, options.Tags);
                 } catch (Exception e) {
                     Results.Add(rid, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
                     return;
                 } finally {
-                    processed.Dispose();
+                    if (!ReferenceEquals(resourceVertex.ImportOutput, processed)) {
+                        processed.Dispose();
+                    }
                 }
-
-                Results.Add(rid, outputResult = new(BuildStatus.Success));
-                _environment.IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, resourceVertex.DependencyIds, new(importer.Version, processor.Version)));
-
-                if (processingContext != null) {
-                    AppendProceduralResources(rid, processingContext.ProceduralResources);
-                }
-            } finally {
-                ReleaseDependencies(resourceVertex.DependencyIds);
+                
+                AppendProceduralResources(rid, processingContext.ProceduralResources, proceduralResources);
             }
+
+            Results.Add(rid, outputResult = new(BuildStatus.Success));
+            _environment.IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, resourceVertex.DependencyIds, new(importer.Version, processor.Version)));
         } finally {
+            ReleaseDependencies(resourceVertex.DependencyIds);
             resourceVertex.Release();
         }
-    }
-
-    private void BuildProceduralResources() {
-        if (_proceduralResources.Count == 0) return;
         
-        // TODO: Implementation
-    }
-    
-    private IReadOnlyDictionary<ResourceID, ContentRepresentation> CollectDependencies(IReadOnlyCollection<ResourceID> dependencyIds) {
-        if (dependencyIds.Count == 0) return FrozenDictionary<ResourceID, ContentRepresentation>.Empty;
+        IReadOnlyDictionary<ResourceID, ContentRepresentation> CollectDependencies(IReadOnlyCollection<ResourceID> dependencyIds) {
+            if (dependencyIds.Count == 0) return FrozenDictionary<ResourceID, ContentRepresentation>.Empty;
         
-        Dictionary<ResourceID, ContentRepresentation> dependencyCollection = [];
+            Dictionary<ResourceID, ContentRepresentation> dependencyCollection = [];
 
-        foreach (var dependencyId in dependencyIds) {
-            ResourceVertex dependencyVertex = _graph[dependencyId];
+            foreach (var dependencyId in dependencyIds) {
+                ResourceVertex dependencyVertex = _graph[dependencyId];
 
-            if (Results.TryGetValue(dependencyId, out var result)) {
-                switch (result.Status) {
-                    case BuildStatus.Success:
-                        Debug.Assert(dependencyVertex.ImportOutput != null);
+                if (Results.TryGetValue(dependencyId, out var result)) {
+                    switch (result.Status) {
+                        case BuildStatus.Success:
+                            Debug.Assert(dependencyVertex.ImportOutput != null);
                         
-                        dependencyCollection[dependencyId] = dependencyVertex.ImportOutput;
-                        continue;
+                            dependencyCollection[dependencyId] = dependencyVertex.ImportOutput;
+                            continue;
                     
-                    case BuildStatus.Cached: break; // Import the resource.
+                        case BuildStatus.Cached: break; // Import the resource.
                     
-                    default: continue;
+                        default: continue;
+                    }
+                }
+
+                if (dependencyVertex.ImportOutput is { } dependencyImportOutput) {
+                    dependencyCollection.Add(dependencyId, dependencyImportOutput);
+                } else {
+                    (ResourceProvider provider, BuildingOptions options) = _environment.Resources[dependencyId];
+
+                    if (Import(dependencyId, provider, _environment.Importers[options.ImporterName], options.Options, out ContentRepresentation? imported, out _)) {
+                        dependencyVertex.SetImportResult(imported);
+                        dependencyCollection.Add(dependencyId, imported);
+                    }
                 }
             }
 
-            (ResourceProvider provider, BuildingOptions options) = _environment.Resources[dependencyId];
-
-            if (Import(dependencyId, provider, options, out ContentRepresentation? imported, out _)) {
-                dependencyVertex.SetImportResult(imported);
-                dependencyCollection.Add(dependencyId, imported);
-            }
+            return dependencyCollection;
         }
+    }
 
-        return dependencyCollection;
+    private void BuildProceduralResources(IReadOnlyDictionary<ResourceID, BuildingProceduralResource> proceduralResources) {
+        if (proceduralResources.Count == 0) return;
+
+        new ProceduralBuildLayer(this, null, proceduralResources).Build();
+
+        // foreach ((var rid, var resource) in proceduralResources) {
+        //     ResourceVertex vertex = new(resource.DependencyIds);
+        //     vertex.SetImportResult(resource.Object);
+        //     
+        //     _graph.Add(rid, vertex);
+        // }
+        //
+        // ValidateGraph();
+        //
+        // // Assigning reference count for dependencies.
+        // foreach ((_, var vertex) in _graph) {
+        //     foreach (var dependencyId in vertex.DependencyIds) {
+        //         _graph[dependencyId].ReferenceCount++;
+        //     }
+        // }
+        //
+        // Dictionary<ResourceID, BuildingProceduralResource> nextPassProceduralResources = [];
+        //
+        // foreach ((var rid, var vertex) in _graph) {
+        //     BuildProceduralResource(rid, vertex, proceduralResources, nextPassProceduralResources, pass, out _);
+        // }
+        //
+        // Debug.Assert(_graph.Values.All(x => x.ReferenceCount == 0));
+        //
+        // BuildProceduralResources(nextPassProceduralResources, pass + 1);
     }
     
     private void ReleaseDependencies(IReadOnlyCollection<ResourceID> dependencyIds) {
@@ -220,7 +269,7 @@ internal sealed class BuildSession {
         }
     }
     
-    private bool Import(ResourceID rid, ResourceProvider provider, BuildingOptions options, [NotNullWhen(true)] out ContentRepresentation? imported, out ResourceBuildingResult failureResult) {
+    private bool Import(ResourceID rid, ResourceProvider provider, Importer importer, IImportOptions? options, [NotNullWhen(true)] out ContentRepresentation? imported, out ResourceBuildingResult failureResult) {
         using (Stream stream = provider.GetStream()) {
             if (stream is not { CanRead: true, CanSeek: true }) {
                 Results.Add(rid, failureResult = new(BuildStatus.InvalidResourceStream));
@@ -230,8 +279,8 @@ internal sealed class BuildSession {
             }
 
             try {
-                ImportingContext context = new(options.Options);
-                imported = _environment.Importers[options.ImporterName].ImportObject(stream, context);
+                ImportingContext context = new(options);
+                imported = importer.ImportObject(stream, context);
 
                 failureResult = default;
                 return true;
@@ -243,40 +292,8 @@ internal sealed class BuildSession {
             }
         }
     }
-    
-    private bool Process(ResourceID rid, ContentRepresentation imported, BuildingOptions options, IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies, [NotNullWhen(true)] out ContentRepresentation? processed, out ProcessingContext? context, out ResourceBuildingResult failureResult) {
-        string? processorName = options.ProcessorName;
 
-        if (string.IsNullOrEmpty(processorName)) {
-            processed = imported;
-            context = null;
-            failureResult = default;
-            return true;
-        }
-        
-        if (!_environment.Processors.TryGetValue(processorName, out var processor)) {
-            Results.Add(rid, failureResult = new(BuildStatus.UnknownProcessor));
-            processed = null;
-            context = null;
-            return false;
-        }
-
-        try {
-            context = new(_environment, options.Options, dependencies, _environment.Logger);
-            processed = processor.Process(imported, context);
-
-            failureResult = default;
-            return true;
-        } catch (Exception e) {
-            Results.Add(rid, failureResult = new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
-        
-            processed = null;
-            context = null;
-            return false;
-        }
-    }
-
-    private void SerializeProcessedObject(ContentRepresentation processed, ResourceID rid, BuildingOptions options) {
+    private void SerializeProcessedObject(ContentRepresentation processed, ResourceID rid, IImportOptions? options, IReadOnlyCollection<string> tags) {
         var factory = _environment.SerializerFactories.GetSerializableFactory(processed.GetType())!;
         
         if (factory == null) {
@@ -285,27 +302,27 @@ internal sealed class BuildSession {
 
         using MemoryStream ms = new(4096);
 
-        var serializer = factory.InternalCreateSerializer(processed, new(options.Options, _environment.Logger));
+        var serializer = factory.InternalCreateSerializer(processed, new(options, _environment.Logger));
         
-        CompileHelpers.Compile(serializer, ms, options.Tags);
+        CompileHelpers.Compile(serializer, ms, tags);
         ms.Position = 0;
         _environment.Output.CopyCompiledResourceOutput(ms, rid);
     }
 
-    private void AppendProceduralResources(ResourceID rid, IReadOnlyDictionary<ProceduralResourceID, BuildingProceduralResource> generatedResources) {
+    private void AppendProceduralResources(ResourceID rid, IReadOnlyDictionary<ProceduralResourceID, BuildingProceduralResource> proceduralResources, Dictionary<ResourceID, BuildingProceduralResource> receiver) {
         unsafe {
             Span<byte> buffer = stackalloc byte[sizeof(ResourceID) + sizeof(ProceduralResourceID)];
             
             MemoryMarshal.Write(buffer, rid);
             Span<byte> slice = buffer[sizeof(ResourceID)..];
 
-            foreach ((var proceduralId, var proceduralResource) in generatedResources) {
+            foreach ((var proceduralId, var proceduralResource) in proceduralResources) {
                 MemoryMarshal.Write(slice, proceduralId);
 
                 UInt128 hash = XxHash128.HashToUInt128(buffer);
 
                 Debug.Assert(!_environment.Resources.ContainsKey(hash), "ResourceID collided.");
-                _proceduralResources.Add(hash, proceduralResource);
+                receiver.Add(hash, proceduralResource);
             }
         }
     }
@@ -353,12 +370,11 @@ internal sealed class BuildSession {
 
         public ResourceVertex(IReadOnlySet<ResourceID> dependencies) {
             DependencyIds = dependencies;
-            ReferenceCount = 1;
         }
 
         [MemberNotNull(nameof(ImportOutput))]
         public void SetImportResult(ContentRepresentation importOutput) {
-            Debug.Assert(ReferenceCount > 0);
+            // Debug.Assert(ReferenceCount > 0);
             
             ImportOutput = importOutput;
         }
@@ -368,6 +384,176 @@ internal sealed class BuildSession {
 
             ImportOutput?.Dispose();
             ImportOutput = null;
+        }
+    }
+
+    private sealed class ProceduralBuildLayer {
+        private readonly BuildSession _session;
+        private readonly ProceduralBuildLayer? _previous;
+
+        private readonly IReadOnlyDictionary<ResourceID, BuildingProceduralResource> _proceduralResources;
+        
+        public Dictionary<ResourceID, BuildingProceduralResource> NextLayerProceduralResources { get; }
+
+        public ProceduralBuildLayer(BuildSession session, ProceduralBuildLayer? previousLayer, IReadOnlyDictionary<ResourceID, BuildingProceduralResource> proceduralResources) {
+            _session = session;
+            _previous = previousLayer;
+            _proceduralResources = proceduralResources;
+            NextLayerProceduralResources = [];
+        }
+
+        public ProceduralBuildLayer Build() {
+            if (_proceduralResources.Count == 0) return this;
+            
+            foreach ((ResourceID rid, BuildingProceduralResource resource) in _proceduralResources) {
+                HashSet<ResourceID> sanitizedDependencies = new(resource.DependencyIds.Count);
+
+                foreach (var dependencyId in resource.DependencyIds) {
+                    if (_session._graph.ContainsKey(dependencyId) || _proceduralResources.ContainsKey(dependencyId)) {
+                        if (dependencyId != rid) {
+                            sanitizedDependencies.Add(dependencyId);
+                        }
+                    }
+                }
+                
+                ResourceVertex vertex = new(sanitizedDependencies);
+                vertex.SetImportResult(resource.Object);
+            
+                _session._graph.Add(rid, vertex);
+            }
+
+            try {
+                _session.ValidateGraph();
+
+                // Not gonna do reference counting here because procedural resources are only created one, and it's very hard
+                // to have an API that keeping track of refcount and releasing.
+                
+                foreach ((var rid, var vertex) in _proceduralResources) {
+                    BuildResource(rid, vertex, out _);
+                }
+
+                Debug.Assert(_session._graph.Values.All(x => x.ReferenceCount == 0));
+
+                return new ProceduralBuildLayer(_session, this, NextLayerProceduralResources).Build();
+            } finally {
+                foreach ((_, BuildingProceduralResource resource) in _proceduralResources) {
+                    resource.Object.Dispose();
+                }
+            }
+        }
+        
+        private void BuildResource(ResourceID rid, BuildingProceduralResource resource, out ResourceBuildingResult outputResult) {
+            Debug.Assert(rid != ResourceID.Null);
+            Debug.Assert(resource.Object != null);
+
+            var resourceVertex = _session._graph[rid];
+            
+            Debug.Assert(ReferenceEquals(resource.Object, resourceVertex.ImportOutput));
+            
+            try {
+                if (string.IsNullOrEmpty(resource.ProcessorName)) {
+                    try {
+                        _session.SerializeProcessedObject(resourceVertex.ImportOutput, rid, resource.Options, resource.Tags);
+                    } catch (Exception e) {
+                        _session.Results.Add(rid, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
+                        return;
+                    }
+                } else if (_session._environment.Processors.TryGetValue(resource.ProcessorName, out var processor)) {
+                    if (!processor.CanProcess(resourceVertex.ImportOutput)) {
+                        _session.Results.Add(rid, outputResult = new(BuildStatus.Unprocessable));
+                        return;
+                    }
+
+                    ContentRepresentation processed;
+                    IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies = CollectDependencies(resourceVertex.DependencyIds);
+                    ProcessingContext processingContext;
+                    
+                    try {
+                        processingContext = new(_session._environment, resource.Options, dependencies, _session._environment.Logger);
+                        processed = processor.Process(resourceVertex.ImportOutput, processingContext);
+                    } catch (Exception e) {
+                        _session.Results.Add(rid, outputResult = new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
+                        return;
+                    }
+
+                    try {
+                        _session.SerializeProcessedObject(processed, rid, resource.Options, resource.Tags);
+                    } catch (Exception e) {
+                        _session.Results.Add(rid, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
+                        return;
+                    } finally {
+                        if (!ReferenceEquals(resourceVertex.ImportOutput, processed)) {
+                            processed.Dispose();
+                        }
+                    }
+                    
+                    _session.AppendProceduralResources(rid, processingContext.ProceduralResources, NextLayerProceduralResources);
+                } else {
+                    _session.Results.Add(rid, outputResult = new(BuildStatus.UnknownProcessor));
+                    return;
+                }
+                
+                _session.Results.Add(rid, outputResult = new(BuildStatus.Success));
+            } finally {
+                ReleaseDependencies(resource.DependencyIds);
+            }
+            
+            IReadOnlyDictionary<ResourceID, ContentRepresentation> CollectDependencies(IReadOnlyCollection<ResourceID> dependencyIds) {
+                if (dependencyIds.Count == 0) return FrozenDictionary<ResourceID, ContentRepresentation>.Empty;
+            
+                Dictionary<ResourceID, ContentRepresentation> dependencyCollection = [];
+
+                foreach (var dependencyId in dependencyIds) {
+                    ResourceVertex dependencyVertex = _session._graph[dependencyId];
+
+                    if (_session.Results.TryGetValue(dependencyId, out var result)) {
+                        switch (result.Status) {
+                            case BuildStatus.Success:
+                                Debug.Assert(dependencyVertex.ImportOutput != null);
+                            
+                                dependencyCollection[dependencyId] = dependencyVertex.ImportOutput;
+                                continue;
+                        
+                            case BuildStatus.Cached: break; // Import the resource.
+                        
+                            default: continue;
+                        }
+                    }
+
+                    if (dependencyVertex.ImportOutput is { } dependencyImportOutput) {
+                        dependencyCollection.Add(dependencyId, dependencyImportOutput);
+                    } else {
+                        if (_session._environment.Resources.TryGetValue(dependencyId, out BuildingResource envResource)) {
+                            (ResourceProvider provider, BuildingOptions options) = envResource;
+                                
+                            if (_session.Import(dependencyId, provider, _session._environment.Importers[options.ImporterName], options.Options, out ContentRepresentation? imported, out _)) {
+                                dependencyVertex.SetImportResult(imported);
+                                dependencyCollection.Add(dependencyId, imported);
+                            }
+                        } else if (_proceduralResources.TryGetValue(dependencyId, out var proceduralResource)) {
+                            Debug.Assert(_session._graph[dependencyId].ReferenceCount > 0);
+                            
+                            dependencyCollection.Add(dependencyId, proceduralResource.Object);
+                        }
+                        // (ResourceProvider provider, BuildingOptions options) = _environment.Resources[dependencyId];
+                        //
+                        // if (_session.Import(dependencyId, provider, _environment.Importers[options.ImporterName], options.Options, out ContentRepresentation? imported, out _)) {
+                        //     dependencyVertex.SetImportResult(imported);
+                        //     dependencyCollection.Add(dependencyId, imported);
+                        // }
+                    }
+                }
+
+                return dependencyCollection;
+            }
+        }
+        
+        private void ReleaseDependencies(IReadOnlyCollection<ResourceID> dependencyIds) {
+            foreach (var dependencyId in dependencyIds) {
+                if (!_session._environment.Resources.ContainsKey(dependencyId)) continue;   // Only release environment resources.
+                
+                _session._graph[dependencyId].Release();
+            }
         }
     }
 }

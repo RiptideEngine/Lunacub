@@ -1,5 +1,6 @@
 ﻿using Caxivitual.Lunacub.Building.Collections;
 using Microsoft.Extensions.Logging;
+using System.Collections.Frozen;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -25,7 +26,7 @@ public sealed class ProcessingContext {
     public IReadOnlyDictionary<ResourceID, ContentRepresentation> Dependencies { get; }
     
     /// <summary>
-    /// Gets the dictionary that stores the generated resources to build in next pass.
+    /// Gets the procedural resources container generated during processing stage.
     /// </summary>
     public Dictionary<ProceduralResourceID, BuildingProceduralResource> ProceduralResources { get; }
     
@@ -38,7 +39,7 @@ public sealed class ProcessingContext {
         Environment = environment;
         Options = options;
         Dependencies = dependencies;
-        Logger = logger;
         ProceduralResources = [];
+        Logger = logger;
     }
 }

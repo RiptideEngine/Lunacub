@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Building;
+﻿using System.Collections.Frozen;
+
+namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
 /// Provides the base class that handles the process of processing a <see cref="ContentRepresentation"/> and convert it
@@ -7,13 +9,9 @@
 public abstract class Processor {
     public virtual string? Version => null;
     
-    internal static Processor Passthrough { get; } = new PassthroughProcessor();
-    
     internal abstract bool CanProcess(ContentRepresentation input);
 
-    // public abstract IReadOnlyDictionary<ProceduralResourceID, BuildingOptions> BuildProceduralResourceSchema();
-    
-    internal abstract ContentRepresentation Process(ContentRepresentation input, ProcessingContext context);
+    internal abstract ContentRepresentation Process(ContentRepresentation importedObject, ProcessingContext context);
 }
 
 /// <inheritdoc cref="Processor"/>
@@ -22,17 +20,12 @@ public abstract class Processor {
 public abstract class Processor<TInput, TOutput> : Processor where TInput : ContentRepresentation where TOutput : ContentRepresentation {
     internal override sealed bool CanProcess(ContentRepresentation input) => input is TInput t && CanProcess(t);
     
-    internal override sealed ContentRepresentation Process(ContentRepresentation input, ProcessingContext context) {
-        Debug.Assert(input.GetType().IsAssignableTo(typeof(TInput)));
+    internal override sealed ContentRepresentation Process(ContentRepresentation importedObject, ProcessingContext context) {
+        Debug.Assert(importedObject.GetType().IsAssignableTo(typeof(TInput)));
 
-        return Process((TInput)input, context);
+        return Process((TInput)importedObject, context);
     }
 
     protected virtual bool CanProcess(TInput content) => true;
-    protected abstract TOutput Process(TInput input, ProcessingContext context);
-}
-
-file sealed class PassthroughProcessor : Processor {
-    internal override bool CanProcess(ContentRepresentation input) => true;
-    internal override ContentRepresentation Process(ContentRepresentation input, ProcessingContext context) => input;
+    protected abstract TOutput Process(TInput importedObject, ProcessingContext context);
 }

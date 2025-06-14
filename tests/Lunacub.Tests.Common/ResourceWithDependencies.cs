@@ -31,8 +31,8 @@ public sealed class ResourceWithDependenciesImporter : Importer<ResourceWithDepe
 }
 
 public sealed class ResourceWithDependenciesProcessor : Processor<ResourceWithDependenciesDTO, ResourceWithDependenciesDTO> {
-    protected override ResourceWithDependenciesDTO Process(ResourceWithDependenciesDTO input, ProcessingContext context) {
-        return input;
+    protected override ResourceWithDependenciesDTO Process(ResourceWithDependenciesDTO importedObject, ProcessingContext context) {
+        return importedObject;
     }
 }
 

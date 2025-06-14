@@ -22,13 +22,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "experiments", "experiments"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyImporting", "examples\DependencyImporting\DependencyImporting.csproj", "{4B05A58A-F336-43BE-A145-2CC88F92AF82}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunacub.Building.SourceGenerator", "Lunacub.Building.SourceGenerator\Lunacub.Building.SourceGenerator.csproj", "{7ED47A65-8E42-4EE7-A10B-899BEAF6BF3A}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "concepts", "concepts", "{B532E27C-F78F-417A-9247-AF5B5D0E409C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "applications", "applications", "{F109B4A5-3CCF-4217-ABAE-C85DC9437B9A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProceduralResources", "examples\ProceduralResources\ProceduralResources.csproj", "{13642D7B-E273-4A86-8FBE-4F8292292FA3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunacub.Building.SourceGenerator", "tools\Lunacub.Building.SourceGenerator\Lunacub.Building.SourceGenerator.csproj", "{F8FA9164-4CD1-4C09-B04C-88BC3938A46B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -72,14 +72,14 @@ Global
 		{4B05A58A-F336-43BE-A145-2CC88F92AF82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4B05A58A-F336-43BE-A145-2CC88F92AF82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4B05A58A-F336-43BE-A145-2CC88F92AF82}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7ED47A65-8E42-4EE7-A10B-899BEAF6BF3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7ED47A65-8E42-4EE7-A10B-899BEAF6BF3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7ED47A65-8E42-4EE7-A10B-899BEAF6BF3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7ED47A65-8E42-4EE7-A10B-899BEAF6BF3A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{13642D7B-E273-4A86-8FBE-4F8292292FA3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{13642D7B-E273-4A86-8FBE-4F8292292FA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{13642D7B-E273-4A86-8FBE-4F8292292FA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{13642D7B-E273-4A86-8FBE-4F8292292FA3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8FA9164-4CD1-4C09-B04C-88BC3938A46B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8FA9164-4CD1-4C09-B04C-88BC3938A46B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8FA9164-4CD1-4C09-B04C-88BC3938A46B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8FA9164-4CD1-4C09-B04C-88BC3938A46B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B532E27C-F78F-417A-9247-AF5B5D0E409C} = {BD303699-F202-42F4-B61F-8D17F82567F4}

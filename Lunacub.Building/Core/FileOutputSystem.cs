@@ -33,7 +33,7 @@ public class FileOutputSystem : OutputSystem {
 
     public override void FlushIncrementalInfos(IReadOnlyDictionary<ResourceID, IncrementalInfo> reports) {
         foreach ((var rid, var report) in reports) {
-            using FileStream reportFile = File.OpenWrite(Path.Combine(ReportDirectory, $"{rid}{CompilingConstants.ReportExtension}"));
+            using FileStream reportFile = File.OpenWrite(Path.Combine(ReportDirectory, $"{rid:X}{CompilingConstants.ReportExtension}"));
             reportFile.SetLength(0);
 
             JsonSerializer.Serialize(reportFile, report);
@@ -41,13 +41,13 @@ public class FileOutputSystem : OutputSystem {
     }
 
     public override DateTime? GetResourceLastBuildTime(ResourceID rid) {
-        string path = Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
+        string path = Path.Combine(ResourceOutputDirectory, $"{rid:X}{CompilingConstants.CompiledResourceExtension}");
         
         return File.Exists(path) ? File.GetLastWriteTime(path) : null;
     }
 
     public override void CopyCompiledResourceOutput(Stream sourceStream, ResourceID rid) {
-        using FileStream fs = new(Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        using FileStream fs = new(Path.Combine(ResourceOutputDirectory, $"{rid:X}{CompilingConstants.CompiledResourceExtension}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
         fs.SetLength(0);
         sourceStream.CopyTo(fs);
     }

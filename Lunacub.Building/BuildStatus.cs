@@ -29,35 +29,37 @@ public enum BuildStatus {
     /// <summary>
     /// Indicates that the resource failed to be imported by <see cref="Importer"/> due to an exception.
     /// </summary>
-    ImportingFailed = -3,
+    ImportingFailed = -4,
     
     /// <summary>
     /// Indicates that the resource is requesting to be processed by an unregistered <see cref="Processor"/>.
     /// </summary>
     /// <seealso cref="BuildEnvironment.Processors"/>
-    UnknownProcessor = -4,
+    UnknownProcessor = -5,
     
     /// <summary>
-    /// Indicates that the resource's requested <see cref="Processor"/> cannot process the object returned by the importer.
+    /// Indicates that the <see cref="Processor"/> cannot process the <see cref="ContentRepresentation"/> returned by <see cref="Importer"/>.
     /// </summary>
-    /// <seealso cref="Processor.CanProcess"/>
-    CannotProcess = -5,
+    Unprocessable = -6,
     
     /// <summary>
     /// Indicates that the resource failed to be processed by <see cref="Processor"/> due to an exception.
     /// </summary>
-    ProcessingFailed = -6,
+    ProcessingFailed = -7,
     
     /// <summary>
     /// Indicates that the resource provider returned an invalid <see cref="Stream"/> instance.
     /// </summary>
     /// <see cref="ResourceProvider.GetStream"/>
-    InvalidResourceStream = -7,
+    InvalidResourceStream = -8,
     
     /// <summary>
     /// Indicates that the resource failed to be serialized due to an exception.
     /// </summary>
-    SerializationFailed = -8,
+    SerializationFailed = -9,
     
-    ExtractDependenciesFailed = -9,
+    /// <summary>
+    /// Indicates that the <see cref="Importer"/> failed to extract the dependency informations from the resource stream.
+    /// </summary>
+    ExtractDependenciesFailed = -10,
 }

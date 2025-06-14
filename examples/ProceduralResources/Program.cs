@@ -49,7 +49,7 @@ internal static class Program {
         
         var result = env.BuildResources();
         
-        Debug.Assert(result.ResourceResults.Count == 2);
+        Debug.Assert(result.ResourceResults.Count == 2, "Expected 2 results, got " + result.ResourceResults.Count + '.');
 
         foreach ((var rid, var resourceResult) in result.ResourceResults) {
             _logger.LogInformation("Resource '{rid}' build status: {status}.", rid, resourceResult.Status);

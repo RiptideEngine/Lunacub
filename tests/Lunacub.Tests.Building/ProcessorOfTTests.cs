@@ -16,7 +16,7 @@ public class ProcessorOfTTests {
     }
 
     private sealed class SimpleResourceProcessor : Processor<ResourceWithValueDTO, ResourceWithValueDTO> {
-        protected override ResourceWithValueDTO Process(ResourceWithValueDTO input, ProcessingContext context) {
+        protected override ResourceWithValueDTO Process(ResourceWithValueDTO importedObject, ProcessingContext context) {
             return new();
         }
     }

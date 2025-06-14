@@ -1,10 +1,17 @@
-﻿namespace Caxivitual.Lunacub.Building;
+﻿using System.Collections.Frozen;
+
+namespace Caxivitual.Lunacub.Building;
 
 public readonly struct BuildingProceduralResource : IEquatable<BuildingProceduralResource> {
     /// <summary>
-    /// Gets the <see cref="ContentRepresentation"/> object that is being built.
+    /// Gets the building resource as an instance of <see cref="ContentRepresentation"/>.
     /// </summary>
     public required ContentRepresentation Object { get; init; }
+    
+    /// <summary>
+    /// Gets the dependency ids of the resource.
+    /// </summary>
+    public IReadOnlySet<ResourceID> DependencyIds { get; init; }
     
     /// <summary>
     /// Gets the name of <see cref="Processor"/> used to convert the <see cref="ContentRepresentation"/> after the
@@ -25,6 +32,7 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     public BuildingProceduralResource() {
         Tags = [];
         Options = null;
+        DependencyIds = FrozenSet<ResourceID>.Empty;
     }
 
     [SetsRequiredMembers]
@@ -33,13 +41,16 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     [SetsRequiredMembers]
     public BuildingProceduralResource(ContentRepresentation obj, string? processorName, IReadOnlyCollection<string> tags, IImportOptions? options) {
         Object = obj;
+        DependencyIds = FrozenSet<ResourceID>.Empty;
         ProcessorName = processorName;
         Tags = tags;
         Options = options;
     }
     
     public bool Equals(BuildingProceduralResource other) {
-        return Object == other.Object && ProcessorName == other.ProcessorName &&
+        return Object == other.Object &&
+               DependencyIds.SequenceEqual(other.DependencyIds) &&
+               ProcessorName == other.ProcessorName &&
                Tags.SequenceEqual(other.Tags) &&
                (Options?.Equals(other.Options) ?? other.Options == null);
     }
@@ -52,6 +63,7 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
         HashCode hc = new();
         
         hc.Add(Object);
+        hc.Add(DependencyIds);
         hc.Add(ProcessorName);
         hc.Add(Options);
         
