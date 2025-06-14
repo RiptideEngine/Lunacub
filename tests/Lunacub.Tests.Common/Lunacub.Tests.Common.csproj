@@ -20,15 +20,15 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\Lunacub.Building\Lunacub.Building.csproj" />
-        <ProjectReference Include="..\..\Lunacub.Importing\Lunacub.Importing.csproj" />
-        <ProjectReference Include="..\..\Lunacub\Lunacub.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
         <Content Include="Resources\**">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\sources\Lunacub.Building\Lunacub.Building.csproj" />
+      <ProjectReference Include="..\..\sources\Lunacub.Importing\Lunacub.Importing.csproj" />
+      <ProjectReference Include="..\..\sources\Lunacub\Lunacub.csproj" />
     </ItemGroup>
 
     <Import Project="$(SolutionDir)commons\languagecommon.props"/>

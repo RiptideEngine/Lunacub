@@ -15,9 +15,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Lunacub.Building\Lunacub.Building.csproj" />
-      <ProjectReference Include="..\..\Lunacub.Importing\Lunacub.Importing.csproj" />
-      <ProjectReference Include="..\..\Lunacub\Lunacub.csproj" />
+      <ProjectReference Include="..\..\sources\Lunacub.Building\Lunacub.Building.csproj" />
+      <ProjectReference Include="..\..\sources\Lunacub.Importing\Lunacub.Importing.csproj" />
+      <ProjectReference Include="..\..\sources\Lunacub\Lunacub.csproj" />
     </ItemGroup>
 
 </Project>

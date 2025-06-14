@@ -89,7 +89,7 @@ public class BinaryWriterExtensionsTests : IDisposable {
     
     [Fact]
     public void Write_ResourceID_RecordOriginalValue() {
-        ResourceID value = new("496c198955cf587a94b50ba89ca80d7d");
+        ResourceID value = 255;
         _writer.Write(value);
         
         _writer.BaseStream.Position.Should().Be(Unsafe.SizeOf<ResourceID>());
