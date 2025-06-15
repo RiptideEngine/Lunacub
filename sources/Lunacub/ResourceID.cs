@@ -111,7 +111,7 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     ///     <see langword="true"/> if <paramref name="span"/> was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
     public static bool TryParse(ReadOnlySpan<char> span, out ResourceID result) {
-        if (UInt128.TryParse(span, NumberStyles.HexNumber, null, out var value)) {
+        if (UInt128.TryParse(span, null, out var value)) {
             result = new(value);
             return true;
         }
@@ -133,7 +133,7 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     ///     <see langword="true"/> if <paramref name="span"/> was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
     public static bool TryParse(ReadOnlySpan<char> span, IFormatProvider? formatProvider, out ResourceID result) {
-        if (UInt128.TryParse(span, NumberStyles.HexNumber, null, out var value)) {
+        if (UInt128.TryParse(span, null, out var value)) {
             result = new(value);
             return true;
         }
@@ -144,7 +144,7 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     
     /// <inheritdoc cref="TryParse(ReadOnlySpan{char},out Caxivitual.Lunacub.ResourceID)"/>
     public static bool TryParse(ReadOnlySpan<byte> span, out ResourceID result) {
-        if (UInt128.TryParse(span, NumberStyles.HexNumber, null, out var value)) {
+        if (UInt128.TryParse(span, null, out var value)) {
             result = new(value);
             return true;
         }
@@ -155,7 +155,7 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     
     /// <inheritdoc cref="TryParse(ReadOnlySpan{char},IFormatProvider?,out Caxivitual.Lunacub.ResourceID)"/>
     public static bool TryParse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider, out ResourceID result) {
-        if (UInt128.TryParse(span, NumberStyles.HexNumber, null, out var value)) {
+        if (UInt128.TryParse(span, null, out var value)) {
             result = new(value);
             return true;
         }
@@ -167,9 +167,9 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     /// <summary>
     /// Formats this instance into numerical representation.
     /// </summary>
-    /// <param name="format">The format to use, or <see langword="null"/> to use the hexadecimal format.</param>
+    /// <param name="format">The format to use, or <see langword="null"/> to use the default decimal format.</param>
     /// <returns>The string presentation of this instance specified by the format.</returns>
-    public string ToString(string? format) => Value.ToString(format ?? "X");
+    public string ToString(string? format) => Value.ToString(format);
     
     /// <summary>
     /// Formats this instance into numerical representation.
@@ -181,11 +181,11 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     /// <summary>
     /// Formats this instance into numerical representation.
     /// </summary>
-    /// <param name="format">The format to use, or <see langword="null"/> to use the hexadecimal format.</param>
+    /// <param name="format">The format to use, or <see langword="null"/> to use the default decimal format.</param>
     /// <param name="formatProvider">An object that supplies culture-specific formatting information.</param>
     /// <returns>The string representation of this instance specified by the format.</returns>
     public string ToString(string? format, IFormatProvider? formatProvider) {
-        return Value.ToString(format ?? "X", formatProvider);
+        return Value.ToString(format, formatProvider);
     }
 
     /// <summary>
@@ -257,8 +257,8 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     public static implicit operator UInt128(ResourceID value) => value.Value;
 
     /// <summary>
-    /// Returns the string representation of this instance in hexadecimal integer format.
+    /// Returns the string representation of this instance in default decimal integer format.
     /// </summary>
-    /// <returns>A string that represents the current <see cref="ResourceID"/> in hexadecimal integer format.</returns>
-    public override string ToString() => Value.ToString("X");
+    /// <returns>A string that represents the current <see cref="ResourceID"/> in default decimal integer format.</returns>
+    public override string ToString() => Value.ToString();
 }
