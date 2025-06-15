@@ -187,7 +187,7 @@ internal sealed class BuildSession {
             }
 
             Results.Add(rid, outputResult = new(BuildStatus.Success));
-            _environment.IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, resourceVertex.DependencyIds, new(importer.Version, processor.Version)));
+            _environment.IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, resourceVertex.DependencyIds, new(importer.Version, processor?.Version)));
         } finally {
             ReleaseDependencies(resourceVertex.DependencyIds);
             resourceVertex.Release();
