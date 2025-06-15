@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Building.Core;
+﻿using System.Globalization;
+
+namespace Caxivitual.Lunacub.Building.Core;
 
 [ExcludeFromCodeCoverage]
 public class FileOutputSystem : OutputSystem {
@@ -19,7 +21,7 @@ public class FileOutputSystem : OutputSystem {
 
     public override void CollectIncrementalInfos(IDictionary<ResourceID, IncrementalInfo> receiver) {
         foreach (var file in Directory.EnumerateFiles(ReportDirectory, $"*{CompilingConstants.ReportExtension}", SearchOption.TopDirectoryOnly)) {
-            if (!ResourceID.TryParse(Path.GetFileNameWithoutExtension(file), out var rid)) continue;
+            if (!ResourceID.TryParse(Path.GetFileNameWithoutExtension(file), NumberStyles.HexNumber, null, out var rid)) continue;
 
             try {
                 using FileStream reportFile = File.OpenRead(file);

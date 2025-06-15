@@ -33,85 +33,62 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     /// </summary>
     /// <returns>A new <see cref="ResourceID"/> instance with random <see cref="Value"/>.</returns>
     public static ResourceID Create() => Unsafe.BitCast<Guid, ResourceID>(Guid.NewGuid());
-
-    /// <summary>
-    /// Parses a string into a <see cref="ResourceID"/>.
-    /// </summary>
-    /// <param name="str">A string represents a 128-bit unsigned integer to parse.</param>
-    /// <returns>The result of parsing <paramref name="str"/>.</returns>
-    public static ResourceID Parse(string str) => new(UInt128.Parse(str));
-
-    /// <summary>
-    /// Parse a string into a <see cref="ResourceID"/> with formatting information object.
-    /// </summary>
-    /// <param name="str">A string represents a 128-bit unsigned integer to parse.</param>
-    /// <param name="formatProvider">An object contains formatting information about <paramref name="str"/>.</param>
-    /// <returns></returns>
-    public static ResourceID Parse(string str, IFormatProvider? formatProvider) => new(UInt128.Parse(str, formatProvider));
     
-    /// <inheritdoc cref="Parse(ReadOnlySpan{char})"/>
-    public static ResourceID Parse(ReadOnlySpan<byte> span) => new(UInt128.Parse(span));
-
+    /// <summary>
+    /// Parses a string into a <see cref="ResourceID"/> with formatting information object.
+    /// </summary>
+    /// <param name="s">A string represents a 128-bit unsigned integer to parse.</param>
+    /// <param name="formatProvider">An object contains formatting information about <paramref name="s"/>.</param>
+    /// <returns>The result of parsing <paramref name="s"/>.</returns>
+    public static ResourceID Parse(string s, IFormatProvider? formatProvider) {
+        return new(UInt128.Parse(s, formatProvider));
+    }
+    
     /// <inheritdoc cref="Parse(ReadOnlySpan{char},IFormatProvider?)"/>
-    public static ResourceID Parse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider) => new(UInt128.Parse(span, formatProvider));
-    
-    /// <summary>
-    /// Parses a span of characters into a <see cref="ResourceID"/>.
-    /// </summary>
-    /// <param name="span">A span of character represents a 128-bit unsigned integer to parse.</param>
-    /// <returns>The result of parsing <paramref name="span"/>.</returns>
-    public static ResourceID Parse(ReadOnlySpan<char> span) => new(UInt128.Parse(span));
+    public static ResourceID Parse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider) {
+        return new(UInt128.Parse(span, formatProvider));
+    }
 
+    /// <inheritdoc cref="Parse(ReadOnlySpan{char},NumberStyles,IFormatProvider?)"/>
+    public static ResourceID Parse(ReadOnlySpan<byte> span, NumberStyles style = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
+        return new(UInt128.Parse(span, style, formatProvider));
+    }
+    
     /// <summary>
     /// Parses a span of characters into a <see cref="ResourceID"/> with formatting information object.
     /// </summary>
     /// <param name="span">A span of character represents a 128-bit unsigned integer to parse.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="span"/>.</param>
     /// <returns>The result of parsing <paramref name="span"/>.</returns>
-    public static ResourceID Parse(ReadOnlySpan<char> span, IFormatProvider? formatProvider) => new(UInt128.Parse(span, formatProvider));
-
-    /// <summary>
-    /// Tries to parse a string into a <see cref="ResourceID"/>.
-    /// </summary>
-    /// <param name="str">A string represents a 128-bit unsigned integer to parse.</param>
-    /// <param name="result">
-    ///     When this method returns, contains the result of successfully parsing <paramref name="str"/>, or the default
-    ///     value of <see cref="ResourceID"/> if parsing failed.
-    /// </param>
-    /// <returns>
-    ///     <see langword="true"/> if <paramref name="str"/> was parsed successfully; otherwise, <see langword="false"/>.
-    /// </returns>
-    public static bool TryParse([NotNullWhen(true)] string? str, out ResourceID result) => TryParse(str.AsSpan(), out result);
-
-    /// <summary>
-    /// Tries to parse a string into a <see cref="ResourceID"/>.
-    /// </summary>
-    /// <param name="str">A string represents a 128-bit unsigned integer to parse.</param>
-    /// <param name="formatProvider">An object contains formatting information about <paramref name="str"/>.</param>
-    /// <param name="result">
-    ///     When this method returns, contains the result of successfully parsing <paramref name="str"/>, or the default
-    ///     value of <see cref="ResourceID"/> if parsing failed.
-    /// </param>
-    /// <returns>
-    ///     <see langword="true"/> if <paramref name="str"/> was parsed successfully; otherwise, <see langword="false"/>.
-    /// </returns>
-    public static bool TryParse([NotNullWhen(true)] string? str, IFormatProvider? formatProvider, out ResourceID result) {
-        return TryParse(str.AsSpan(), out result);
+    public static ResourceID Parse(ReadOnlySpan<char> span, IFormatProvider? formatProvider) {
+        return new(UInt128.Parse(span, formatProvider));
     }
-    
+
     /// <summary>
-    /// Tries to parse a span of character into a <see cref="ResourceID"/>.
+    /// Parses a span of characters into a <see cref="ResourceID"/> with formatting information object.
     /// </summary>
     /// <param name="span">A span of character represents a 128-bit unsigned integer to parse.</param>
-    /// <param name="result">
-    ///     When this method returns, contains the result of successfully parsing <paramref name="span"/>, or the default
-    ///     value of <see cref="ResourceID"/> if parsing failed.
-    /// </param>
-    /// <returns>
-    ///     <see langword="true"/> if <paramref name="span"/> was parsed successfully; otherwise, <see langword="false"/>.
-    /// </returns>
-    public static bool TryParse(ReadOnlySpan<char> span, out ResourceID result) {
-        if (UInt128.TryParse(span, null, out var value)) {
+    /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="span"/>.</param>
+    /// <param name="formatProvider">An object contains formatting information about <paramref name="span"/>.</param>
+    /// <returns>The result of parsing <paramref name="span"/>.</returns>
+    public static ResourceID Parse(ReadOnlySpan<char> span, NumberStyles style = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
+        return new(UInt128.Parse(span, style, formatProvider));
+    }
+    
+    /// <inheritdoc cref="TryParse(ReadOnlySpan{char},IFormatProvider?,out Caxivitual.Lunacub.ResourceID)"/>
+    public static bool TryParse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider, out ResourceID result) {
+        if (UInt128.TryParse(span, formatProvider, out var value)) {
+            result = new(value);
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+    
+    /// <inheritdoc cref="TryParse(ReadOnlySpan{char},NumberStyles,IFormatProvider?,out Caxivitual.Lunacub.ResourceID)"/>
+    public static bool TryParse(ReadOnlySpan<byte> span, NumberStyles style, IFormatProvider? formatProvider, out ResourceID result) {
+        if (UInt128.TryParse(span, style, formatProvider, out var value)) {
             result = new(value);
             return true;
         }
@@ -133,7 +110,7 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     ///     <see langword="true"/> if <paramref name="span"/> was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
     public static bool TryParse(ReadOnlySpan<char> span, IFormatProvider? formatProvider, out ResourceID result) {
-        if (UInt128.TryParse(span, null, out var value)) {
+        if (UInt128.TryParse(span, formatProvider, out var value)) {
             result = new(value);
             return true;
         }
@@ -142,9 +119,21 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
         return false;
     }
     
-    /// <inheritdoc cref="TryParse(ReadOnlySpan{char},out Caxivitual.Lunacub.ResourceID)"/>
-    public static bool TryParse(ReadOnlySpan<byte> span, out ResourceID result) {
-        if (UInt128.TryParse(span, null, out var value)) {
+    /// <summary>
+    /// Tries to parse a span of character into a <see cref="ResourceID"/>.
+    /// </summary>
+    /// <param name="span">A span of character represents a 128-bit unsigned integer to parse.</param>
+    /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="span"/>.</param>
+    /// <param name="formatProvider">An object contains formatting information about <paramref name="span"/>.</param>
+    /// <param name="result">
+    ///     When this method returns, contains the result of successfully parsing <paramref name="span"/>, or the default
+    ///     value of <see cref="ResourceID"/> if parsing failed.
+    /// </param>
+    /// <returns>
+    ///     <see langword="true"/> if <paramref name="span"/> was parsed successfully; otherwise, <see langword="false"/>.
+    /// </returns>
+    public static bool TryParse(ReadOnlySpan<char> span, NumberStyles style, IFormatProvider? formatProvider, out ResourceID result) {
+        if (UInt128.TryParse(span, style, formatProvider, out var value)) {
             result = new(value);
             return true;
         }
@@ -152,16 +141,38 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
         result = default;
         return false;
     }
-    
-    /// <inheritdoc cref="TryParse(ReadOnlySpan{char},IFormatProvider?,out Caxivitual.Lunacub.ResourceID)"/>
-    public static bool TryParse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider, out ResourceID result) {
-        if (UInt128.TryParse(span, null, out var value)) {
-            result = new(value);
-            return true;
-        }
 
-        result = default;
-        return false;
+    /// <summary>
+    /// Tries to parse a string into a <see cref="ResourceID"/>.
+    /// </summary>
+    /// <param name="s">A string represents a 128-bit unsigned integer to parse.</param>
+    /// <param name="formatProvider">An object contains formatting information about <paramref name="s"/>.</param>
+    /// <param name="result">
+    ///     When this method returns, contains the result of successfully parsing <paramref name="s"/>, or the default
+    ///     value of <see cref="ResourceID"/> if parsing failed.
+    /// </param>
+    /// <returns>
+    ///     <see langword="true"/> if <paramref name="s"/> was parsed successfully; otherwise, <see langword="false"/>.
+    /// </returns>
+    public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? formatProvider, out ResourceID result) {
+        return TryParse(s.AsSpan(), formatProvider, out result);
+    }
+    
+    /// <summary>
+    /// Tries to parse a string into a <see cref="ResourceID"/>.
+    /// </summary>
+    /// <param name="s">A string represents a 128-bit unsigned integer to parse.</param>
+    /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s"/>.</param>
+    /// <param name="formatProvider">An object contains formatting information about <paramref name="s"/>.</param>
+    /// <param name="result">
+    ///     When this method returns, contains the result of successfully parsing <paramref name="s"/>, or the default
+    ///     value of <see cref="ResourceID"/> if parsing failed.
+    /// </param>
+    /// <returns>
+    ///     <see langword="true"/> if <paramref name="s"/> was parsed successfully; otherwise, <see langword="false"/>.
+    /// </returns>
+    public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? formatProvider, out ResourceID result) {
+        return TryParse(s.AsSpan(), style, formatProvider, out result);
     }
 
     /// <summary>
