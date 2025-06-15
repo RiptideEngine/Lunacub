@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Caxivitual.Lunacub.Examples.SimpleResources;
+namespace Caxivitual.Lunacub.Examples.ResourceReferencing;
 
 public sealed partial class SimpleResourceSerializerFactory : SerializerFactory {
     public override bool CanSerialize(Type representationType) => representationType == typeof(SimpleResourceDTO);

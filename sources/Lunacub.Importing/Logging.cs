@@ -13,6 +13,9 @@ internal static partial class Logging {
 
     [LoggerMessage(LogLevel.Information, "Begin import resource {rid}.")]
     public static partial void BeginImport(ILogger logger, ResourceID rid);
+    
+    [LoggerMessage(LogLevel.Information, "Begin import reference resource {rid}.")]
+    public static partial void BeginImportReference(ILogger logger, ResourceID rid);
 
     [LoggerMessage(LogLevel.Warning, "Trying to import an unregistered resource {rid}.")]
     public static partial void UnregisteredResource(ILogger logger, ResourceID rid);

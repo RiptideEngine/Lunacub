@@ -2,9 +2,9 @@
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
 
-namespace Caxivitual.Lunacub.Examples.SimpleResources;
+namespace Caxivitual.Lunacub.Examples.ResourceReferencing;
 
-internal static partial class Program {
+internal static class Program {
     private static readonly ILogger _logger = LoggerFactory.Create(builder => {
         builder.AddConsole();
     }).CreateLogger("Program");
@@ -22,16 +22,24 @@ internal static partial class Program {
 
     private static void BuildResources(string reportDirectory, string outputDirectory) {
         _logger.LogInformation("Building resources...");
-
+        
         using BuildEnvironment env = new(new FileOutputSystem(reportDirectory, outputDirectory)) {
             Importers = {
                 [nameof(SimpleResourceImporter)] = new SimpleResourceImporter(),
+                [nameof(ReferencingResourceImporter)] = new ReferencingResourceImporter(),
             },
             SerializerFactories = {
                 new SimpleResourceSerializerFactory(),
+                new ReferencingResourceSerializerFactory(),
             },
             Resources = {
                 [1] = new() {
+                    Provider = MemoryResourceProvider.AsUtf8("""{"ReferenceId":2}""", DateTime.MinValue),
+                    Options = new() {
+                        ImporterName = nameof(ReferencingResourceImporter),
+                    },
+                },
+                [2] = new() {
                     Provider = MemoryResourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
                     Options = new() {
                         ImporterName = nameof(SimpleResourceImporter),
@@ -48,18 +56,21 @@ internal static partial class Program {
     }
     
     private static async Task ImportResource(string resourceDirectory) {
+        _logger.LogInformation("Importing resources...");
+        
         using ImportEnvironment importEnvironment = new ImportEnvironment {
             Deserializers = {
                 [nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer(),
+                [nameof(ReferencingResourceDeserializer)] = new ReferencingResourceDeserializer(),
             },
             Logger = _logger,
             Libraries = {
-                new FileResourceLibrary(resourceDirectory)
+                new FileResourceLibrary(resourceDirectory),
             }
         };
         
-        ResourceHandle<SimpleResource> handle = await importEnvironment.Import<SimpleResource>(1).Task;
+        ResourceHandle<ReferencingResource> handle = await importEnvironment.Import<ReferencingResource>(1).Task;
         
-        _logger.LogInformation("Imported: {value}.", handle.Value);
+        _logger.LogInformation("Reference value: {value}.", handle.Value!.Reference!.Value);
     }
 }

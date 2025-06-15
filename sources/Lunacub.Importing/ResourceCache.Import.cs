@@ -49,7 +49,7 @@ partial class ResourceCache {
         return new(rid, await importingTask as T);
     }
     
-    private ResourceContainer? ImportDependencyResource(ResourceID rid, HashSet<ResourceID> stack) {
+    private ResourceContainer? ImportReferenceResource(ResourceID rid, HashSet<ResourceID> stack) {
         if (rid == ResourceID.Null) return null;
         
         if (!_environment.Libraries.ContainResource(rid)) {
@@ -70,6 +70,8 @@ partial class ResourceCache {
                 
                 container.ReferenceCount++;
             } else {
+                Logging.BeginImportReference(_environment.Logger, rid);
+                
                 container = new(rid, 1);
                 container.VesselImportTask = ImportResourceVessel(rid, typeof(object), container.CancellationTokenSource.Token);
                 container.FullImportTask = FullImport(rid, container, stack);
@@ -114,7 +116,7 @@ partial class ResourceCache {
             // Import dependencies references.
             Dictionary<ReferencePropertyKey, ResourceContainer> importedDependencies = [];
             foreach ((ReferencePropertyKey property, DeserializationContext.RequestingDependency requesting) in context.RequestingDependencies) {
-                if (ImportDependencyResource(requesting.Rid, stack) is not { } dependencyContainer) continue;
+                if (ImportReferenceResource(requesting.Rid, stack) is not { } dependencyContainer) continue;
                 
                 importedDependencies.Add(property, dependencyContainer);
             }
@@ -212,7 +214,7 @@ partial class ResourceCache {
             optionsStream.Seek(0, SeekOrigin.Begin);
             
             await using PartialReadStream dataStream = new(resourceStream, dataChunkInfo.ContentOffset, dataChunkInfo.Length, ownStream: false);
-            DeserializationContext context = new();
+            DeserializationContext context = new(_environment.Logger);
             
             object deserialized = await deserializer.DeserializeObjectAsync(dataStream, optionsStream, context, cancellationToken);
             

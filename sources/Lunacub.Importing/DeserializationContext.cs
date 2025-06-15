@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Importing;
+﻿using Microsoft.Extensions.Logging;
+
+namespace Caxivitual.Lunacub.Importing;
 
 public sealed class DeserializationContext {
     private readonly Dictionary<ReferencePropertyKey, RequestingDependency> _requestingDependencies;
@@ -6,10 +8,13 @@ public sealed class DeserializationContext {
     internal Dictionary<ReferencePropertyKey, object?>? References { get; set; }
     
     public Dictionary<object, object> ValueContainer { get; }
+    
+    public ILogger Logger { get; }
 
-    internal DeserializationContext() {
+    internal DeserializationContext(ILogger logger) {
         _requestingDependencies = [];
         ValueContainer = [];
+        Logger = logger;
     }
 
     public void RequestReference(ReferencePropertyKey propertyKey, ResourceID rid, Type resourceType) {

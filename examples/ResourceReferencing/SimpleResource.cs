@@ -1,4 +1,4 @@
-﻿namespace Caxivitual.Lunacub.Examples.SimpleResources;
+﻿namespace Caxivitual.Lunacub.Examples.ResourceReferencing;
 
 public record SimpleResource(int Value);
 
