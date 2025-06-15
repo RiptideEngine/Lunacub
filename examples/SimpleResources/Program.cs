@@ -43,7 +43,11 @@ internal static partial class Program {
         var result = env.BuildResources();
 
         foreach ((var rid, var resourceResult) in result.ResourceResults) {
-            _logger.LogError(resourceResult.Exception?.SourceException, "Resource '{rid}' build status: {status}.", rid, resourceResult.Status);
+            if (resourceResult.IsSuccess) {
+                _logger.LogInformation("Resource {rid} build status: {status}.", rid, resourceResult.Status);
+            } else {
+                _logger.LogError(resourceResult.Exception?.SourceException, "Resource {rid} build status: {status}.", rid, resourceResult.Status);
+            }
         }
     }
     

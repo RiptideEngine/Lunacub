@@ -72,8 +72,11 @@ internal static class Program {
         Debug.Assert(result.ResourceResults.Count == 4);
 
         foreach ((var rid, var resourceResult) in result.ResourceResults) {
-            _logger.LogInformation("Resource '{rid}' build status: {status}.", rid, resourceResult.Status);
-            resourceResult.Exception?.Throw();
+            if (resourceResult.IsSuccess) {
+                _logger.LogInformation("Resource {rid} build status: {status}.", rid, resourceResult.Status);
+            } else {
+                _logger.LogError(resourceResult.Exception?.SourceException, "Resource {rid} build status: {status}.", rid, resourceResult.Status);
+            }
         }
     }
     
