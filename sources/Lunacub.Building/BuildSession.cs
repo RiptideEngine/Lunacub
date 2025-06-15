@@ -316,18 +316,11 @@ internal sealed class BuildSession {
 
     private void AppendProceduralResources(ResourceID rid, IReadOnlyDictionary<ProceduralResourceID, BuildingProceduralResource> proceduralResources, Dictionary<ResourceID, BuildingProceduralResource> receiver) {
         unsafe {
-            Span<byte> buffer = stackalloc byte[sizeof(ResourceID) + sizeof(ProceduralResourceID)];
-            
-            MemoryMarshal.Write(buffer, rid);
-            Span<byte> slice = buffer[sizeof(ResourceID)..];
-
             foreach ((var proceduralId, var proceduralResource) in proceduralResources) {
-                MemoryMarshal.Write(slice, proceduralId);
+                ResourceID hashedId = rid.Combine(proceduralId);
 
-                UInt128 hash = XxHash128.HashToUInt128(buffer);
-
-                Debug.Assert(!_environment.Resources.ContainsKey(hash), "ResourceID collided.");
-                receiver.Add(hash, proceduralResource);
+                Debug.Assert(!_environment.Resources.ContainsKey(hashedId), "ResourceID collided.");
+                receiver.Add(hashedId, proceduralResource);
             }
         }
     }
