@@ -23,7 +23,12 @@ internal sealed class BuildSession {
     public void Build() {
         BuildEnvironmentResources(out var proceduralResources);
         BuildProceduralResources(proceduralResources);
+        
+        Debug.Assert(_graph.Values.All(x => x.ImportOutput == null || IsDisposed(x.ImportOutput)));
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_disposed")]
+    static extern ref bool IsDisposed(ContentRepresentation contentRepresentation);
 
     private void ValidateGraph() {
         if (_graph.Count == 0) return;
@@ -432,8 +437,6 @@ internal sealed class BuildSession {
                     BuildResource(rid, vertex, out _);
                 }
 
-                Debug.Assert(_session._graph.Values.All(x => x.ReferenceCount == 0));
-
                 return new ProceduralBuildLayer(_session, this, NextLayerProceduralResources).Build();
             } finally {
                 foreach ((_, BuildingProceduralResource resource) in _proceduralResources) {
@@ -535,12 +538,6 @@ internal sealed class BuildSession {
                             
                             dependencyCollection.Add(dependencyId, proceduralResource.Object);
                         }
-                        // (ResourceProvider provider, BuildingOptions options) = _environment.Resources[dependencyId];
-                        //
-                        // if (_session.Import(dependencyId, provider, _environment.Importers[options.ImporterName], options.Options, out ContentRepresentation? imported, out _)) {
-                        //     dependencyVertex.SetImportResult(imported);
-                        //     dependencyCollection.Add(dependencyId, imported);
-                        // }
                     }
                 }
 

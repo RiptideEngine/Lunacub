@@ -60,6 +60,15 @@ public sealed partial class BuildEnvironment : IDisposable {
         IncrementalInfos = new(output);
         Logger = NullLogger.Instance;
     }
+    
+    public BuildingResult BuildResources() {
+        DateTime begin = DateTime.Now;
+        
+        BuildSession session = new BuildSession(this);
+        session.Build();
+
+        return new(begin, DateTime.Now, session.Results);
+    }
 
     private void Dispose(bool disposing) {
         if (_disposed) return;
