@@ -1,8 +1,10 @@
-﻿using System.Text.Json;
+﻿using Caxivitual.Lunacub.Building.Attributes;
+using System.Text.Json;
 
 namespace Caxivitual.Lunacub.Examples.ResourceReferencing;
 
-public class ReferencingResourceImporter : Importer<ReferencingResourceDTO> {
+[AutoTimestampVersion("yyyMMddHHmmss")]
+public sealed partial class ReferencingResourceImporter : Importer<ReferencingResourceDTO> {
     private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerOptions.Default) {
         IncludeFields = true,
     };

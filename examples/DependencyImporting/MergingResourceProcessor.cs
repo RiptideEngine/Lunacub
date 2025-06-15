@@ -1,5 +1,8 @@
-﻿namespace Caxivitual.Lunacub.Examples.DependencyImporting;
+﻿using Caxivitual.Lunacub.Building.Attributes;
 
+namespace Caxivitual.Lunacub.Examples.DependencyImporting;
+
+[AutoTimestampVersion("yyyMMddHHmmss")]
 public sealed partial class MergingResourceProcessor : Processor<MergingResourceDTO, ProcessedMergingResourceDTO> {
     protected override ProcessedMergingResourceDTO Process(MergingResourceDTO importedObject, ProcessingContext context) {
         List<int> values = [];

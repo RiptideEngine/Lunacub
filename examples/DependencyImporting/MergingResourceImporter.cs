@@ -1,8 +1,10 @@
-﻿using System.Text;
+﻿using Caxivitual.Lunacub.Building.Attributes;
+using System.Text;
 using System.Text.Json;
 
 namespace Caxivitual.Lunacub.Examples.DependencyImporting;
 
+[AutoTimestampVersion("yyyMMddHHmmss")]
 public sealed partial class MergingResourceImporter : Importer<MergingResourceDTO> {
     public override IReadOnlyCollection<ResourceID> ExtractDependencies(Stream stream) {
         // Typically you will deserialize into a surrogate type that only contains the dependency informations,

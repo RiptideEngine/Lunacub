@@ -1,11 +1,14 @@
-﻿namespace Caxivitual.Lunacub.Examples.ProceduralResources;
+﻿using Caxivitual.Lunacub.Building.Attributes;
 
-public sealed class EmittableResourceProcessor : Processor<EmittableResourceDTO, EmittableResourceDTO> {
-    protected override EmittableResourceDTO Process(EmittableResourceDTO importedObject, ProcessingContext context) {
+namespace Caxivitual.Lunacub.Examples.ProceduralResources;
+
+[AutoTimestampVersion("yyyMMddHHmmss")]
+public sealed partial class EmittableResourceProcessor : Processor<EmittableResourceDTO, ProcessedEmittableResourceDTO> {
+    protected override ProcessedEmittableResourceDTO Process(EmittableResourceDTO importedObject, ProcessingContext context) {
         context.ProceduralResources.Add(1, new() {
             Object = new SimpleResourceDTO(importedObject.Value),
         });
-        
-        return importedObject;
+
+        return new ProcessedEmittableResourceDTO(importedObject.Value, context.BuildingResourceId.Combine(1));
     }
 }

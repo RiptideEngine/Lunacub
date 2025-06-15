@@ -12,6 +12,11 @@ public sealed class ProcessingContext {
     /// Gets the <see cref="BuildEnvironment"/> instance responsible for the processing process.
     /// </summary>
     public BuildEnvironment Environment { get; }
+    
+    /// <summary>
+    /// Gets the Id of the currently processing resource.
+    /// </summary>
+    public ResourceID BuildingResourceId { get; }
 
     /// <summary>
     /// Gets user-provided options that can be used during the processing process.
@@ -35,8 +40,9 @@ public sealed class ProcessingContext {
     /// </summary>
     public ILogger Logger { get; }
     
-    internal ProcessingContext(BuildEnvironment environment, IImportOptions? options, IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies, ILogger logger) {
+    internal ProcessingContext(BuildEnvironment environment, ResourceID buildingResourceId, IImportOptions? options, IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies, ILogger logger) {
         Environment = environment;
+        BuildingResourceId = buildingResourceId;
         Options = options;
         Dependencies = dependencies;
         ProceduralResources = [];

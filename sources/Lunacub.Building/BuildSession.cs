@@ -170,7 +170,7 @@ internal sealed class BuildSession {
                 ProcessingContext processingContext;
 
                 try {
-                    processingContext = new(_environment, options.Options, dependencies, _environment.Logger);
+                    processingContext = new(_environment, rid, options.Options, dependencies, _environment.Logger);
                     processed = processor.Process(resourceVertex.ImportOutput, processingContext);
                 } catch (Exception e) {
                     Results.Add(rid, outputResult = new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
@@ -465,7 +465,7 @@ internal sealed class BuildSession {
                     ProcessingContext processingContext;
                     
                     try {
-                        processingContext = new(_session._environment, resource.Options, dependencies, _session._environment.Logger);
+                        processingContext = new(_session._environment, rid, resource.Options, dependencies, _session._environment.Logger);
                         processed = processor.Process(resourceVertex.ImportOutput, processingContext);
                     } catch (Exception e) {
                         _session.Results.Add(rid, outputResult = new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));

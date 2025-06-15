@@ -1,4 +1,5 @@
 ﻿using Caxivitual.Lunacub.Building.Core;
+using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
@@ -46,10 +47,10 @@ internal static class Program {
             },
         };
         
+        _logger.LogInformation("Version: {importer}, {processor}", env.Importers[nameof(EmittableResourceImporter)].Version, env.Processors[nameof(EmittableResourceProcessor)].Version);
+        
         var result = env.BuildResources();
         
-        Debug.Assert(result.ResourceResults.Count == 2, "Expected 2 results, got " + result.ResourceResults.Count + '.');
-
         foreach ((var rid, var resourceResult) in result.ResourceResults) {
             if (resourceResult.IsSuccess) {
                 _logger.LogInformation("Resource {rid} build status: {status}.", rid, resourceResult.Status);
@@ -60,22 +61,20 @@ internal static class Program {
     }
     
     private static async Task ImportResource(string resourceDirectory) {
-        // using ImportEnvironment importEnvironment = new ImportEnvironment() {
-        //     Deserializers = {
-        //         [nameof(ReferenceResourceDeserializer)] = new ReferenceResourceDeserializer(),
-        //     },
-        //     Logger = _logger,
-        //     Libraries = {
-        //         new FileResourceLibrary(resourceDirectory)
-        //     },
-        // };
-        //
-        // ResourceHandle<ReferenceResource> handle = await importEnvironment.Import<ReferenceResource>(1).Task;
-        //
-        // _logger.LogInformation("resource.Value: {value}", handle.Value!.Value);
-        // _logger.LogInformation("resource.Reference.Value: {refValue}", handle.Value!.Reference!.Value);
-        // _logger.LogInformation("resource.Reference.Reference.Value: {referefValue}", handle.Value!.Reference!.Reference!.Value);
-        //
-        // await Task.Delay(100);
+        using ImportEnvironment importEnvironment = new ImportEnvironment() {
+            Deserializers = {
+                [nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer(),
+                [nameof(EmittableResourceDeserializer)] = new EmittableResourceDeserializer(),
+            },
+            Logger = _logger,
+            Libraries = {
+                new FileResourceLibrary(resourceDirectory)
+            },
+        };
+        
+        ResourceHandle<EmittableResource> handle = await importEnvironment.Import<EmittableResource>(1).Task;
+        
+        _logger.LogInformation("resource.Value: {value}", handle.Value!.Value);
+        _logger.LogInformation("resource.Value.Generated.Value: {value}", handle.Value!.Generated!.Value);
     }
 }

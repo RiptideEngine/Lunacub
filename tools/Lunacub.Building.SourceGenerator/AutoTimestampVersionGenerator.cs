@@ -33,7 +33,7 @@ public sealed class AutoTimestampVersionGenerator : IIncrementalGenerator {
 
         if (data.ConstructorArguments[0].Value is not string format) return null;
 
-        return new(typedSymbol.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat), containingTypes, typedSymbol, format);
+        return new(typedSymbol.ContainingNamespace.ToDisplayString(), containingTypes, typedSymbol, format);
     }
 
     private static void Execute(SourceProductionContext context, ImmutableArray<GenerateTarget?> targets) {
