@@ -1,4 +1,5 @@
 ﻿using Caxivitual.Lunacub.Building.Collections;
+using Microsoft.Extensions.Logging;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -13,7 +14,13 @@ public sealed class ImportingContext {
     /// <seealso cref="BuildingResource.Options"/>
     public IImportOptions? Options { get; }
     
-    internal ImportingContext(IImportOptions? options) {
+    /// <summary>
+    /// Gets the logger used for debugging and printing purpose.
+    /// </summary>
+    public ILogger Logger { get; }
+    
+    internal ImportingContext(IImportOptions? options, ILogger logger) {
         Options = options;
+        Logger = logger;
     }
 }

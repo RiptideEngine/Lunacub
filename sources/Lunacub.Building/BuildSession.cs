@@ -282,9 +282,9 @@ internal sealed class BuildSession {
                 imported = null;
                 return false;
             }
-
+            
             try {
-                ImportingContext context = new(options);
+                ImportingContext context = new(options, _environment.Logger);
                 imported = importer.ImportObject(stream, context);
 
                 failureResult = default;

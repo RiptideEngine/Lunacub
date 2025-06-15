@@ -61,7 +61,7 @@ internal static class Program {
     }
     
     private static async Task ImportResource(string resourceDirectory) {
-        using ImportEnvironment importEnvironment = new ImportEnvironment() {
+        using ImportEnvironment importEnvironment = new ImportEnvironment {
             Deserializers = {
                 [nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer(),
                 [nameof(EmittableResourceDeserializer)] = new EmittableResourceDeserializer(),

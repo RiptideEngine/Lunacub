@@ -73,7 +73,6 @@ public sealed class AutoTimestampVersionGenerator : IIncrementalGenerator {
             sb.Append(' ', indent).Append("partial class ").Append(target.Symbol.Name).AppendLine(" {");
             indent += 4;
             {
-                // sb.Append(' ', indent).Append('[').AppendLine("System.CodeDom.Compiler.GeneratedCode()]");
                 sb.Append(' ', indent).Append("public override string Version => \"").Append(now.ToString(target.Format)).AppendLine("\";");
             }
             indent -= 4;
