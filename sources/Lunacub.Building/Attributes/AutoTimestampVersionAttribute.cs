@@ -4,7 +4,7 @@
 public class AutoTimestampVersionAttribute : Attribute {
     public string Format { get; }
 
-    public AutoTimestampVersionAttribute(string format) {
+    public AutoTimestampVersionAttribute([StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format) {
         Format = format;
     }
 }

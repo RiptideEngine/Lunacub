@@ -1,7 +1,10 @@
-﻿namespace MultiLayerProceduralResources;
+﻿using Caxivitual.Lunacub.Building.Attributes;
+
+namespace MultiLayerProceduralResources;
 
 public record EmittingResource(int Value);
 
+[AutoTimestampVersion("yyyyMMddHHmmss")]
 public sealed class EmittingResourceDTO : ContentRepresentation {
     public int Value;
     public int Count;
@@ -10,4 +13,6 @@ public sealed class EmittingResourceDTO : ContentRepresentation {
         Value = value;
         Count = count;
     }
+
+    public void Something() { }
 }

@@ -21,7 +21,7 @@
     </ItemGroup>
     
     <ItemGroup>
-        <ProjectReference Include="..\..\Lunacub.Building.SourceGenerator\Lunacub.Building.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+        <ProjectReference Include="..\..\tools\Lunacub.Building.SourceGenerator\Lunacub.Building.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
         <ProjectReference Include="..\..\sources\Lunacub.Building\Lunacub.Building.csproj" />
         <ProjectReference Include="..\..\sources\Lunacub.Importing\Lunacub.Importing.csproj" />
         <ProjectReference Include="..\..\sources\Lunacub\Lunacub.csproj" />

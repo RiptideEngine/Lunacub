@@ -1,8 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Caxivitual.Lunacub.Building.Attributes;
+using Microsoft.Extensions.Logging;
 
 namespace MultiLayerProceduralResources;
 
-public sealed class EmittingResourceProcessor : Processor<EmittingResourceDTO, EmittingResourceDTO> {
+[AutoTimestampVersion("yyyyMMddHHmmss")]
+public sealed partial class EmittingResourceProcessor : Processor<EmittingResourceDTO, EmittingResourceDTO> {
     protected override EmittingResourceDTO Process(EmittingResourceDTO importedObject, ProcessingContext context) {
         if (importedObject.Count > 0) {
             context.ProceduralResources.Add(1, new() {
