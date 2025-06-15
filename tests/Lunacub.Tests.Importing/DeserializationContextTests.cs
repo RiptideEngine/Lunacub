@@ -1,11 +1,12 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Microsoft.Extensions.Logging.Abstractions;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
 namespace Caxivitual.Lunacub.Tests.Importing;
 
 [SuppressMessage("Usage", "CA2263:Prefer generic overload when type is known")]
 public class DeserializationContextTests {
-    private readonly DeserializationContext _context = new();
+    private readonly DeserializationContext _context = new(NullLogger.Instance);
     
     [Theory]
     [InlineData(typeof(object))]

@@ -17,10 +17,7 @@ public sealed class ResourceWithReferenceDTO : ContentRepresentation {
 
 public sealed class ResourceWithReferenceImporter : Importer<ResourceWithReferenceDTO> {
     protected override ResourceWithReferenceDTO Import(Stream resourceStream, ImportingContext context) {
-        var dto = JsonSerializer.Deserialize<ResourceWithReferenceDTO>(resourceStream)!;
-        context.AddReference(dto.Reference);
-
-        return dto;
+        return JsonSerializer.Deserialize<ResourceWithReferenceDTO>(resourceStream)!;
     }
 }
 
@@ -52,12 +49,12 @@ public sealed class ResourceWithReferenceDeserializer : Deserializer<ResourceWit
     protected override Task<ResourceWithReference> DeserializeAsync(Stream dataStream, Stream optionsStream, DeserializationContext context, CancellationToken cancellationToken) {
         using var reader = new BinaryReader(dataStream, Encoding.UTF8, true);
         
-        context.RequestReference<ResourceWithReference>(1, reader.ReadResourceID());
+        context.RequestReference<ResourceWithReference>(0, reader.ReadResourceID());
         
         return Task.FromResult(new ResourceWithReference { Value = reader.ReadInt32() });
     }
 
     protected override void ResolveReferences(ResourceWithReference instance, DeserializationContext context) {
-        instance.Reference = context.GetReference<ResourceWithReference>(1);
+        instance.Reference = context.GetReference<ResourceWithReference>(0);
     }
 }
