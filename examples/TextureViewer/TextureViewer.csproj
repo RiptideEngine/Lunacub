@@ -28,4 +28,10 @@
       </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\sources\Lunacub.Building\Lunacub.Building.csproj" />
+      <ProjectReference Include="..\..\sources\Lunacub.Importing\Lunacub.Importing.csproj" />
+      <ProjectReference Include="..\..\sources\Lunacub\Lunacub.csproj" />
+    </ItemGroup>
+
 </Project>
