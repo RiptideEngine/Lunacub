@@ -14,15 +14,14 @@ internal static unsafe class ApplicationLifecycle {
     private static WebGPUBuffer* _indexBuffer = null!;
     
     // Material
-    private static ShaderModule* _shaderModule = null!;
+    private static Shader _shader = null!;
     private static BindGroupLayout* _bindGroupLayout = null!;
     private static PipelineLayout* _pipelineLayout = null!;
     private static RenderPipeline* _renderPipeline = null!;
     
     // Drawing
     private static WebGPUBuffer* _transformationBuffer = null!;
-    private static Texture* _texture = null!;
-    private static TextureView* _textureView = null!;
+    private static Texture2D _texture = null!;
     private static Sampler* _sampler = null!;
     private static BindGroup* _bindGroup = null!;
     
@@ -42,14 +41,7 @@ internal static unsafe class ApplicationLifecycle {
         ], 64);
         
         using (Image<Rgba32> image = Image.Load<Rgba32>(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "crate.png"))) {
-            _texture = _renderer.WebGPU.DeviceCreateTexture(_renderer.RenderingDevice.Device, new TextureDescriptor {
-                Usage = TextureUsage.TextureBinding | TextureUsage.CopyDst,
-                Size = new() { Width = (uint)image.Width, Height = (uint)image.Height, DepthOrArrayLayers = 1 },
-                Dimension = TextureDimension.Dimension2D,
-                Format = TextureFormat.Rgba8Unorm,
-                MipLevelCount = 1,
-                SampleCount = 1,
-            });
+            _texture = new(_renderer, (uint)image.Width, (uint)image.Height, TextureFormat.Rgba8Unorm);
 
             image.ProcessPixelRows(accessor => {
                 TextureDataLayout layout = new() {
@@ -66,7 +58,7 @@ internal static unsafe class ApplicationLifecycle {
                         ImageCopyTexture dest = new() {
                             Aspect = TextureAspect.All,
                             MipLevel = 0,
-                            Texture = _texture,
+                            Texture = _texture.Texture,
                             Origin = new() { X = 0, Y = (uint)y, Z = 0 },
                         };
                         
@@ -75,16 +67,6 @@ internal static unsafe class ApplicationLifecycle {
                 }
             });
         }
-        
-        _textureView = _renderer.WebGPU.TextureCreateView(_texture, new TextureViewDescriptor {
-            Dimension = TextureViewDimension.Dimension2D,
-            Aspect = TextureAspect.All,
-            Format = TextureFormat.Rgba8Unorm,
-            ArrayLayerCount = 1,
-            BaseArrayLayer = 0,
-            MipLevelCount = 1,
-            BaseMipLevel = 0,
-        });
         
         _sampler = _renderer.WebGPU.DeviceCreateSampler(_renderer.RenderingDevice.Device, new SamplerDescriptor {
             AddressModeU = AddressMode.ClampToEdge,
@@ -123,24 +105,7 @@ internal static unsafe class ApplicationLifecycle {
         ], (nuint)sizeof(ushort) * 6);
         
         // Create material.
-        using (FileStream fs = new FileStream(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Shader.wgsl"), FileMode.Open, FileAccess.Read, FileShare.Read)) {
-            byte[] buffer = new byte[fs.Length + 1];
-            fs.ReadExactly(buffer.AsSpan(0, (int)fs.Length));
-
-            fixed (byte* ptr = buffer) {
-                ShaderModuleWGSLDescriptor wgslDescriptor = new() {
-                    Chain = new() {
-                        SType = SType.ShaderModuleWgslDescriptor,
-                    },
-
-                    Code = ptr,
-                };
-
-                _shaderModule = _renderer.WebGPU.DeviceCreateShaderModule(_renderer.RenderingDevice.Device, new ShaderModuleDescriptor {
-                    NextInChain = &wgslDescriptor.Chain,
-                });
-            }
-        }
+        _shader = Shader.FromFile(_renderer, Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Shader.wgsl"));
 
         BindGroupLayoutEntry* bindGroupLayoutEntries = stackalloc BindGroupLayoutEntry[] {
             new BindGroupLayoutEntry {
@@ -230,7 +195,7 @@ internal static unsafe class ApplicationLifecycle {
 
             FragmentState fragmentState = new() {
                 EntryPoint = psEntrypoint,
-                Module = _shaderModule,
+                Module = _shader.Module,
                 Targets = targets,
                 TargetCount = 1,
             };
@@ -239,7 +204,7 @@ internal static unsafe class ApplicationLifecycle {
                 DepthStencil = null,
                 Vertex = new() {
                     EntryPoint = vsEntrypoint,
-                    Module = _shaderModule,
+                    Module = _shader.Module,
                     Buffers = vertexBufferLayouts,
                     BufferCount = 1,
                 },
@@ -269,7 +234,7 @@ internal static unsafe class ApplicationLifecycle {
             },
             new BindGroupEntry {
                 Binding = 1,
-                TextureView = _textureView,
+                TextureView = _texture.View,
             },
             new BindGroupEntry {
                 Binding = 2,
@@ -348,10 +313,7 @@ internal static unsafe class ApplicationLifecycle {
             _bindGroupLayout = null;
         }
         
-        if (_shaderModule != null) {
-            _renderer.WebGPU.ShaderModuleRelease(_shaderModule);
-            _shaderModule = null;
-        }
+        _shader.Dispose();
         
         if (_indexBuffer != null) {
             _renderer.WebGPU.BufferRelease(_indexBuffer);
@@ -362,16 +324,8 @@ internal static unsafe class ApplicationLifecycle {
             _renderer.WebGPU.BufferRelease(_vertexBuffer);
             _vertexBuffer = null;
         }
-        
-        if (_textureView != null) {
-            _renderer.WebGPU.TextureViewRelease(_textureView);
-            _textureView = null;
-        }
-        
-        if (_texture != null) {
-            _renderer.WebGPU.TextureRelease(_texture);
-            _texture = null;
-        }
+
+        _texture.Dispose();
         
         if (_sampler != null) {
             _renderer.WebGPU.SamplerRelease(_sampler);

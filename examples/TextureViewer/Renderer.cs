@@ -4,9 +4,7 @@ using System.Diagnostics;
 
 namespace Caxivitual.Lunacub.Examples.TextureViewer;
 
-public sealed unsafe class Renderer : IDisposable {
-    private static bool _disposed;
-    
+public sealed unsafe class Renderer : BaseDisposable {
     public WebGPU WebGPU { get; private set; }
 
     internal Instance* Instance { get; private set; }
@@ -75,7 +73,7 @@ public sealed unsafe class Renderer : IDisposable {
         WebGPU.SurfacePresent(Surface);
     }
 
-    private void Dispose(bool disposing) {
+    protected override void DisposeImpl(bool disposing) {
         if (CurrentSurfaceView != null) {
             WebGPU.TextureViewRelease(CurrentSurfaceView);
             CurrentSurfaceView = null;
@@ -94,16 +92,5 @@ public sealed unsafe class Renderer : IDisposable {
         Surface = null;
         
         WebGPU.Dispose(); WebGPU = null!;
-    }
-
-    public void Dispose() {
-        if (Interlocked.Exchange(ref _disposed, true)) return;
-        
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    ~Renderer() {
-        Dispose(false);
     }
 }
