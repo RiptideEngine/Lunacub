@@ -1,6 +1,8 @@
-﻿namespace Caxivitual.Lunacub.Tests.Common;
+﻿using System.Globalization;
 
-public class MockResourceLibrary(MockFileSystem fs) : ResourceLibrary {
+namespace Caxivitual.Lunacub.Tests.Common;
+
+public sealed class MockResourceLibrary(MockFileSystem fs) : ResourceLibrary {
     public MockFileSystem FileSystem { get; } = fs;
 
     public override bool Contains(ResourceID rid) {
@@ -15,8 +17,8 @@ public class MockResourceLibrary(MockFileSystem fs) : ResourceLibrary {
 
     public override IEnumerator<ResourceID> GetEnumerator() {
         foreach (var file in FileSystem.Directory.EnumerateFiles(MockOutputSystem.ResourceOutputDirectory, $"*{CompilingConstants.CompiledResourceExtension}")) {
-            if (ResourceID.TryParse(file.AsSpan(..^CompilingConstants.CompiledResourceExtension.Length), out var id)) {
-                yield return id;
+            if (ResourceID.TryParse(FileSystem.Path.GetFileNameWithoutExtension(file.AsSpan()), NumberStyles.HexNumber, null, out var rid)) {
+                yield return rid;
             }
         }
     }

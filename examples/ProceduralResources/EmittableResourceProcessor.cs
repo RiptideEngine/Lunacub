@@ -9,6 +9,6 @@ public sealed partial class EmittableResourceProcessor : Processor<EmittableReso
             Object = new SimpleResourceDTO(importedObject.Value),
         });
 
-        return new ProcessedEmittableResourceDTO(importedObject.Value, context.BuildingResourceId.Combine(1));
+        return new(importedObject.Value, context.BuildingResourceId.Combine(1));
     }
 }
