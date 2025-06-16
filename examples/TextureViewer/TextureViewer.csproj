@@ -18,7 +18,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Include="Resources\Shader.wgsl" />
+      <Content Include="Resources\Shader.wgsl">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>
