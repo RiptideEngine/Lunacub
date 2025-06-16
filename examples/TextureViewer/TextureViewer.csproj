@@ -15,10 +15,15 @@
       <PackageReference Include="Silk.NET.WebGPU" Version="2.22.0" />
       <PackageReference Include="Silk.NET.WebGPU.Native.WGPU" Version="2.22.0" />
       <PackageReference Include="Silk.NET.Windowing" Version="2.22.0" />
+      <PackageReference Include="SixLabors.ImageSharp" Version="3.1.10" />
     </ItemGroup>
 
     <ItemGroup>
       <Content Include="Resources\Shader.wgsl">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <None Remove="Resources\crate.png" />
+      <Content Include="Resources\crate.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
     </ItemGroup>

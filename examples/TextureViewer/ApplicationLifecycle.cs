@@ -1,4 +1,6 @@
 ﻿using Silk.NET.WebGPU;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using System.Numerics;
 using WebGPUBuffer = Silk.NET.WebGPU.Buffer;
 
@@ -18,12 +20,86 @@ internal static unsafe class ApplicationLifecycle {
     private static RenderPipeline* _renderPipeline = null!;
     
     // Drawing
+    private static WebGPUBuffer* _transformationBuffer = null!;
+    private static Texture* _texture = null!;
+    private static TextureView* _textureView = null!;
+    private static Sampler* _sampler = null!;
     private static BindGroup* _bindGroup = null!;
     
     public static void Initialize() {
         _renderer = new(Application.MainWindow);
+        
+        // Drawing Resources
+        _transformationBuffer = _renderer.WebGPU.DeviceCreateBuffer(_renderer.RenderingDevice.Device, new BufferDescriptor {
+            Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
+            Size = 64,
+            MappedAtCreation = false,
+        });
+        
+        _renderer.WebGPU.QueueWriteBuffer(_renderer.RenderingDevice.Queue, _transformationBuffer, 0, [
+            Matrix4x4.CreateLookToLeftHanded(new(0, 0, -1), Vector3.UnitZ, Vector3.UnitY) *
+            Matrix4x4.CreateOrthographicLeftHanded(2f * Application.MainWindow.FramebufferSize.X / Application.MainWindow.FramebufferSize.Y, 2, 0.01f, 10f),
+        ], 64);
+        
+        using (Image<Rgba32> image = Image.Load<Rgba32>(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "crate.png"))) {
+            _texture = _renderer.WebGPU.DeviceCreateTexture(_renderer.RenderingDevice.Device, new TextureDescriptor {
+                Usage = TextureUsage.TextureBinding | TextureUsage.CopyDst,
+                Size = new() { Width = (uint)image.Width, Height = (uint)image.Height, DepthOrArrayLayers = 1 },
+                Dimension = TextureDimension.Dimension2D,
+                Format = TextureFormat.Rgba8Unorm,
+                MipLevelCount = 1,
+                SampleCount = 1,
+            });
 
-        // Create mesh.
+            image.ProcessPixelRows(accessor => {
+                TextureDataLayout layout = new() {
+                    Offset = 0,
+                    BytesPerRow = (uint)sizeof(Rgba32) * (uint)accessor.Width,
+                    RowsPerImage = (uint)accessor.Height,
+                };
+                Extent3D writeSize = new() { Width = (uint)accessor.Width, Height = 1, DepthOrArrayLayers = 1 };
+                
+                for (int y = 0; y < accessor.Height; y++) {
+                    var row = accessor.GetRowSpan(y);
+
+                    fixed (Rgba32* pRow = row) {
+                        ImageCopyTexture dest = new() {
+                            Aspect = TextureAspect.All,
+                            MipLevel = 0,
+                            Texture = _texture,
+                            Origin = new() { X = 0, Y = (uint)y, Z = 0 },
+                        };
+                        
+                        _renderer.WebGPU.QueueWriteTexture(_renderer.RenderingDevice.Queue, &dest, pRow, (nuint)sizeof(Rgba32) * (uint)accessor.Width, &layout, &writeSize);
+                    }
+                }
+            });
+        }
+        
+        _textureView = _renderer.WebGPU.TextureCreateView(_texture, new TextureViewDescriptor {
+            Dimension = TextureViewDimension.Dimension2D,
+            Aspect = TextureAspect.All,
+            Format = TextureFormat.Rgba8Unorm,
+            ArrayLayerCount = 1,
+            BaseArrayLayer = 0,
+            MipLevelCount = 1,
+            BaseMipLevel = 0,
+        });
+        
+        _sampler = _renderer.WebGPU.DeviceCreateSampler(_renderer.RenderingDevice.Device, new SamplerDescriptor {
+            AddressModeU = AddressMode.ClampToEdge,
+            AddressModeV = AddressMode.ClampToEdge,
+            AddressModeW = AddressMode.ClampToEdge,
+            Compare = CompareFunction.Undefined,
+            LodMinClamp = 0,
+            LodMaxClamp = float.MaxValue,
+            MinFilter = FilterMode.Linear,
+            MagFilter = FilterMode.Linear,
+            MipmapFilter = MipmapFilterMode.Nearest,
+            MaxAnisotropy = 1,
+        });
+
+        // Mesh
         _vertexBuffer = _renderer.WebGPU.DeviceCreateBuffer(_renderer.RenderingDevice.Device, new BufferDescriptor {
             MappedAtCreation = false,
             Size = (ulong)sizeof(Vertex) * 4,
@@ -36,10 +112,10 @@ internal static unsafe class ApplicationLifecycle {
         });
         
         _renderer.WebGPU.QueueWriteBuffer<Vertex>(_renderer.RenderingDevice.Queue, _vertexBuffer, 0, [
-            new(new(-0.5f, -0.5f, 0), Vector2.Zero),
-            new(new(0.5f, -0.5f, 0), Vector2.UnitX),
-            new(new(0.5f, 0.5f, 0), Vector2.One),
-            new(new(-0.5f, 0.5f, 0), Vector2.UnitY),
+            new(new(-0.5f, 0.5f, 0), Vector2.Zero),
+            new(new(0.5f, 0.5f, 0), Vector2.UnitX),
+            new(new(0.5f, -0.5f, 0), Vector2.One),
+            new(new(-0.5f, -0.5f, 0), Vector2.UnitY),
         ], (nuint)sizeof(Vertex) * 4);
         
         _renderer.WebGPU.QueueWriteBuffer<ushort>(_renderer.RenderingDevice.Queue, _indexBuffer, 0, [
@@ -67,11 +143,36 @@ internal static unsafe class ApplicationLifecycle {
         }
 
         BindGroupLayoutEntry* bindGroupLayoutEntries = stackalloc BindGroupLayoutEntry[] {
+            new BindGroupLayoutEntry {
+                Binding = 0,
+                Buffer = new() {
+                    Type = BufferBindingType.Uniform,
+                    HasDynamicOffset = false,
+                    MinBindingSize = 64,
+                },
+                Visibility = ShaderStage.Vertex,
+            },
+            new BindGroupLayoutEntry {
+                Binding = 1,
+                Texture = new() {
+                    Multisampled = false,
+                    SampleType = TextureSampleType.Float,
+                    ViewDimension = TextureViewDimension.Dimension2D,
+                },
+                Visibility = ShaderStage.Fragment,
+            },
+            new BindGroupLayoutEntry {
+                Binding = 2,
+                Sampler = new() {
+                    Type = SamplerBindingType.Filtering,
+                },
+                Visibility = ShaderStage.Fragment,
+            },
         };
 
         _bindGroupLayout = _renderer.WebGPU.DeviceCreateBindGroupLayout(_renderer.RenderingDevice.Device, new BindGroupLayoutDescriptor {
             Entries = bindGroupLayoutEntries,
-            EntryCount = 0,
+            EntryCount = 3,
         });
 
         BindGroupLayout** bindGroupLayouts = stackalloc BindGroupLayout*[1] {
@@ -150,7 +251,7 @@ internal static unsafe class ApplicationLifecycle {
                 },
                 Primitive = new() {
                     CullMode = CullMode.Back,
-                    FrontFace = FrontFace.Ccw,
+                    FrontFace = FrontFace.CW,
                     StripIndexFormat = IndexFormat.Undefined,
                     Topology = PrimitiveTopology.TriangleList,
                 },
@@ -160,11 +261,25 @@ internal static unsafe class ApplicationLifecycle {
         
         // Drawing
         BindGroupEntry* bindGroupEntries = stackalloc BindGroupEntry[] {
+            new BindGroupEntry {
+                Binding = 0,
+                Buffer = _transformationBuffer,
+                Offset = 0,
+                Size = 64,
+            },
+            new BindGroupEntry {
+                Binding = 1,
+                TextureView = _textureView,
+            },
+            new BindGroupEntry {
+                Binding = 2,
+                Sampler = _sampler,
+            }
         };
         
         _bindGroup = _renderer.WebGPU.DeviceCreateBindGroup(_renderer.RenderingDevice.Device, new BindGroupDescriptor {
             Entries = bindGroupEntries,
-            EntryCount = 0,
+            EntryCount = 3,
             Layout = _bindGroupLayout,
         });
     }
@@ -246,6 +361,26 @@ internal static unsafe class ApplicationLifecycle {
         if (_vertexBuffer != null) {
             _renderer.WebGPU.BufferRelease(_vertexBuffer);
             _vertexBuffer = null;
+        }
+        
+        if (_textureView != null) {
+            _renderer.WebGPU.TextureViewRelease(_textureView);
+            _textureView = null;
+        }
+        
+        if (_texture != null) {
+            _renderer.WebGPU.TextureRelease(_texture);
+            _texture = null;
+        }
+        
+        if (_sampler != null) {
+            _renderer.WebGPU.SamplerRelease(_sampler);
+            _sampler = null;
+        }
+        
+        if (_transformationBuffer != null) {
+            _renderer.WebGPU.BufferRelease(_transformationBuffer);
+            _transformationBuffer = null;
         }
         
         _renderer.Dispose();
