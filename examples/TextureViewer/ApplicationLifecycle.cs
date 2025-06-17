@@ -1,6 +1,10 @@
-﻿using Silk.NET.WebGPU;
+﻿using Caxivitual.Lunacub.Importing;
+using Caxivitual.Lunacub.Importing.Core;
+using Microsoft.Extensions.Logging;
+using Silk.NET.WebGPU;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using System.Diagnostics;
 using System.Numerics;
 using WebGPUBuffer = Silk.NET.WebGPU.Buffer;
 
@@ -8,6 +12,9 @@ namespace Caxivitual.Lunacub.Examples.TextureViewer;
 
 internal static unsafe class ApplicationLifecycle {
     private static Renderer _renderer = null!;
+    private static readonly ILogger _logger = LoggerFactory.Create(builder => {
+        builder.AddConsole();
+    }).CreateLogger("Program");
 
     // Mesh
     private static WebGPUBuffer* _vertexBuffer = null!;
@@ -21,12 +28,13 @@ internal static unsafe class ApplicationLifecycle {
     
     // Drawing
     private static WebGPUBuffer* _transformationBuffer = null!;
-    private static Texture2D _texture = null!;
+    private static ResourceHandle<Texture2D> _texture;
     private static Sampler* _sampler = null!;
     private static BindGroup* _bindGroup = null!;
     
     public static void Initialize() {
         _renderer = new(Application.MainWindow);
+        Resources.Initialize(_renderer, _logger);
         
         // Drawing Resources
         _transformationBuffer = _renderer.WebGPU.DeviceCreateBuffer(_renderer.RenderingDevice.Device, new BufferDescriptor {
@@ -39,34 +47,8 @@ internal static unsafe class ApplicationLifecycle {
             Matrix4x4.CreateLookToLeftHanded(new(0, 0, -1), Vector3.UnitZ, Vector3.UnitY) *
             Matrix4x4.CreateOrthographicLeftHanded(2f * Application.MainWindow.FramebufferSize.X / Application.MainWindow.FramebufferSize.Y, 2, 0.01f, 10f),
         ], 64);
-        
-        using (Image<Rgba32> image = Image.Load<Rgba32>(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "crate.png"))) {
-            _texture = new(_renderer, (uint)image.Width, (uint)image.Height, TextureFormat.Rgba8Unorm);
 
-            image.ProcessPixelRows(accessor => {
-                TextureDataLayout layout = new() {
-                    Offset = 0,
-                    BytesPerRow = (uint)sizeof(Rgba32) * (uint)accessor.Width,
-                    RowsPerImage = (uint)accessor.Height,
-                };
-                Extent3D writeSize = new() { Width = (uint)accessor.Width, Height = 1, DepthOrArrayLayers = 1 };
-                
-                for (int y = 0; y < accessor.Height; y++) {
-                    var row = accessor.GetRowSpan(y);
-
-                    fixed (Rgba32* pRow = row) {
-                        ImageCopyTexture dest = new() {
-                            Aspect = TextureAspect.All,
-                            MipLevel = 0,
-                            Texture = _texture.Texture,
-                            Origin = new() { X = 0, Y = (uint)y, Z = 0 },
-                        };
-                        
-                        _renderer.WebGPU.QueueWriteTexture(_renderer.RenderingDevice.Queue, &dest, pRow, (nuint)sizeof(Rgba32) * (uint)accessor.Width, &layout, &writeSize);
-                    }
-                }
-            });
-        }
+        ImportingOperation<Texture2D> textureImportOp = Resources.Import<Texture2D>(1);
         
         _sampler = _renderer.WebGPU.DeviceCreateSampler(_renderer.RenderingDevice.Device, new SamplerDescriptor {
             AddressModeU = AddressMode.ClampToEdge,
@@ -223,6 +205,9 @@ internal static unsafe class ApplicationLifecycle {
                 Layout = _pipelineLayout,
             });
         }
+
+        textureImportOp.Task.Wait();
+        _texture = textureImportOp.Task.Result;
         
         // Drawing
         BindGroupEntry* bindGroupEntries = stackalloc BindGroupEntry[] {
@@ -234,7 +219,7 @@ internal static unsafe class ApplicationLifecycle {
             },
             new BindGroupEntry {
                 Binding = 1,
-                TextureView = _texture.View,
+                TextureView = _texture.Value!.View,
             },
             new BindGroupEntry {
                 Binding = 2,
@@ -325,7 +310,8 @@ internal static unsafe class ApplicationLifecycle {
             _vertexBuffer = null;
         }
 
-        _texture.Dispose();
+        var releaseStatus = Resources.Release(_texture);
+        Debug.Assert(releaseStatus == ReleaseStatus.Success);
         
         if (_sampler != null) {
             _renderer.WebGPU.SamplerRelease(_sampler);
