@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace Caxivitual.Lunacub.Examples.TextureViewer;
 
 public static class Resources {
-    private static bool _initialized = false;
+    private static bool _initialized;
 
     private static Renderer _renderer = null!;
     private static ILogger _logger = null!;
@@ -58,7 +58,7 @@ public static class Resources {
         }
 
         using (FileStream fs = new FileStream(resourceRegistryPath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-            var resourceElements = JsonSerializer.Deserialize<Dictionary<ResourceID, ResourceElement>>(fs);
+            var resourceElements = JsonSerializer.Deserialize<Dictionary<ResourceID, ResourceElement>>(fs)!;
 
             foreach ((var id, ResourceElement element) in resourceElements) {
                 environment.Resources.Add(id, new() {
@@ -120,7 +120,9 @@ public static class Resources {
     public static ReleaseStatus Release(ResourceID rid) => _importEnv.Release(rid);
     public static ReleaseStatus Release<T>(ResourceHandle<T> handle) where T : class => _importEnv.Release(handle);
 
-    public readonly record struct ResourceElement(
+    public static IEnumerable<ResourceID> EnumerateResourceIds() => _importEnv.Libraries.SelectMany(x => x);
+
+    private readonly record struct ResourceElement(
         string Path,
         [property: JsonPropertyName("Importer")] string ImporterName,
         [property: JsonPropertyName("Processor")] string? ProcessorName

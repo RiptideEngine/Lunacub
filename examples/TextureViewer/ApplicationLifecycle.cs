@@ -1,9 +1,6 @@
 ﻿using Caxivitual.Lunacub.Importing;
-using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
 using Silk.NET.WebGPU;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using System.Diagnostics;
 using System.Numerics;
 using WebGPUBuffer = Silk.NET.WebGPU.Buffer;
@@ -28,14 +25,13 @@ internal static unsafe class ApplicationLifecycle {
     
     // Drawing
     private static WebGPUBuffer* _transformationBuffer = null!;
-    private static ResourceHandle<Texture2D> _texture;
     private static Sampler* _sampler = null!;
-    private static BindGroup* _bindGroup = null!;
+    private static SortedList<ResourceID, MaterialResource> _materialResources = [];
     
     public static void Initialize() {
         _renderer = new(Application.MainWindow);
         Resources.Initialize(_renderer, _logger);
-        
+
         // Drawing Resources
         _transformationBuffer = _renderer.WebGPU.DeviceCreateBuffer(_renderer.RenderingDevice.Device, new BufferDescriptor {
             Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
@@ -48,7 +44,7 @@ internal static unsafe class ApplicationLifecycle {
             Matrix4x4.CreateOrthographicLeftHanded(2f * Application.MainWindow.FramebufferSize.X / Application.MainWindow.FramebufferSize.Y, 2, 0.01f, 10f),
         ], 64);
 
-        ImportingOperation<Texture2D> textureImportOp = Resources.Import<Texture2D>(1);
+        // ImportingOperation<Texture2D> textureImportOp = Resources.Import<Texture2D>(2);
         
         _sampler = _renderer.WebGPU.DeviceCreateSampler(_renderer.RenderingDevice.Device, new SamplerDescriptor {
             AddressModeU = AddressMode.ClampToEdge,
@@ -156,14 +152,14 @@ internal static unsafe class ApplicationLifecycle {
 
             BlendState blend = new() {
                 Color = new() {
-                    SrcFactor = BlendFactor.One,
+                    SrcFactor = BlendFactor.SrcAlpha,
                     Operation = BlendOperation.Add,
-                    DstFactor = BlendFactor.Zero,
+                    DstFactor = BlendFactor.OneMinusSrcAlpha,
                 },
                 Alpha = new() {
-                    SrcFactor = BlendFactor.One,
+                    SrcFactor = BlendFactor.SrcAlpha,
                     Operation = BlendOperation.Add,
-                    DstFactor = BlendFactor.Zero,
+                    DstFactor = BlendFactor.OneMinusSrcAlpha,
                 },
             };
 
@@ -206,8 +202,11 @@ internal static unsafe class ApplicationLifecycle {
             });
         }
 
-        textureImportOp.Task.Wait();
-        _texture = textureImportOp.Task.Result;
+        ImportingOperation<Texture2D> importOperation = Resources.Import<Texture2D>(1);
+
+        importOperation.Task.Wait();
+        
+        var textureHandle = importOperation.Task.Result;
         
         // Drawing
         BindGroupEntry* bindGroupEntries = stackalloc BindGroupEntry[] {
@@ -219,7 +218,7 @@ internal static unsafe class ApplicationLifecycle {
             },
             new BindGroupEntry {
                 Binding = 1,
-                TextureView = _texture.Value!.View,
+                TextureView = textureHandle.Value!.View,
             },
             new BindGroupEntry {
                 Binding = 2,
@@ -227,11 +226,13 @@ internal static unsafe class ApplicationLifecycle {
             }
         };
         
-        _bindGroup = _renderer.WebGPU.DeviceCreateBindGroup(_renderer.RenderingDevice.Device, new BindGroupDescriptor {
+        var bindGroup = _renderer.WebGPU.DeviceCreateBindGroup(_renderer.RenderingDevice.Device, new BindGroupDescriptor {
             Entries = bindGroupEntries,
             EntryCount = 3,
             Layout = _bindGroupLayout,
         });
+        
+        _materialResources.Add(1, new(textureHandle, bindGroup));
     }
 
     public static void Update() {
@@ -258,10 +259,12 @@ internal static unsafe class ApplicationLifecycle {
             ColorAttachments = &colorAttachment,
             DepthStencilAttachment = null,
         });
+
+        MaterialResource materialResource = _materialResources.GetValueAtIndex(0);
         
         webgpu.RenderPassEncoderSetVertexBuffer(renderPass, 0, _vertexBuffer, 0, (ulong)sizeof(Vertex) * 4);
         webgpu.RenderPassEncoderSetIndexBuffer(renderPass, _indexBuffer, IndexFormat.Uint16, 0, sizeof(ushort) * 6);
-        webgpu.RenderPassEncoderSetBindGroup(renderPass, 0, _bindGroup, 0, null);
+        webgpu.RenderPassEncoderSetBindGroup(renderPass, 0, materialResource.BindGroup, 0, null);
         webgpu.RenderPassEncoderSetPipeline(renderPass, _renderPipeline);
         webgpu.RenderPassEncoderDrawIndexed(renderPass, 6, 1, 0, 0, 0);
         
@@ -278,9 +281,11 @@ internal static unsafe class ApplicationLifecycle {
     }
 
     public static void Shutdown() {
-        if (_bindGroup != null) {
-            _renderer.WebGPU.BindGroupRelease(_bindGroup);
-            _bindGroup = null;
+        foreach (var materialResource in _materialResources) {
+            _renderer.WebGPU.BindGroupRelease(materialResource.Value.BindGroup);
+            
+            var releaseStatus = Resources.Release(materialResource.Value.TextureHandle);
+            Debug.Assert(releaseStatus == ReleaseStatus.Success);
         }
         
         if (_renderPipeline != null) {
@@ -310,9 +315,6 @@ internal static unsafe class ApplicationLifecycle {
             _vertexBuffer = null;
         }
 
-        var releaseStatus = Resources.Release(_texture);
-        Debug.Assert(releaseStatus == ReleaseStatus.Success);
-        
         if (_sampler != null) {
             _renderer.WebGPU.SamplerRelease(_sampler);
             _sampler = null;
@@ -325,5 +327,15 @@ internal static unsafe class ApplicationLifecycle {
         
         _renderer.Dispose();
         _renderer = null!;
+    }
+
+    private readonly struct MaterialResource {
+        public readonly ResourceHandle<Texture2D> TextureHandle;
+        public readonly BindGroup* BindGroup;
+
+        public MaterialResource(ResourceHandle<Texture2D> textureHandle, BindGroup* bindGroup) {
+            TextureHandle = textureHandle;
+            BindGroup = bindGroup;
+        }
     }
 }
