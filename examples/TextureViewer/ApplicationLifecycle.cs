@@ -26,12 +26,12 @@ internal static unsafe class ApplicationLifecycle {
     // Drawing
     private static WebGPUBuffer* _transformationBuffer = null!;
     private static Sampler* _sampler = null!;
-    private static SortedList<ResourceID, MaterialResource> _materialResources = [];
+    private static readonly SortedList<ResourceID, MaterialResource> _materialResources = [];
     
     public static void Initialize() {
         _renderer = new(Application.MainWindow);
         Resources.Initialize(_renderer, _logger);
-
+        
         // Drawing Resources
         _transformationBuffer = _renderer.WebGPU.DeviceCreateBuffer(_renderer.RenderingDevice.Device, new BufferDescriptor {
             Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
