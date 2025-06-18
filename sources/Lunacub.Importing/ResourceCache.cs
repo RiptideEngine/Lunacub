@@ -40,7 +40,7 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
             bool removal = _importedReleaseCache.Remove(resource);
             Debug.Assert(removal);
         
-            removal = _resourceContainers.Remove(container.Rid);
+            removal = _resourceContainers.Remove(container.ResourceId);
             Debug.Assert(removal);
 
             if (_environment.Disposers.TryDispose(resource)) {
@@ -59,7 +59,7 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
         _containerLock.Wait();
         try {
             if (!_importedReleaseCache.TryGetValue(rid.Value!, out var container)) return ReleaseStatus.InvalidResource;
-            if (container.Rid != rid.Rid) return ReleaseStatus.IdIncompatible;
+            if (container.ResourceId != rid.Rid) return ReleaseStatus.IdIncompatible;
             
             Debug.Assert(container.FullImportTask.Status == TaskStatus.RanToCompletion);
             Debug.Assert(ReferenceEquals(container.FullImportTask.Result, rid.Value));
@@ -73,7 +73,7 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
             bool removal = _importedReleaseCache.Remove(releasedResource);
             Debug.Assert(removal);
             
-            removal = _resourceContainers.Remove(container.Rid);
+            removal = _resourceContainers.Remove(container.ResourceId);
             Debug.Assert(removal);
             
             if (_environment.Disposers.TryDispose(releasedResource)) {
@@ -121,7 +121,7 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
                     bool removal = _importedReleaseCache.Remove(releasedResource);
                     Debug.Assert(removal);
         
-                    removal = _resourceContainers.Remove(container.Rid);
+                    removal = _resourceContainers.Remove(container.ResourceId);
                     Debug.Assert(removal);
 
                     if (_environment.Disposers.TryDispose(releasedResource)) {
@@ -133,7 +133,7 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
                     return ReleaseStatus.NotDisposed;
             
                 case TaskStatus.Canceled or TaskStatus.Faulted:
-                    Debug.Assert(!_resourceContainers.ContainsKey(container.Rid));
+                    Debug.Assert(!_resourceContainers.ContainsKey(container.ResourceId));
                     return ReleaseStatus.Canceled;
             
                 default: throw new UnreachableException($"Unexpected task status '{container.FullImportTask.Status}'.");

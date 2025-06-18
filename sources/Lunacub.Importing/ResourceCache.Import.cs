@@ -144,7 +144,7 @@ partial class ResourceCache {
             IEnumerable<ResourceContainer> filteredContainers;
             
             lock (stack) {
-                filteredContainers = importedDependencies.Values.ExceptBy(stack, c => c.Rid);
+                filteredContainers = importedDependencies.Values.ExceptBy(stack, c => c.ResourceId);
             }
             
             await Task.WhenAll(filteredContainers.Select(async x => {

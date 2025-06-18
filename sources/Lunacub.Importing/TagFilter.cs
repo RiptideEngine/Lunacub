@@ -26,7 +26,7 @@ internal readonly struct TagFilter {
                 case '&': tokens.Add(new(TokenType.And, start..current)); break;
                 case '|': tokens.Add(new(TokenType.Or, start..current)); break;
                 case '^': tokens.Add(new(TokenType.Xor, start..current)); break;
-                case '!' or '~': tokens.Add(new(TokenType.Not, start..current)); break;
+                case '!' or '~' or '-': tokens.Add(new(TokenType.Not, start..current)); break;
                 case ' ' or '\t' or '\r' or '\n': break;
                 default:
                     if (IsTagCharacter(currentCharacter)) {
@@ -38,7 +38,7 @@ internal readonly struct TagFilter {
                         break;
                     }
 
-                    throw new ArgumentException($"Unexpected character '{currentCharacter}'.");
+                    throw new ArgumentException($"Unexpected character '{currentCharacter}' at position {current - 1}.");
             }
         }
         
