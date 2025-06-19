@@ -34,13 +34,13 @@ internal static class Program {
                 new EmittingResourceSerializerFactory(),
             },
             Resources = {
-                [1] = new() {
+                [1] = new("Resource", [], new() {
                     Provider = MemoryResourceProvider.AsUtf8("""{"Value":1,"Count":5}""", DateTime.MinValue),
                     Options = new() {
                         ImporterName = nameof(EmittingResourceImporter),
                         ProcessorName = nameof(EmittingResourceProcessor),
                     },
-                },
+                }),
             },
         };
 

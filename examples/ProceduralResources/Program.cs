@@ -37,13 +37,13 @@ internal static class Program {
                 new EmittableResourceSerializerFactory(),
             },
             Resources = {
-                [1] = new() {
+                [1] = new("Resource", [], new() {
                     Provider = MemoryResourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
                     Options = new() {
                         ImporterName = nameof(EmittableResourceImporter),
                         ProcessorName = nameof(EmittableResourceProcessor),
                     },
-                },
+                }),
             },
         };
         

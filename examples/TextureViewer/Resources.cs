@@ -61,13 +61,13 @@ public static class Resources {
             var resourceElements = JsonSerializer.Deserialize<Dictionary<ResourceID, ResourceElement>>(fs)!;
 
             foreach ((var id, ResourceElement element) in resourceElements) {
-                environment.Resources.Add(id, new() {
+                environment.Resources.Add(id, new(id.ToString(), [], new() {
                     Provider = new FileResourceProvider(Path.Combine(resourceDirectoryPath, element.Path)),
                     Options = new() {
                         ImporterName = element.ImporterName,
                         ProcessorName = element.ProcessorName,
                     },
-                });
+                }));
             }
         }
 

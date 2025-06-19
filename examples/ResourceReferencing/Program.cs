@@ -33,18 +33,18 @@ internal static class Program {
                 new ReferencingResourceSerializerFactory(),
             },
             Resources = {
-                [1] = new() {
+                [1] = new("Resource", [], new() {
                     Provider = MemoryResourceProvider.AsUtf8("""{"ReferenceId":2}""", DateTime.MinValue),
                     Options = new() {
                         ImporterName = nameof(ReferencingResourceImporter),
                     },
-                },
-                [2] = new() {
+                }),
+                [2] = new("Reference", [], new() {
                     Provider = MemoryResourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
                     Options = new() {
                         ImporterName = nameof(SimpleResourceImporter),
                     },
-                },
+                }),
             },
         };
 

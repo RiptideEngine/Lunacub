@@ -27,6 +27,7 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
         _containerLock.Wait();
         try {
             if (!_importedReleaseCache.TryGetValue(resource, out var container)) return ReleaseStatus.InvalidResource;
+            if (container.FullImportTask == null) return ReleaseStatus.NotImported;
             
             Debug.Assert(container.FullImportTask.Status == TaskStatus.RanToCompletion);
             Debug.Assert(ReferenceEquals(container.FullImportTask.Result, resource));

@@ -31,12 +31,12 @@ internal static partial class Program {
                 new SimpleResourceSerializerFactory(),
             },
             Resources = {
-                [1] = new() {
+                [1] = new("Resource", [], new() {
                     Provider = MemoryResourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
                     Options = new() {
                         ImporterName = nameof(SimpleResourceImporter),
                     },
-                },
+                }),
             },
         };
 

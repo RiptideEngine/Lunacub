@@ -19,11 +19,6 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
     public string? ProcessorName { get; init; }
     
     /// <summary>
-    /// Get the tags of the resource.
-    /// </summary>
-    public IReadOnlyCollection<string> Tags { get; init; }
-    
-    /// <summary>
     /// Gets the importing option object that can be used for building resource.
     /// </summary>
     public IImportOptions? Options { get; init; }
@@ -34,12 +29,10 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
     [ExcludeFromCodeCoverage]
     public BuildingOptions() {
         ProcessorName = string.Empty;
-        Tags = [];
     }
     
     /// <summary>
-    /// Initializes the structure with provided <paramref name="importerName"/> and <see cref="processorName"/>, has
-    /// empty <see cref="Tags"/> and <see langword="null"/> <see cref="Options"/>.
+    /// Initializes the structure with provided <paramref name="importerName"/> and <see cref="processorName"/> and <see langword="null"/> <see cref="Options"/>.
     /// </summary>
     /// <param name="importerName">
     ///     The importer name in <see cref="BuildEnvironment.Importers"/> used to build resource.
@@ -49,11 +42,10 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
     ///     <see cref="ContentRepresentation"/> to another.
     /// </param>
     [SetsRequiredMembers]
-    public BuildingOptions(string importerName, string? processorName = null) : this(importerName, processorName, [], null) { }
+    public BuildingOptions(string importerName, string? processorName = null) : this(importerName, processorName, null) { }
     
     /// <summary>
-    /// Initializes the structure with provided <paramref name="importerName"/> and <see cref="processorName"/>, has
-    /// empty <see cref="Tags"/> and <see langword="null"/> <see cref="Options"/>.
+    /// Initializes the structure with provided <paramref name="importerName"/> and <see cref="processorName"/> <see langword="null"/> <see cref="Options"/>.
     /// </summary>
     /// <param name="importerName">
     ///     The importer name in <see cref="BuildEnvironment.Importers"/> used to build resource.
@@ -62,21 +54,18 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
     ///     The processor name in <see cref="BuildEnvironment.Processors"/> used to process resource from a
     ///     <see cref="ContentRepresentation"/> to another.
     /// </param>
-    /// <param name="tags">The tags of the resource.</param>
     /// <param name="options">
     ///     The importing option object that can be used to finely tune the resource building process.
     /// </param>
     [SetsRequiredMembers]
-    public BuildingOptions(string importerName, string? processorName, IReadOnlyCollection<string>? tags, IImportOptions? options) {
+    public BuildingOptions(string importerName, string? processorName, IImportOptions? options) {
         ImporterName = importerName;
         ProcessorName = processorName;
-        Tags = tags ?? [];
         Options = options;
     }
 
     public bool Equals(BuildingOptions other) {
         return ImporterName == other.ImporterName && ProcessorName == other.ProcessorName &&
-               Tags.SequenceEqual(other.Tags) &&
                (Options?.Equals(other.Options) ?? other.Options == null);
     }
 
@@ -91,10 +80,6 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
         hc.Add(ProcessorName);
         hc.Add(Options);
         
-        foreach (var tag in Tags) {
-            hc.Add(tag);
-        }
-        
         return hc.ToHashCode();
     }
 
@@ -105,7 +90,6 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
         sb.Append(" { ");
         sb.Append(nameof(ImporterName)).Append('=').Append(ImporterName).Append(", ");
         sb.Append(nameof(ProcessorName)).Append('=').Append(ProcessorName).Append(", ");
-        sb.Append(nameof(Tags)).Append("=[").AppendJoin(", ", Tags).Append("], ");
         sb.Append(nameof(Options)).Append(" = ").Append(Options);
         sb.Append(" }");
         

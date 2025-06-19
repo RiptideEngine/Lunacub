@@ -1,7 +1,7 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
-internal static unsafe class CompileHelpers {
-    public static void Compile(Serializer serializer, Stream outputStream, IReadOnlyCollection<string> tags) {
+internal static class CompileHelpers {
+    public static unsafe void Compile(Serializer serializer, Stream outputStream, IReadOnlyCollection<string> tags) {
         using BinaryWriter bwriter = new(outputStream, Encoding.UTF8, true);
         bwriter.Write(CompilingConstants.MagicIdentifier);
         bwriter.Write((ushort)1);

@@ -2,7 +2,6 @@
 
 using Microsoft.Extensions.Logging;
 using System.Collections.Frozen;
-using System.IO.Hashing;
 using System.Runtime.ExceptionServices;
 
 namespace Caxivitual.Lunacub.Building;
@@ -61,8 +60,10 @@ internal sealed class BuildSession {
     private void BuildEnvironmentResources(out Dictionary<ResourceID, BuildingProceduralResource> proceduralResources) {
         _environment.Logger.LogInformation("Building environment resources.");
         
-        foreach ((var rid, var resource) in _environment.Resources) {
-            if (!_environment.Importers.TryGetValue(resource.Options.ImporterName, out var importer)) {
+        foreach ((var rid, var element) in _environment.Resources) {
+            var option = element.Option;
+            
+            if (!_environment.Importers.TryGetValue(option.Options.ImporterName, out var importer)) {
                 Results.Add(rid, new(BuildStatus.UnknownImporter));
                 continue;
             }
@@ -71,9 +72,9 @@ internal sealed class BuildSession {
             HashSet<ResourceID> dependencyIds;
             
             try {
-                using (Stream stream = resource.Provider.GetStream()) {
+                using (Stream stream = option.Provider.GetStream()) {
                     dependencyIds = importer.ExtractDependencies(stream)
-                        .Intersect(((IDictionary<ResourceID, BuildingResource>)_environment.Resources).Keys)
+                        .Intersect(_environment.Resources.Keys)
                         .ToHashSet();
                     dependencyIds.Remove(rid);   // Preventing self-referencing break everything.
                 }
@@ -124,7 +125,8 @@ internal sealed class BuildSession {
         }
 
         try {
-            (ResourceProvider provider, BuildingOptions options) = _environment.Resources[rid];
+            var registryElement = _environment.Resources[rid];
+            (ResourceProvider provider, BuildingOptions options) = registryElement.Option;
             DateTime resourceLastWriteTime = provider.LastWriteTime;
 
             Importer importer = _environment.Importers[options.ImporterName];
@@ -154,7 +156,7 @@ internal sealed class BuildSession {
 
             if (processor == null) {
                 try {
-                    SerializeProcessedObject(resourceVertex.ImportOutput, rid, options.Options, options.Tags);
+                    SerializeProcessedObject(resourceVertex.ImportOutput, rid, options.Options, registryElement.Tags);
                 } catch (Exception e) {
                     Results.Add(rid, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
                     return;
@@ -178,7 +180,7 @@ internal sealed class BuildSession {
                 }
 
                 try {
-                    SerializeProcessedObject(processed, rid, options.Options, options.Tags);
+                    SerializeProcessedObject(processed, rid, options.Options, registryElement.Tags);
                 } catch (Exception e) {
                     Results.Add(rid, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
                     return;
@@ -223,7 +225,7 @@ internal sealed class BuildSession {
                 if (dependencyVertex.ImportOutput is { } dependencyImportOutput) {
                     dependencyCollection.Add(dependencyId, dependencyImportOutput);
                 } else {
-                    (ResourceProvider provider, BuildingOptions options) = _environment.Resources[dependencyId];
+                    (ResourceProvider provider, BuildingOptions options) = _environment.Resources[dependencyId].Option;
 
                     if (Import(dependencyId, provider, _environment.Importers[options.ImporterName], options.Options, out ContentRepresentation? imported, out _)) {
                         dependencyVertex.SetImportResult(imported);
@@ -519,8 +521,8 @@ internal sealed class BuildSession {
                     if (dependencyVertex.ImportOutput is { } dependencyImportOutput) {
                         dependencyCollection.Add(dependencyId, dependencyImportOutput);
                     } else {
-                        if (_session._environment.Resources.TryGetValue(dependencyId, out BuildingResource envResource)) {
-                            (ResourceProvider provider, BuildingOptions options) = envResource;
+                        if (_session._environment.Resources.TryGetValue(dependencyId, out ResourceRegistry<BuildingResource>.Element registryElement)) {
+                            (ResourceProvider provider, BuildingOptions options) = registryElement.Option;
                                 
                             if (_session.Import(dependencyId, provider, _session._environment.Importers[options.ImporterName], options.Options, out ContentRepresentation? imported, out _)) {
                                 dependencyVertex.SetImportResult(imported);

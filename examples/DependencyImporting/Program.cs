@@ -39,31 +39,31 @@ internal static class Program {
                 new MergingResourceSerializerFactory(),
             },
             Resources = {
-                [1] = new() {
+                [1] = new("1", [], new() {
                     Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource1.json")),
                     Options = new() {
                         ImporterName = nameof(SimpleResourceImporter),
                     },
-                },
-                [2] = new() {
+                }),
+                [2] = new("2", [], new() {
                     Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource2.json")),
                     Options = new() {
                         ImporterName = nameof(SimpleResourceImporter),
                     },
-                },
-                [3] = new() {
+                }),
+                [3] = new("3", [], new() {
                     Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource3.json")),
                     Options = new() {
                         ImporterName = nameof(SimpleResourceImporter),
                     },
-                },
-                [4] = new() {
+                }),
+                [4] = new("4", [], new() {
                     Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "MergingResource.json")),
                     Options = new() {
                         ImporterName = nameof(MergingResourceImporter),
                         ProcessorName = nameof(MergingResourceProcessor),
                     },
-                },
+                }),
             },
         };
 

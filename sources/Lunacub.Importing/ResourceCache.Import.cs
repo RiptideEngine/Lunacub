@@ -35,8 +35,8 @@ partial class ResourceCache {
             } else {
                 Logging.BeginImport(_environment.Logger, rid);
                 
-                container = new(rid, 1);
-                container.VesselImportTask = ImportResourceVessel(rid, typeof(T), container.CancellationTokenSource.Token);
+                container = new(rid);
+                container.VesselImportTask = ImportResourceVessel(rid, typeof(T), container);
 
                 importingTask = container.FullImportTask = FullImport(rid, container, [rid]);
             }
@@ -72,8 +72,8 @@ partial class ResourceCache {
             } else {
                 Logging.BeginImportReference(_environment.Logger, rid);
                 
-                container = new(rid, 1);
-                container.VesselImportTask = ImportResourceVessel(rid, typeof(object), container.CancellationTokenSource.Token);
+                container = new(rid);
+                container.VesselImportTask = ImportResourceVessel(rid, typeof(object), container);
                 container.FullImportTask = FullImport(rid, container, stack);
             }
 
@@ -84,19 +84,19 @@ partial class ResourceCache {
         }
     }
     
-    private async Task<DeserializeResult> ImportResourceVessel(ResourceID rid, Type type, CancellationToken cancelToken) {
-        await Task.Yield();
-        
-        Stream? resourceStream = _environment.Libraries.CreateResourceStream(rid);
-
-        if (resourceStream == null) {
-            throw new InvalidOperationException($"Null resource stream provided despite contains resource '{rid}'.");
+    private async Task<DeserializeResult> ImportResourceVessel(ResourceID rid, Type type, ResourceContainer container) {
+        if (_environment.Libraries.CreateResourceStream(rid) is not { } resourceStream) {
+            return await Task.FromException<DeserializeResult>(new InvalidOperationException($"Null resource stream provided despite contains resource '{rid}'."));
         }
+        
+        
+        // await Task.Yield();
+        //
         
         var layout = LayoutExtracting.Extract(resourceStream);
 
         switch (layout.MajorVersion) {
-            case 1: return await ImportResourceVesselV1(type, resourceStream, layout, cancelToken);
+            case 1: return await ImportResourceVesselV1(type, resourceStream, layout, container.CancellationTokenSource.Token);
                 
             default:
                 await resourceStream.DisposeAsync();

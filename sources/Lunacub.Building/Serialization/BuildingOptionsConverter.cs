@@ -9,12 +9,11 @@ internal sealed class BuildingOptionsConverter : JsonConverter<BuildingOptions> 
         }
         
         string importerName = string.Empty, processorName = string.Empty;
-        IReadOnlyCollection<string> tags = [];
         IImportOptions? buildOptions = null;
         
         while (reader.Read()) {
             if (reader.TokenType == JsonTokenType.EndObject) {
-                return new(importerName, processorName, tags, buildOptions);
+                return new(importerName, processorName, buildOptions);
             }
 
             if (reader.TokenType != JsonTokenType.PropertyName) {
@@ -31,10 +30,6 @@ internal sealed class BuildingOptionsConverter : JsonConverter<BuildingOptions> 
                     
                 case nameof(BuildingOptions.ProcessorName):
                     processorName = reader.GetString() ?? string.Empty;
-                    break;
-                
-                case nameof(BuildingOptions.Tags):
-                    tags = JsonSerializer.Deserialize<string[]>(ref reader, options) is { } tagArray ? tagArray.ToFrozenSet() : FrozenSet<string>.Empty;
                     break;
                 
                 case nameof(BuildingOptions.Options):
@@ -55,14 +50,6 @@ internal sealed class BuildingOptionsConverter : JsonConverter<BuildingOptions> 
         {
             writer.WriteString(nameof(BuildingOptions.ImporterName), value.ImporterName);
             writer.WriteString(nameof(BuildingOptions.ProcessorName), value.ProcessorName);
-
-            writer.WriteStartArray(nameof(BuildingOptions.Tags));
-            {
-                foreach (var tag in value.Tags) {
-                    writer.WriteStringValue(tag);
-                }
-            }
-            writer.WriteEndArray();
 
             writer.WritePropertyName(nameof(BuildingOptions.Options));
             JsonSerializer.Serialize(writer, value.Options, options);
