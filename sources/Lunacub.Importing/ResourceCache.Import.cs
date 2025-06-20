@@ -85,13 +85,11 @@ partial class ResourceCache {
     }
     
     private async Task<DeserializeResult> ImportResourceVessel(ResourceID rid, Type type, ResourceContainer container) {
+        await Task.Yield();
+        
         if (_environment.Libraries.CreateResourceStream(rid) is not { } resourceStream) {
             return await Task.FromException<DeserializeResult>(new InvalidOperationException($"Null resource stream provided despite contains resource '{rid}'."));
         }
-        
-        
-        // await Task.Yield();
-        //
         
         var layout = LayoutExtracting.Extract(resourceStream);
 

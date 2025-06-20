@@ -28,9 +28,15 @@ public abstract class OutputSystem {
     public abstract DateTime? GetResourceLastBuildTime(ResourceID rid);
     
     /// <summary>
-    /// Flushes the compiled binary of a resource to a persistent storage.
+    /// Flushes the compiled binary of a resource.
     /// </summary>
     /// <param name="sourceStream">Stream contains the compiled resource binary.</param>
     /// <param name="rid">The Id of the compiled resource.</param>
     public abstract void CopyCompiledResourceOutput(Stream sourceStream, ResourceID rid);
+
+    /// <summary>
+    /// Flushes the successfully built resources.
+    /// </summary>
+    /// <param name="registry"></param>
+    public abstract void OutputResourceRegistry(IReadOnlyDictionary<ResourceID, OutputRegistryElement> registry);
 }

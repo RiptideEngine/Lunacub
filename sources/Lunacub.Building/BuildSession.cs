@@ -20,10 +20,31 @@ internal sealed class BuildSession {
     }
 
     public void Build() {
+        Results.Clear();
+        
         BuildEnvironmentResources(out var proceduralResources);
+
+        // List<OutputRegistryElement> registry = Results
+        //     .Where(x => x.Value.IsSuccess)
+        //     .Select(kvp => {
+        //         var element = _environment.Resources[kvp.Key];
+        //         
+        //         return new OutputRegistryElement(element.Name, element.Tags);
+        //     }).ToList();
+
+        Dictionary<ResourceID, OutputRegistryElement> registry = Results
+            .Where(x => x.Value.IsSuccess)
+            .ToDictionary(kvp => kvp.Key, kvp => {
+                var registryElement = _environment.Resources[kvp.Key];
+                
+                return new OutputRegistryElement(registryElement.Name, registryElement.Tags);
+            });
+        
         BuildProceduralResources(proceduralResources);
         
         Debug.Assert(_graph.Values.All(x => x.ImportOutput == null || IsDisposed(x.ImportOutput)));
+
+        _environment.Output.OutputResourceRegistry(registry);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_disposed")]

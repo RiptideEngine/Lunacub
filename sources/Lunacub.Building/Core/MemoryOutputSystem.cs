@@ -1,22 +1,24 @@
-﻿using ResourceOutput = (System.Collections.Immutable.ImmutableArray<byte>, System.DateTime);
+﻿using System.Collections.Frozen;
+using ResourceOutput = (System.Collections.Immutable.ImmutableArray<byte>, System.DateTime);
 
 namespace Caxivitual.Lunacub.Building.Core;
 
 public sealed class MemoryOutputSystem : OutputSystem {
-    private Dictionary<ResourceID, ResourceOutput> _outputs;
+    public IReadOnlyDictionary<ResourceID, OutputRegistryElement> OutputRegistry { get; private set; }
+
+    private readonly Dictionary<ResourceID, ResourceOutput> _outputs;
+    
     public IReadOnlyDictionary<ResourceID, ResourceOutput> Outputs => _outputs;
     
     private readonly Dictionary<ResourceID, IncrementalInfo> _incrementalInfos;
     public IReadOnlyDictionary<ResourceID, IncrementalInfo> IncrementalInfos => _incrementalInfos;
 
-    public MemoryOutputSystem() {
-        _outputs = [];
-        _incrementalInfos = [];
-    }
+    public MemoryOutputSystem() : this([], []) { }
 
     public MemoryOutputSystem(IEnumerable<KeyValuePair<ResourceID, ResourceOutput>> outputs, IEnumerable<KeyValuePair<ResourceID, IncrementalInfo>> incrementalInfos) {
         _outputs = new(outputs);
         _incrementalInfos = new(incrementalInfos);
+        OutputRegistry = FrozenDictionary<ResourceID, OutputRegistryElement>.Empty;
     }
     
     public override void CollectIncrementalInfos(IDictionary<ResourceID, IncrementalInfo> receiver) {
@@ -40,5 +42,9 @@ public sealed class MemoryOutputSystem : OutputSystem {
         sourceStream.ReadExactly(buffer);
         
         _outputs[rid] = (ImmutableCollectionsMarshal.AsImmutableArray(buffer), DateTime.Now);
+    }
+
+    public override void OutputResourceRegistry(IReadOnlyDictionary<ResourceID, OutputRegistryElement> registry) {
+        OutputRegistry = registry;
     }
 }
