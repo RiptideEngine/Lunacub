@@ -3,8 +3,8 @@ using System.Collections.ObjectModel;
 
 namespace Caxivitual.Lunacub.Importing;
 
-public abstract class ResourceLibrary : IEnumerable<ResourceID> {
-    public abstract bool Contains(ResourceID rid);
+public abstract class ResourceLibrary {
+    public abstract ResourceRegistry Registry { get; }
 
     public Stream? CreateStream(ResourceID rid) {
         Stream? created = CreateStreamImpl(rid);
@@ -15,8 +15,6 @@ public abstract class ResourceLibrary : IEnumerable<ResourceID> {
 
         return created;
     }
-    protected abstract Stream? CreateStreamImpl(ResourceID rid);
     
-    public abstract IEnumerator<ResourceID> GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    protected abstract Stream? CreateStreamImpl(ResourceID rid);
 }

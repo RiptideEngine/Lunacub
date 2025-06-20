@@ -120,7 +120,7 @@ public static class Resources {
     public static ReleaseStatus Release(ResourceID rid) => _importEnv.Release(rid);
     public static ReleaseStatus Release<T>(ResourceHandle<T> handle) where T : class => _importEnv.Release(handle);
 
-    public static IEnumerable<ResourceID> EnumerateResourceIds() => _importEnv.Libraries.SelectMany(x => x);
+    // public static IEnumerable<ResourceID> EnumerateResourceIds() => _importEnv.Libraries.SelectMany(x => x);
 
     private readonly record struct ResourceElement(
         string Path,

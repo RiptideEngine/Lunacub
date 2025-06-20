@@ -85,6 +85,7 @@ partial class ResourceCache {
     }
     
     private async Task<DeserializeResult> ImportResourceVessel(ResourceID rid, Type type, ResourceContainer container) {
+        // Never though that I'll get to this point, but commenting this code cause deadlock or something.
         await Task.Yield();
         
         if (_environment.Libraries.CreateResourceStream(rid) is not { } resourceStream) {
@@ -92,6 +93,8 @@ partial class ResourceCache {
         }
         
         var layout = LayoutExtracting.Extract(resourceStream);
+        
+        _environment.Logger.LogInformation("Version: ");
 
         switch (layout.MajorVersion) {
             case 1: return await ImportResourceVesselV1(type, resourceStream, layout, container.CancellationTokenSource.Token);

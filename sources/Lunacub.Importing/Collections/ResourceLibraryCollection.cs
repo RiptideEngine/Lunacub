@@ -5,7 +5,7 @@ namespace Caxivitual.Lunacub.Importing.Collections;
 public sealed class ResourceLibraryCollection : Collection<ResourceLibrary> {
     public bool ContainResource(ResourceID rid) {
         foreach (var library in this) {
-            if (library.Contains(rid)) return true;
+            if (library.Registry.ContainsKey(rid)) return true;
         }
         
         return false;
