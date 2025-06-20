@@ -24,14 +24,6 @@ internal sealed class BuildSession {
         
         BuildEnvironmentResources(out var proceduralResources);
 
-        // List<OutputRegistryElement> registry = Results
-        //     .Where(x => x.Value.IsSuccess)
-        //     .Select(kvp => {
-        //         var element = _environment.Resources[kvp.Key];
-        //         
-        //         return new OutputRegistryElement(element.Name, element.Tags);
-        //     }).ToList();
-
         Dictionary<ResourceID, OutputRegistryElement> registry = Results
             .Where(x => x.Value.IsSuccess)
             .ToDictionary(kvp => kvp.Key, kvp => {
