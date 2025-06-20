@@ -29,7 +29,7 @@ public sealed class BuildEnvironment : IDisposable {
     /// <summary>
     /// Gets the collection of resources need to be built.
     /// </summary>
-    public ResourceDictionary Resources { get; }
+    public ResourceRegistry<BuildResourceRegistryElement> Resources { get; }
     
     /// <summary>
     /// Gets the <see cref="OutputSystem"/> instance.

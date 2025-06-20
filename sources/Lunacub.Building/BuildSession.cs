@@ -338,13 +338,11 @@ internal sealed class BuildSession {
     }
 
     private void AppendProceduralResources(ResourceID rid, IReadOnlyDictionary<ProceduralResourceID, BuildingProceduralResource> proceduralResources, Dictionary<ResourceID, BuildingProceduralResource> receiver) {
-        unsafe {
-            foreach ((var proceduralId, var proceduralResource) in proceduralResources) {
-                ResourceID hashedId = rid.Combine(proceduralId);
+        foreach ((var proceduralId, var proceduralResource) in proceduralResources) {
+            ResourceID hashedId = rid.Combine(proceduralId);
 
-                Debug.Assert(!_environment.Resources.ContainsKey(hashedId), "ResourceID collided.");
-                receiver.Add(hashedId, proceduralResource);
-            }
+            Debug.Assert(!_environment.Resources.ContainsKey(hashedId), "ResourceID collided.");
+            receiver.Add(hashedId, proceduralResource);
         }
     }
     
@@ -542,7 +540,7 @@ internal sealed class BuildSession {
                     if (dependencyVertex.ImportOutput is { } dependencyImportOutput) {
                         dependencyCollection.Add(dependencyId, dependencyImportOutput);
                     } else {
-                        if (_session._environment.Resources.TryGetValue(dependencyId, out ResourceRegistry<BuildingResource>.Element registryElement)) {
+                        if (_session._environment.Resources.TryGetValue(dependencyId, out BuildResourceRegistryElement registryElement)) {
                             (ResourceProvider provider, BuildingOptions options) = registryElement.Option;
                                 
                             if (_session.Import(dependencyId, provider, _session._environment.Importers[options.ImporterName], options.Options, out ContentRepresentation? imported, out _)) {

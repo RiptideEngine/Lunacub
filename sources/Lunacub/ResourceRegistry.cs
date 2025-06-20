@@ -1,22 +1,20 @@
-﻿using System.Collections.Immutable;
+﻿namespace Caxivitual.Lunacub;
 
-namespace Caxivitual.Lunacub;
-
-public class ResourceRegistry<TOption> : IDictionary<ResourceID, ResourceRegistry<TOption>.Element> {
-    private readonly Dictionary<ResourceID, Element> _resources = [];
+public class ResourceRegistry<T> : IDictionary<ResourceID, T> where T : IRegistryElement {
+    private readonly Dictionary<ResourceID, T> _resources = [];
     private readonly Dictionary<string, ResourceID> _nameMap = [];
     
     public int Count => _resources.Count;
 
-    bool ICollection<KeyValuePair<ResourceID, Element>>.IsReadOnly => false;
+    bool ICollection<KeyValuePair<ResourceID, T>>.IsReadOnly => false;
     
-    public Dictionary<ResourceID, Element>.KeyCollection Keys => _resources.Keys;
-    public Dictionary<ResourceID, Element>.ValueCollection Values => _resources.Values;
+    public Dictionary<ResourceID, T>.KeyCollection Keys => _resources.Keys;
+    public Dictionary<ResourceID, T>.ValueCollection Values => _resources.Values;
     
-    ICollection<ResourceID> IDictionary<ResourceID, Element>.Keys => _resources.Keys;
-    ICollection<Element> IDictionary<ResourceID, Element>.Values => _resources.Values;
+    ICollection<ResourceID> IDictionary<ResourceID, T>.Keys => _resources.Keys;
+    ICollection<T> IDictionary<ResourceID, T>.Values => _resources.Values;
 
-    public void Add(ResourceID resourceId, Element element) {
+    public void Add(ResourceID resourceId, T element) {
         ValidateResourceId(resourceId);
         ValidateElement(element);
 
@@ -36,7 +34,7 @@ public class ResourceRegistry<TOption> : IDictionary<ResourceID, ResourceRegistr
         nameMappingReference = resourceId;
     }
 
-    void ICollection<KeyValuePair<ResourceID, Element>>.Add(KeyValuePair<ResourceID, Element> item) {
+    void ICollection<KeyValuePair<ResourceID, T>>.Add(KeyValuePair<ResourceID, T> item) {
         Add(item.Key, item.Value);
     }
 
@@ -51,7 +49,7 @@ public class ResourceRegistry<TOption> : IDictionary<ResourceID, ResourceRegistr
         return false;
     }
     
-    public bool Remove(ResourceID resourceId, out Element output) {
+    public bool Remove(ResourceID resourceId, [NotNullWhen(true)] out T? output) {
         if (_resources.Remove(resourceId, out output)) {
             bool removal = _nameMap.Remove(output.Name);
             Debug.Assert(removal);
@@ -73,20 +71,22 @@ public class ResourceRegistry<TOption> : IDictionary<ResourceID, ResourceRegistr
         return false;
     }
 
-    public bool Remove(string name, out Element output) {
+    public bool Remove(string name, [NotNullWhen(true)] out T? output) {
         if (_nameMap.Remove(name, out var resourceId)) {
             bool removal = _resources.Remove(resourceId, out output);
             Debug.Assert(removal);
 
+#pragma warning disable CS8762 // Parameter must have a non-null value when exiting in some condition.
             return true;
+#pragma warning restore CS8762 // Parameter must have a non-null value when exiting in some condition.
         }
 
         output = default;
         return false;
     }
 
-    bool ICollection<KeyValuePair<ResourceID, Element>>.Remove(KeyValuePair<ResourceID, Element> item) {
-        if (((ICollection<KeyValuePair<ResourceID, Element>>)_resources).Remove(item)) {
+    bool ICollection<KeyValuePair<ResourceID, T>>.Remove(KeyValuePair<ResourceID, T> item) {
+        if (((ICollection<KeyValuePair<ResourceID, T>>)_resources).Remove(item)) {
             bool removal = _nameMap.Remove(item.Value.Name);
             Debug.Assert(removal);
 
@@ -103,11 +103,11 @@ public class ResourceRegistry<TOption> : IDictionary<ResourceID, ResourceRegistr
     
     public bool ContainsKey(ResourceID resourceId) => _resources.ContainsKey(resourceId);
     
-    bool ICollection<KeyValuePair<ResourceID, Element>>.Contains(KeyValuePair<ResourceID, Element> item) => _resources.Contains(item);
+    bool ICollection<KeyValuePair<ResourceID, T>>.Contains(KeyValuePair<ResourceID, T> item) => _resources.Contains(item);
     
-    public bool TryGetValue(ResourceID resourceId, out Element output) => _resources.TryGetValue(resourceId, out output);
+    public bool TryGetValue(ResourceID resourceId, [NotNullWhen(true)] out T? output) => _resources.TryGetValue(resourceId, out output);
 
-    public Element this[ResourceID resourceId] {
+    public T this[ResourceID resourceId] {
         get => _resources[resourceId];
         set {
             ValidateResourceId(resourceId);
@@ -131,8 +131,8 @@ public class ResourceRegistry<TOption> : IDictionary<ResourceID, ResourceRegistr
         }
     }
 
-    void ICollection<KeyValuePair<ResourceID, Element>>.CopyTo(KeyValuePair<ResourceID, Element>[] array, int arrayIndex) {
-        ((ICollection<KeyValuePair<ResourceID, Element>>)_resources).CopyTo(array, arrayIndex);
+    void ICollection<KeyValuePair<ResourceID, T>>.CopyTo(KeyValuePair<ResourceID, T>[] array, int arrayIndex) {
+        ((ICollection<KeyValuePair<ResourceID, T>>)_resources).CopyTo(array, arrayIndex);
     }
 
     [StackTraceHidden]
@@ -143,7 +143,7 @@ public class ResourceRegistry<TOption> : IDictionary<ResourceID, ResourceRegistr
     }
 
     [StackTraceHidden]
-    private void ValidateElement(Element element) {
+    protected virtual void ValidateElement(T element) {
         if (string.IsNullOrEmpty(element.Name)) {
             throw new ArgumentException("Resource name cannot be null or empty string.", nameof(element));
         }
@@ -160,18 +160,14 @@ public class ResourceRegistry<TOption> : IDictionary<ResourceID, ResourceRegistr
                 throw new ArgumentException($"Tag '{tag}' contains invalid character at position {invalidCharacterIndex}.", nameof(element));
             }
         }
-        
-        ValidateOption(element.Option);
     }
 
-    protected virtual void ValidateOption(TOption options) { }
+    public Dictionary<ResourceID, T>.Enumerator GetEnumerator() => _resources.GetEnumerator();
 
-    public Dictionary<ResourceID, Element>.Enumerator GetEnumerator() => _resources.GetEnumerator();
-
-    IEnumerator<KeyValuePair<ResourceID, Element>> IEnumerable<KeyValuePair<ResourceID, Element>>.GetEnumerator() => _resources.GetEnumerator();
+    IEnumerator<KeyValuePair<ResourceID, T>> IEnumerable<KeyValuePair<ResourceID, T>>.GetEnumerator() => _resources.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     
-    public readonly record struct Element(string Name, ImmutableArray<string> Tags, TOption Option);
+    // public readonly record struct T(string Name, ImmutableArray<string> Tags, TOption Option);
 }
 
 file static class Constants {
