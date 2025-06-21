@@ -1,5 +1,8 @@
-﻿namespace Caxivitual.Lunacub;
+﻿using System.Text.Json.Serialization;
 
+namespace Caxivitual.Lunacub;
+
+[JsonConverter(typeof(ResourceRegistryJsonConverterFactory))]
 public class ResourceRegistry<T> : IDictionary<ResourceID, T> where T : IRegistryElement {
     private readonly Dictionary<ResourceID, T> _resources = [];
     private readonly Dictionary<string, ResourceID> _nameMap = [];
@@ -143,7 +146,9 @@ public class ResourceRegistry<T> : IDictionary<ResourceID, T> where T : IRegistr
     }
 
     [StackTraceHidden]
-    protected virtual void ValidateElement(T element) {
+    protected virtual void ValidateElement(T? element) {
+        ArgumentNullException.ThrowIfNull(element, nameof(element));
+        
         if (string.IsNullOrEmpty(element.Name)) {
             throw new ArgumentException("Resource name cannot be null or empty string.", nameof(element));
         }
