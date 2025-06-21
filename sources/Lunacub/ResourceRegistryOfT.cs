@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Caxivitual.Lunacub.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Caxivitual.Lunacub;
 

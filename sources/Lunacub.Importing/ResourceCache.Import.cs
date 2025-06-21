@@ -94,8 +94,6 @@ partial class ResourceCache {
         
         var layout = LayoutExtracting.Extract(resourceStream);
         
-        _environment.Logger.LogInformation("Version: ");
-
         switch (layout.MajorVersion) {
             case 1: return await ImportResourceVesselV1(type, resourceStream, layout, container.CancellationTokenSource.Token);
                 

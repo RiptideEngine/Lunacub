@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Caxivitual.Lunacub;
+namespace Caxivitual.Lunacub.Serialization;
 
 internal sealed class ResourceRegistryJsonConverterFactory : JsonConverterFactory {
     private static readonly Type ResourceIDType = typeof(ResourceID);

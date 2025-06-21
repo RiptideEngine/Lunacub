@@ -20,16 +20,31 @@ public sealed class ResourceLibraryCollection : Collection<ResourceLibrary> {
     }
     
     protected override void InsertItem(int index, ResourceLibrary item) {
-        ArgumentNullException.ThrowIfNull(item, nameof(item));
+        ValidateLibrary(item);
         
         base.InsertItem(index, item);
     }
 
     protected override void SetItem(int index, ResourceLibrary item) {
-        ArgumentNullException.ThrowIfNull(item, nameof(item));
+        ValidateLibrary(item);
 
         if (!ReferenceEquals(item, this[index])) {
             base.SetItem(index, item);
+        }
+    }
+
+    [StackTraceHidden]
+    private void ValidateLibrary(ResourceLibrary library) {
+        ArgumentNullException.ThrowIfNull(library);
+        
+        foreach (var insertedLibrary in this) {
+            ResourceRegistry insertedLibraryRegistry = library.Registry;
+            
+            foreach (var libraryRegistryId in library.Registry.Keys) {
+                if (insertedLibraryRegistry.ContainsKey(libraryRegistryId)) {
+                    throw new ArgumentException("");
+                }
+            }
         }
     }
 }

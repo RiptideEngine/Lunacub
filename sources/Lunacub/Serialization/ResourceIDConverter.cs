@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Caxivitual.Lunacub;
+namespace Caxivitual.Lunacub.Serialization;
 
 internal sealed class ResourceIDConverter : JsonConverter<ResourceID> {
     public override void Write(Utf8JsonWriter writer, ResourceID value, JsonSerializerOptions options) {

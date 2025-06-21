@@ -49,7 +49,7 @@ public class FileOutputSystem : OutputSystem {
     }
 
     public override void CopyCompiledResourceOutput(Stream sourceStream, ResourceID rid) {
-        using FileStream fs = new(Path.Combine(ResourceOutputDirectory, $"{rid:X}{CompilingConstants.CompiledResourceExtension}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        using FileStream fs = File.OpenWrite(Path.Combine(ResourceOutputDirectory, $"{rid:X}{CompilingConstants.CompiledResourceExtension}"));
         fs.SetLength(0);
         fs.Flush();
         
@@ -57,10 +57,10 @@ public class FileOutputSystem : OutputSystem {
     }
 
     public override void OutputResourceRegistry(IReadOnlyDictionary<ResourceID, OutputRegistryElement> registry) {
-        using FileStream fs = new(Path.Combine(ResourceOutputDirectory, "__registry"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        using FileStream fs = File.OpenWrite(Path.Combine(ResourceOutputDirectory, "__registry"));
         fs.SetLength(0);
         fs.Flush();
 
-        JsonSerializer.Serialize(fs, registry);
+        JsonSerializer.Serialize(fs, registry.ToDictionary());
     }
 }
