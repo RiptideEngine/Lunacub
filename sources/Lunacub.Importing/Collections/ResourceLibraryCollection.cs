@@ -38,7 +38,7 @@ public sealed class ResourceLibraryCollection : Collection<ResourceLibrary> {
         ArgumentNullException.ThrowIfNull(library);
         
         foreach (var insertedLibrary in this) {
-            ResourceRegistry insertedLibraryRegistry = library.Registry;
+            ResourceRegistry insertedLibraryRegistry = insertedLibrary.Registry;
             
             foreach (var libraryRegistryId in library.Registry.Keys) {
                 if (insertedLibraryRegistry.ContainsKey(libraryRegistryId)) {
