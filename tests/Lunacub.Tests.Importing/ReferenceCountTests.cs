@@ -7,12 +7,12 @@ public class ReferenceCountTests : IClassFixture<ComponentsFixture>, IDisposable
         MockFileSystem _fileSystem = new();
         using BuildEnvironment buildEnvironment = new(new MockOutputSystem(_fileSystem)) {
             Resources = {
-                [1] = new() {
+                [1] = new("Resource", [], new() {
                     Provider = new MemoryResourceProvider("{}"u8, DateTime.MinValue),
                     Options = new() {
                         ImporterName = nameof(DisposableResourceImporter),
                     },
-                },
+                }),
             },
         };
         

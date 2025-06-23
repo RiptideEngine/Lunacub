@@ -1,9 +1,11 @@
-﻿namespace Caxivitual.Lunacub.Importing;
+﻿using System.Collections.Concurrent;
+
+namespace Caxivitual.Lunacub.Importing;
 
 public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
     private readonly SemaphoreSlim _containerLock;
     private readonly Dictionary<ResourceID, ResourceContainer> _resourceContainers;
-    private readonly Dictionary<object, ResourceContainer> _importedObjectMap;
+    private readonly ConcurrentDictionary<object, ResourceContainer> _importedObjectMap;
     private readonly ImportEnvironment _environment;
     
     private bool _disposed;
@@ -26,7 +28,8 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
     public ReleaseStatus Release(object resource) {
         _containerLock.Wait();
         try {
-            if (!_importedObjectMap.TryGetValue(resource, out var container)) return ReleaseStatus.InvalidResource;
+            if (!_importedObjectMap.TryGetValue(resource, out ResourceContainer? container)) return ReleaseStatus.InvalidResource;
+            
             if (container.ReferenceWaitTask == null) return ReleaseStatus.NotImported;
             
             Debug.Assert(container.ReferenceWaitTask.Status == TaskStatus.RanToCompletion);
@@ -38,9 +41,9 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
 
             _environment.Statistics.DecrementUniqueResourceCount();
 
-            bool removal = _importedObjectMap.Remove(resource);
+            bool removal = _importedObjectMap.TryRemove(resource, out _);
             Debug.Assert(removal);
-        
+
             removal = _resourceContainers.Remove(container.ResourceId);
             Debug.Assert(removal);
 
@@ -67,11 +70,11 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
             
             if (DecrementResourceContainerReference(ref container.ReferenceCount) != 0) return ReleaseStatus.Success;
             
-            object releasedResource = container.ReferenceWaitTask.Result!;
+            object releasedResource = container.ReferenceWaitTask.Result;
             
             _environment.Statistics.DecrementUniqueResourceCount();
             
-            bool removal = _importedObjectMap.Remove(releasedResource);
+            bool removal = _importedObjectMap.TryRemove(releasedResource, out _);
             Debug.Assert(removal);
             
             removal = _resourceContainers.Remove(container.ResourceId);
@@ -113,13 +116,13 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
 
             container.CancellationTokenSource.Dispose();
 
-            switch (container.ReferenceWaitTask.Status) {
+            switch (container.ReferenceWaitTask!.Status) {
                 case TaskStatus.RanToCompletion:
                     object releasedResource = container.ReferenceWaitTask.Result!;
         
                     _environment.Statistics.DecrementUniqueResourceCount();
 
-                    bool removal = _importedObjectMap.Remove(releasedResource);
+                    bool removal = _importedObjectMap.TryRemove(releasedResource, out _);
                     Debug.Assert(removal);
         
                     removal = _resourceContainers.Remove(container.ResourceId);

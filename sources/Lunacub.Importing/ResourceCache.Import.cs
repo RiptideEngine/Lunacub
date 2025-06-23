@@ -74,7 +74,7 @@ partial class ResourceCache {
                 return await Task.FromException<VesselDeserializeResult>(new InvalidOperationException($"Null resource stream provided despite contains resource '{container.ResourceId}'."));
             }
 
-            var layout = LayoutExtracting.ExtractHeader(resourceStream);
+            var layout = BinaryHeader.Extract(resourceStream);
 
             switch (layout.MajorVersion) {
                 case 1: return await ImportResourceVesselV1(resourceType, resourceStream, layout, container.CancellationTokenSource.Token);
@@ -159,6 +159,9 @@ partial class ResourceCache {
                     throw new InvalidOperationException("Deserializer cannot returns null object.");
                 }
 
+                bool add = _importedObjectMap.TryAdd(deserialized, container);
+                Debug.Assert(add);
+                
                 _environment.Statistics.IncrementUniqueResourceCount();
 
                 // Import the references.

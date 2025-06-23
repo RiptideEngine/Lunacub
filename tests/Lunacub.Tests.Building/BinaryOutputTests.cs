@@ -17,18 +17,18 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
     
     [Fact]
     public void BuildSimpleResource_OutputCorrectBinary() {
-        _environment.Resources.Add(1, new() {
+        _environment.Resources.Add(1, new("Resource", [], new() {
             Provider = new MemoryResourceProvider("""{"Value":255}"""u8, DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ResourceWithValueImporter),
             },
-        });
+        }));
         
         new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.ResourceResults.Should().ContainSingle();
 
         MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
         using Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 1)).Should().NotThrow().Which;
-        BinaryHeader layout = new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(stream)).Should().NotThrow().Which;
+        BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(stream)).Should().NotThrow().Which;
 
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
         dataChunkInfo.Length.Should().Be(4);
@@ -42,25 +42,25 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
     
     [Fact]
     public unsafe void BuildReferenceResource_OutputCorrectBinary() {
-        _environment.Resources.Add(1, new() {
+        _environment.Resources.Add(1, new("Referree", [], new() {
             Provider = new MemoryResourceProvider("""{"Reference":2,"Value":50}"""u8, DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ResourceWithReferenceImporter),
             },
-        });
-        _environment.Resources.Add(2, new() {
+        }));
+        _environment.Resources.Add(2, new("Reference", [], new() {
             Provider = new MemoryResourceProvider("""{"Reference":1,"Value":100}"""u8, DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ResourceWithReferenceImporter),
             },
-        });
+        }));
         
         new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.ResourceResults.Should().HaveCount(2);
 
         MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
 
         using (Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 1)).Should().NotThrow().Which) {
-            BinaryHeader layout = new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(stream)).Should().NotThrow().Which;
+            BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(stream)).Should().NotThrow().Which;
             
             layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
             dataChunkInfo.Length.Should().Be((uint)(sizeof(ResourceID) + sizeof(int)));
@@ -74,7 +74,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
         }
         
         using (Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 2)).Should().NotThrow().Which) {
-            BinaryHeader layout = new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(stream)).Should().NotThrow().Which;
+            BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(stream)).Should().NotThrow().Which;
             
             layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
             dataChunkInfo.Length.Should().Be((uint)(sizeof(ResourceID) + sizeof(int)));
@@ -90,19 +90,19 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
     
     [Fact]
     public void BuildOptionsResource_Json_OutputCorrectBinary() {
-        _environment.Resources.Add(1, new() {
+        _environment.Resources.Add(1, new("Resource", [], new() {
             Provider = new MemoryResourceProvider("[1,2,3,4,5]"u8, DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ResourceWithOptionsImporter),
                 Options = new ResourceWithOptionsDTO.Options(OutputType.Json),
             },
-        });
+        }));
         
         new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.ResourceResults.Should().ContainSingle();
 
         MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
         using (Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 1)).Should().NotThrow().Which) {
-            BinaryHeader layout = new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(stream)).Should().NotThrow().Which;
+            BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(stream)).Should().NotThrow().Which;
 
             layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
             dataChunkInfo.Length.Should().Be(11);
@@ -117,19 +117,19 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
     
     [Fact]
     public void BuildOptionsResource_Binary_OutputCorrectBinary() {
-        _environment.Resources.Add(1, new() {
+        _environment.Resources.Add(1, new("Resource", [], new() {
             Provider = new MemoryResourceProvider("[1,2,3,4,5]"u8, DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ResourceWithOptionsImporter),
                 Options = new ResourceWithOptionsDTO.Options(OutputType.Binary),
             },
-        });
+        }));
         
         new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.ResourceResults.Should().ContainSingle();
 
         MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
         using (Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 1)).Should().NotThrow().Which) {
-            BinaryHeader layout = new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(stream)).Should().NotThrow().Which;
+            BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(stream)).Should().NotThrow().Which;
 
             layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
             dataChunkInfo.Length.Should().Be(20);
