@@ -14,10 +14,11 @@ Lunacub is licensed under the GNU General Public License Version 3, see [here](h
 
 ## Documentation
 
-- There is currently no plan to make a documentation website, but the [Playground](/Lunacub.Playground) is an application that uses the library to build and import the game resources.
+- There is currently no plan to make a documentation website, but you can see some usage example in the [example](/examples) directory.
+
 ## Manual building
 
-If you prefer to use the library in your own .NET environment, you can compile the API yourself (Note: There is no guarantee that it will build successfully, if that's the case, *question yourself why you want to stay at obsolete versions*).
+You can manually build Lunacub with your own .NET environment. There is no plan to support older .NET version, so .NET 9.0 is a must for the time being.
 
 To clone Lunacub locally, run one of these 2 following git commands:
 
