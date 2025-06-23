@@ -22,7 +22,7 @@ public class LayoutExtractingTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
+        BinaryHeader layout = new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(ms))
             .Should().NotThrow().Which;
         
         layout.MajorVersion.Should().Be(1);
@@ -49,7 +49,7 @@ public class LayoutExtractingTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms.ToArray()))
+        BinaryHeader layout = new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(ms.ToArray()))
             .Should().NotThrow().Which;
         
         layout.MajorVersion.Should().Be(1);
@@ -63,15 +63,15 @@ public class LayoutExtractingTests {
         MemoryStream ms = new MemoryStream([]);
         ms.Dispose();
 
-        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
+        new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(ms))
             .Should().Throw<ArgumentException>().WithMessage("*Stream*readable*");
     }
 
     [Fact]
     public void Extract_InvalidMagic_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream("????"u8.ToArray());
-        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
-            .Should().Throw<CorruptedFormatException>().WithMessage("*magic*");
+        new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(ms))
+            .Should().Throw<CorruptedBinaryException>().WithMessage("*magic*");
     }
     
     [Fact]
@@ -86,8 +86,8 @@ public class LayoutExtractingTests {
     
         ms.Seek(0, SeekOrigin.Begin);
         
-        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
-            .Should().Throw<CorruptedFormatException>().WithMessage("*header*").WithInnerException<EndOfStreamException>();
+        new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(ms))
+            .Should().Throw<CorruptedBinaryException>().WithMessage("*header*").WithInnerException<EndOfStreamException>();
     }
     
     [Fact]
@@ -107,8 +107,8 @@ public class LayoutExtractingTests {
 
         ms.Seek(0, SeekOrigin.Begin);
         
-        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
-            .Should().Throw<CorruptedFormatException>().WithMessage("*chunk header*").WithInnerException<EndOfStreamException>();
+        new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(ms))
+            .Should().Throw<CorruptedBinaryException>().WithMessage("*chunk header*").WithInnerException<EndOfStreamException>();
     }
 
     [Fact]
@@ -126,8 +126,8 @@ public class LayoutExtractingTests {
 
         ms.Seek(0, SeekOrigin.Begin);
         
-        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
-            .Should().Throw<CorruptedFormatException>().WithMessage("*surpassed*length*");
+        new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(ms))
+            .Should().Throw<CorruptedBinaryException>().WithMessage("*surpassed*length*");
     }
     
     [Fact]
@@ -147,8 +147,8 @@ public class LayoutExtractingTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
-            .Should().Throw<CorruptedFormatException>().WithMessage("*Expected*chunk tag*position*");
+        new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(ms))
+            .Should().Throw<CorruptedBinaryException>().WithMessage("*Expected*chunk tag*position*");
     }
     
     [Fact]
@@ -168,7 +168,7 @@ public class LayoutExtractingTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(ms))
-            .Should().Throw<CorruptedFormatException>().WithMessage("*content*length*surpassed*");
+        new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(ms))
+            .Should().Throw<CorruptedBinaryException>().WithMessage("*content*length*surpassed*");
     }
 }

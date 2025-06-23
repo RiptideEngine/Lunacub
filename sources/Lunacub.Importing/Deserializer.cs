@@ -13,10 +13,6 @@ public abstract class Deserializer {
 public abstract class Deserializer<T> : Deserializer where T : class {
     public sealed override Type OutputType => typeof(T);
 
-    // public sealed override object DeserializeObject(Stream dataStream, Stream optionStream, DeserializationContext context) {
-    //     return Deserialize(dataStream, optionStream, context);
-    // }
-
     public sealed override async Task<object> DeserializeObjectAsync(Stream dataStream, Stream optionStream, DeserializationContext context, CancellationToken cancellationToken) {
         return await DeserializeAsync(dataStream, optionStream, context, cancellationToken);
     }

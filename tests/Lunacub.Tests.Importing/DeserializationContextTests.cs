@@ -19,8 +19,8 @@ public class DeserializationContextTests {
         new Action(() => _context.RequestReference(key, 1, type)).Should().NotThrow();
 #pragma warning restore CA2263
 
-        _context.RequestingDependencies.Should().HaveCount(1);
-        _context.RequestingDependencies.Should().ContainKey(key).WhoseValue.Should().Be(new DeserializationContext.RequestingDependency(1, type));
+        _context.RequestingReferences.Should().HaveCount(1);
+        _context.RequestingReferences.Should().ContainKey(key).WhoseValue.Should().Be(new DeserializationContext.RequestingDependency(1, type));
     }
     
     [Theory]
@@ -32,7 +32,7 @@ public class DeserializationContextTests {
         new Action(() => _context.RequestReference(new(10), 1, type)).Should().NotThrow();
 #pragma warning restore CA2263
 
-        _context.RequestingDependencies.Should().BeEmpty();
+        _context.RequestingReferences.Should().BeEmpty();
     }
     
     [Theory]
@@ -43,14 +43,14 @@ public class DeserializationContextTests {
         new Action(() => _context.RequestReference(new(10), 1, type)).Should().NotThrow();
 #pragma warning restore CA2263
 
-        _context.RequestingDependencies.Should().BeEmpty();
+        _context.RequestingReferences.Should().BeEmpty();
     }
     
     [Fact]
     public void RequestReference_NonGeneric_IgnoreNullResourceID() {
         new Action(() => _context.RequestReference(new(10), ResourceID.Null, typeof(object))).Should().NotThrow();
         
-        _context.RequestingDependencies.Should().BeEmpty();
+        _context.RequestingReferences.Should().BeEmpty();
     }
     
     [Fact]
@@ -63,16 +63,16 @@ public class DeserializationContextTests {
         new Action(() => _context.RequestReference<IEnumerable<int>>(property2, 2)).Should().NotThrow();
         new Action(() => _context.RequestReference<List<int>>(property3, 3)).Should().NotThrow();
 
-        _context.RequestingDependencies.Should().HaveCount(3);
-        _context.RequestingDependencies.Should().ContainKey(property1).WhoseValue.Should().Be(new DeserializationContext.RequestingDependency(1, typeof(object)));
-        _context.RequestingDependencies.Should().ContainKey(property2).WhoseValue.Should().Be(new DeserializationContext.RequestingDependency(2, typeof(IEnumerable<int>)));
-        _context.RequestingDependencies.Should().ContainKey(property3).WhoseValue.Should().Be(new DeserializationContext.RequestingDependency(3, typeof(List<int>)));
+        _context.RequestingReferences.Should().HaveCount(3);
+        _context.RequestingReferences.Should().ContainKey(property1).WhoseValue.Should().Be(new DeserializationContext.RequestingDependency(1, typeof(object)));
+        _context.RequestingReferences.Should().ContainKey(property2).WhoseValue.Should().Be(new DeserializationContext.RequestingDependency(2, typeof(IEnumerable<int>)));
+        _context.RequestingReferences.Should().ContainKey(property3).WhoseValue.Should().Be(new DeserializationContext.RequestingDependency(3, typeof(List<int>)));
     }
     
     [Fact]
     public void RequestReference_Generic_IgnoreNullResourceID() {
         new Action(() => _context.RequestReference<object>(new(10), ResourceID.Null)).Should().NotThrow();
         
-        _context.RequestingDependencies.Should().BeEmpty();
+        _context.RequestingReferences.Should().BeEmpty();
     }
 }

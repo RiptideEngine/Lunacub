@@ -3,7 +3,7 @@
 public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
     private readonly SemaphoreSlim _containerLock;
     private readonly Dictionary<ResourceID, ResourceContainer> _resourceContainers;
-    private readonly Dictionary<object, ResourceContainer> _importedReleaseCache;
+    private readonly Dictionary<object, ResourceContainer> _importedObjectMap;
     private readonly ImportEnvironment _environment;
     
     private bool _disposed;
@@ -11,26 +11,26 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
     internal ResourceCache(ImportEnvironment environment) {
         _containerLock =  new(1, 1);
         _resourceContainers = [];
-        _importedReleaseCache = [];
+        _importedObjectMap = [];
         _environment = environment;
     }
 
-    public ImportingOperation ImportAsync(ResourceID rid) {
-        return new(rid, ImportSingleResource(rid));
+    public ImportingOperation ImportAsync(ResourceID resourceId) {
+        return new(resourceId, ImportSingleResource(resourceId));
     }
 
-    public ImportingOperation<T> ImportAsync<T>(ResourceID rid) where T : class {
-        return new(rid, ImportSingleResource<T>(rid));
+    public ImportingOperation<T> ImportAsync<T>(ResourceID resourceId) where T : class {
+        return new(resourceId, ImportSingleResource<T>(resourceId));
     }
 
     public ReleaseStatus Release(object resource) {
         _containerLock.Wait();
         try {
-            if (!_importedReleaseCache.TryGetValue(resource, out var container)) return ReleaseStatus.InvalidResource;
-            if (container.FullImportTask == null) return ReleaseStatus.NotImported;
+            if (!_importedObjectMap.TryGetValue(resource, out var container)) return ReleaseStatus.InvalidResource;
+            if (container.ReferenceWaitTask == null) return ReleaseStatus.NotImported;
             
-            Debug.Assert(container.FullImportTask.Status == TaskStatus.RanToCompletion);
-            Debug.Assert(ReferenceEquals(container.FullImportTask.Result, resource));
+            Debug.Assert(container.ReferenceWaitTask.Status == TaskStatus.RanToCompletion);
+            Debug.Assert(ReferenceEquals(container.ReferenceWaitTask.Result, resource));
 
             if (DecrementResourceContainerReference(ref container.ReferenceCount) != 0) {
                 return ReleaseStatus.Success;
@@ -38,7 +38,7 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
 
             _environment.Statistics.DecrementUniqueResourceCount();
 
-            bool removal = _importedReleaseCache.Remove(resource);
+            bool removal = _importedObjectMap.Remove(resource);
             Debug.Assert(removal);
         
             removal = _resourceContainers.Remove(container.ResourceId);
@@ -56,22 +56,22 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
         }
     }
     
-    public ReleaseStatus Release(ResourceHandle rid) {
+    public ReleaseStatus Release(ResourceHandle resourceId) {
         _containerLock.Wait();
         try {
-            if (!_importedReleaseCache.TryGetValue(rid.Value!, out var container)) return ReleaseStatus.InvalidResource;
-            if (container.ResourceId != rid.Rid) return ReleaseStatus.IdIncompatible;
+            if (!_importedObjectMap.TryGetValue(resourceId.Value!, out var container)) return ReleaseStatus.InvalidResource;
+            if (container.ResourceId != resourceId.Rid) return ReleaseStatus.IdIncompatible;
             
-            Debug.Assert(container.FullImportTask.Status == TaskStatus.RanToCompletion);
-            Debug.Assert(ReferenceEquals(container.FullImportTask.Result, rid.Value));
+            Debug.Assert(container.ReferenceWaitTask!.Status == TaskStatus.RanToCompletion);
+            Debug.Assert(ReferenceEquals(container.ReferenceWaitTask.Result, resourceId.Value));
             
             if (DecrementResourceContainerReference(ref container.ReferenceCount) != 0) return ReleaseStatus.Success;
             
-            object releasedResource = container.FullImportTask.Result!;
+            object releasedResource = container.ReferenceWaitTask.Result!;
             
             _environment.Statistics.DecrementUniqueResourceCount();
             
-            bool removal = _importedReleaseCache.Remove(releasedResource);
+            bool removal = _importedObjectMap.Remove(releasedResource);
             Debug.Assert(removal);
             
             removal = _resourceContainers.Remove(container.ResourceId);
@@ -102,7 +102,7 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
             container.CancellationTokenSource.Cancel();
 
             try {
-                container.FullImportTask.Wait();
+                container.ReferenceWaitTask!.Wait();
             } catch (AggregateException ae) {
                 foreach (var e in ae.InnerExceptions) {
                     if (e is TaskCanceledException or OperationCanceledException) continue;
@@ -113,13 +113,13 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
 
             container.CancellationTokenSource.Dispose();
 
-            switch (container.FullImportTask.Status) {
+            switch (container.ReferenceWaitTask.Status) {
                 case TaskStatus.RanToCompletion:
-                    object releasedResource = container.FullImportTask.Result!;
+                    object releasedResource = container.ReferenceWaitTask.Result!;
         
                     _environment.Statistics.DecrementUniqueResourceCount();
 
-                    bool removal = _importedReleaseCache.Remove(releasedResource);
+                    bool removal = _importedObjectMap.Remove(releasedResource);
                     Debug.Assert(removal);
         
                     removal = _resourceContainers.Remove(container.ResourceId);
@@ -137,7 +137,7 @@ public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
                     Debug.Assert(!_resourceContainers.ContainsKey(container.ResourceId));
                     return ReleaseStatus.Canceled;
             
-                default: throw new UnreachableException($"Unexpected task status '{container.FullImportTask.Status}'.");
+                default: throw new UnreachableException($"Unexpected task status '{container.ReferenceWaitTask.Status}'.");
             }
         } finally {
             _containerLock.Release();

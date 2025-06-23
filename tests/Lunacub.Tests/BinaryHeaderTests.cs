@@ -2,10 +2,10 @@
 
 namespace Caxivitual.Lunacub.Tests;
 
-public class CompiledResourceLayoutTests {
+public class BinaryHeaderTests {
     [Fact]
     public void TryGetChunkInformation_RegisteredTag_ReturnsStoredValue() {
-        CompiledResourceLayout layout = new(1, 0, [
+        BinaryHeader layout = new(1, 0, [
             new(BinaryPrimitives.ReadUInt32LittleEndian("ABCD"u8), 4, 0),
             new(BinaryPrimitives.ReadUInt32LittleEndian("EFGH"u8), 8, 4),
             new(BinaryPrimitives.ReadUInt32LittleEndian("IJKL"u8), 12, 12),
@@ -18,7 +18,7 @@ public class CompiledResourceLayoutTests {
 
     [Fact]
     public void TryGetChunkInformation_UnregisteredTag_ReturnsFalseAndOutputDefault() {
-        CompiledResourceLayout layout = new(1, 0, [
+        BinaryHeader layout = new(1, 0, [
             new(BinaryPrimitives.ReadUInt32LittleEndian("ABCD"u8), 4, 0),
             new(BinaryPrimitives.ReadUInt32LittleEndian("EFGH"u8), 8, 4),
             new(BinaryPrimitives.ReadUInt32LittleEndian("IJKL"u8), 12, 12),
@@ -36,7 +36,7 @@ public class CompiledResourceLayoutTests {
 
     [Theory, MemberData(nameof(GetInvalidTagData))]
     public void TryGetChunkInformation_InvalidTag_ReturnsFalseAndOutputDefault(ReadOnlyMemory<byte> tag) {
-        CompiledResourceLayout layout = new(1, 0, [
+        BinaryHeader layout = new(1, 0, [
             new(BinaryPrimitives.ReadUInt32LittleEndian("ABCD"u8), 4, 0),
         ]);
 

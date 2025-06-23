@@ -7,81 +7,72 @@ using System.Text;
 namespace Caxivitual.Lunacub.Compilation;
 
 public static class LayoutExtracting {
-    public static CompiledResourceLayout Extract(Stream stream) {
+    public static BinaryHeader ExtractHeader(Stream stream) {
         if (!stream.CanRead || !stream.CanSeek) throw new ArgumentException("Stream is not readable or not seekable.");
-        
-        using BinaryReader reader = new(stream, Encoding.UTF8, leaveOpen: true);
 
-        KeyValuePair<uint, int>[] chunkPositions = [];
+        Span<byte> header = stackalloc byte[12];
 
-        ushort majorVersion, minorVersion;
-        int chunkAmount;
+        if (stream.Read(header) < 12) {
+            throw new CorruptedBinaryException("Stream does not contain sufficient data to read binary header.");
+        }
+
+        if (!header.StartsWith(CompilingConstants.MagicIdentifier)) {
+            throw new CorruptedBinaryException("Unexpected magic identifier.");
+        }
+
+        ushort major = BinaryPrimitives.ReadUInt16LittleEndian(header.Slice(4, 2));
+        ushort minor = BinaryPrimitives.ReadUInt16LittleEndian(header.Slice(6, 2));
+        int chunkCount = BinaryPrimitives.ReadInt32LittleEndian(header.Slice(8, 4));
+
+        KeyValuePair<uint, uint>[]? rentedArray = null;
+        Span<KeyValuePair<uint, uint>> span = chunkCount <= 16 ?
+            stackalloc KeyValuePair<uint, uint>[chunkCount] :
+            (rentedArray = ArrayPool<KeyValuePair<uint, uint>>.Shared.Rent(chunkCount)).AsSpan()[..chunkCount];
+
         try {
-            uint magic = reader.ReadUInt32();
-
-            if (magic != BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.MagicIdentifier)) {
-                throw new CorruptedFormatException($"Unexpected magic identifier 0x{magic:x8}.");
+            if (stream.Read(MemoryMarshal.AsBytes(span)) < chunkCount * sizeof(uint) * 2) {
+                throw new CorruptedBinaryException("Stream does not contain sufficient data to read chunk offsets.");
             }
 
-            majorVersion = reader.ReadUInt16();
-            minorVersion = reader.ReadUInt16();
-            chunkAmount = reader.ReadInt32();
+            var builder = ImmutableArray.CreateBuilder<ChunkInformation>(chunkCount);
             
-            chunkPositions = ArrayPool<KeyValuePair<uint, int>>.Shared.Rent(chunkAmount);
-
-            stream.ReadExactly(MemoryMarshal.AsBytes(chunkPositions.AsSpan(0, chunkAmount)));
-        } catch (EndOfStreamException e) {
-            ArrayPool<KeyValuePair<uint, int>>.Shared.Return(chunkPositions);
-            throw new CorruptedFormatException("Unable to read compiled resource header.", e);
-        }
-
-        try {
-            var chunkInfoBuilder = ImmutableArray.CreateBuilder<ChunkInformation>(chunkAmount);
-
-            ValidateChunkInformations(reader, chunkPositions.AsSpan(0, chunkAmount), chunkInfoBuilder);
-
-            return new(majorVersion, minorVersion, chunkInfoBuilder.MoveToImmutable());
+            ValidateChunkInformations(stream, span, builder);
+            
+            return new(major, minor, builder.MoveToImmutable());
         } finally {
-            ArrayPool<KeyValuePair<uint, int>>.Shared.Return(chunkPositions);
-        }
-    }
-
-    public static CompiledResourceLayout Extract(ReadOnlySpan<byte> memory) {
-        unsafe {
-            fixed (byte* ptr = memory) {
-                using UnmanagedMemoryStream stream = new(ptr, memory.Length, memory.Length, FileAccess.Read);
-                return Extract(stream);
+            if (rentedArray != null) {
+                ArrayPool<KeyValuePair<uint, uint>>.Shared.Return(rentedArray);
             }
         }
     }
 
-    private static unsafe void ValidateChunkInformations(BinaryReader reader, ReadOnlySpan<KeyValuePair<uint, int>> chunkPositions, ImmutableArray<ChunkInformation>.Builder chunkInfoBuilder) {
-        Stream stream = reader.BaseStream;
+    private static unsafe void ValidateChunkInformations(Stream stream, ReadOnlySpan<KeyValuePair<uint, uint>> chunkPositions, ImmutableArray<ChunkInformation>.Builder chunkInfoBuilder) {
+        Span<uint> buffer = stackalloc uint[2];
         
-        foreach ((uint chunkTag, int position) in chunkPositions) {
+        foreach ((uint chunkTag, uint position) in chunkPositions) {
             ReadOnlySpan<byte> chunkTagBytes = new ReadOnlySpan<byte>(&chunkTag, sizeof(uint));
             
-            if (position >= stream.Length) throw new CorruptedFormatException($"Chunk {Encoding.ASCII.GetString(chunkTagBytes)} has position surpassed Stream's length.");
+            if (position >= stream.Length) throw new CorruptedBinaryException($"Chunk {Encoding.ASCII.GetString(chunkTagBytes)} has position surpassed Stream's length.");
             
             stream.Seek(position, SeekOrigin.Begin);
 
-            try {
-                uint validatingChunk = reader.ReadUInt32();
-                
-                if (validatingChunk != chunkTag) {
-                    throw new CorruptedFormatException($"Expected chunk tag {Encoding.ASCII.GetString(chunkTagBytes)} at position {position}.");
-                }
-                
-                uint contentLength = reader.ReadUInt32();
-                
-                if (stream.Position + contentLength > stream.Length) {
-                    throw new CorruptedFormatException($"Chunk {Encoding.ASCII.GetString(chunkTagBytes)} has content length surpassed Stream's length.");
-                }
-                
-                chunkInfoBuilder.Add(new(chunkTag, contentLength, stream.Position));
-            } catch (EndOfStreamException e) {
-                throw new CorruptedFormatException($"Failed to read chunk header of chunk {Encoding.ASCII.GetString(chunkTagBytes)}.", e);
+            if (stream.Read(MemoryMarshal.AsBytes(buffer)) < 8) {
+                throw new CorruptedBinaryException($"Stream does not contain sufficient data to validate chunk offset and length for chunk '{Encoding.ASCII.GetString(chunkTagBytes)}'.");
             }
+
+            uint validatingChunk = buffer[0];
+            
+            if (validatingChunk != chunkTag) {
+                throw new CorruptedBinaryException($"Expected chunk tag {Encoding.ASCII.GetString(chunkTagBytes)} at position {position}.");
+            }
+            
+            uint contentLength = buffer[1];
+            
+            if (stream.Position + contentLength > stream.Length) {
+                throw new CorruptedBinaryException($"Chunk {Encoding.ASCII.GetString(chunkTagBytes)} has content length surpassed Stream's length.");
+            }
+            
+            chunkInfoBuilder.Add(new(chunkTag, contentLength, stream.Position));
         }
     }
 }

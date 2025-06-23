@@ -3,7 +3,7 @@
 namespace Caxivitual.Lunacub.Importing;
 
 [ExcludeFromCodeCoverage]
-internal static partial class Logging {
+internal static partial class Log {
     // public static EventId BeginImportEvent => new(1, "BeginImport");
     // public static EventId ImportExceptionOccuredEvent => new(2, "ImportExceptionOccured");
     // public static EventId DependencyImportExceptionOccuredEvent => new(3, "DependencyImportExceptionOccured");

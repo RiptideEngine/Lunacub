@@ -31,7 +31,9 @@ partial class ResourceCache {
         try {
             if (!_resourceContainers.TryGetValue(rid, out ResourceContainer? value)) return ResourceStatus.NotImported;
             
-            return value.FullImportTask.IsCompletedSuccessfully ? ResourceStatus.Imported : ResourceStatus.Importing;
+            Debug.Assert(value.ReferenceWaitTask != null);
+            
+            return value.ReferenceWaitTask.IsCompletedSuccessfully ? ResourceStatus.Imported : ResourceStatus.Importing;
         } finally {
             _containerLock.Release();
         }

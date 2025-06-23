@@ -28,7 +28,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
 
         MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
         using Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 1)).Should().NotThrow().Which;
-        CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(stream)).Should().NotThrow().Which;
+        BinaryHeader layout = new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(stream)).Should().NotThrow().Which;
 
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
         dataChunkInfo.Length.Should().Be(4);
@@ -60,7 +60,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
         MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
 
         using (Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 1)).Should().NotThrow().Which) {
-            CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(stream)).Should().NotThrow().Which;
+            BinaryHeader layout = new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(stream)).Should().NotThrow().Which;
             
             layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
             dataChunkInfo.Length.Should().Be((uint)(sizeof(ResourceID) + sizeof(int)));
@@ -74,7 +74,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
         }
         
         using (Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 2)).Should().NotThrow().Which) {
-            CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(stream)).Should().NotThrow().Which;
+            BinaryHeader layout = new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(stream)).Should().NotThrow().Which;
             
             layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
             dataChunkInfo.Length.Should().Be((uint)(sizeof(ResourceID) + sizeof(int)));
@@ -102,7 +102,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
 
         MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
         using (Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 1)).Should().NotThrow().Which) {
-            CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(stream)).Should().NotThrow().Which;
+            BinaryHeader layout = new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(stream)).Should().NotThrow().Which;
 
             layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
             dataChunkInfo.Length.Should().Be(11);
@@ -129,7 +129,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
 
         MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
         using (Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 1)).Should().NotThrow().Which) {
-            CompiledResourceLayout layout = new Func<CompiledResourceLayout>(() => LayoutExtracting.Extract(stream)).Should().NotThrow().Which;
+            BinaryHeader layout = new Func<BinaryHeader>(() => LayoutExtracting.ExtractHeader(stream)).Should().NotThrow().Which;
 
             layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
             dataChunkInfo.Length.Should().Be(20);

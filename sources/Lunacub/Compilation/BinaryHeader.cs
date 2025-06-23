@@ -1,14 +1,13 @@
-﻿using System.Buffers;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 
 namespace Caxivitual.Lunacub.Compilation;
 
-public readonly struct CompiledResourceLayout {
+public readonly struct BinaryHeader {
     public readonly ushort MajorVersion;
     public readonly ushort MinorVersion;
     public readonly ImmutableArray<ChunkInformation> Chunks;
 
-    public CompiledResourceLayout(ushort majorVersion, ushort minorVersion, ImmutableArray<ChunkInformation> chunks) {
+    public BinaryHeader(ushort majorVersion, ushort minorVersion, ImmutableArray<ChunkInformation> chunks) {
         MajorVersion = majorVersion;
         MinorVersion = minorVersion;
         Chunks = chunks;
