@@ -92,25 +92,10 @@ public sealed class ResourceWithOptionsDeserializer : Deserializer<ResourceWithO
             {
                 Debug.Assert(dataStream.Length % 4 == 0);
 
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(256);
-                int[] finalBuffer = new int[buffer.Length / 4];
-                int index = 0;
+                byte[] buffer = new byte[dataStream.Length];
+                await dataStream.ReadExactlyAsync(buffer, cancellationToken);
 
-                try {
-                    while (true) {
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        int read = await dataStream.ReadAsync(buffer, cancellationToken);
-                        if (read == 0) break;
-
-                        MemoryMarshal.Cast<byte, int>(buffer.AsSpan(0, read)).CopyTo(finalBuffer.AsSpan(index));
-                        index += read / 4;
-                    }
-                } finally {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                }
-
-                return new(ImmutableCollectionsMarshal.AsImmutableArray(finalBuffer));
+                return new([..MemoryMarshal.Cast<byte, int>(buffer)]);
             }
 
             default: throw new NotSupportedException("Unsupported serialization type.");

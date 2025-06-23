@@ -11,6 +11,7 @@ public class DisposerTests {
             disposable.Dispose();
             return true;
         }).TryDispose(resource).Should().BeTrue();
+        
         resource.Disposed.Should().BeTrue();
     }
 }

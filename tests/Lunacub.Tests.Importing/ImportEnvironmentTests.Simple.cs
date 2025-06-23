@@ -1,19 +1,27 @@
-﻿// namespace Caxivitual.Lunacub.Tests.Importing;
-//
-// partial class ImportEnvironmentTests {
-//     [Fact]
-//     public void ImportSimpleResource_Normal_DeserializeCorrectly() {
-//         ResourceID rid = ResourceID.Parse("e0b8066bf60043c5a0c3a7782363427d");
-//
-//         BuildResources(rid);
-//
-//         _importEnv.Input.Libraries.Add(new MockResourceLibrary(Guid.NewGuid(), _fileSystem));
-//         
-//         var fs = ((MockResourceLibrary)_importEnv.Input.Libraries[0]).FileSystem;
-//         fs.File.Exists(fs.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}")).Should().BeTrue();
-//
-//         var handle = new Func<ResourceHandle<object>>(() => _importEnv.Import<object>(rid)).Should().NotThrow().Which;
-//         handle.Rid.Should().Be(rid);
-//         handle.Value.Should().BeOfType<SimpleResource>().Which.Value.Should().Be(69);
-//     }
-// }
+﻿using FluentAssertions.Extensions;
+
+namespace Caxivitual.Lunacub.Tests.Importing;
+
+partial class ImportEnvironmentTests {
+    [Fact]
+    public async Task ImportSimpleResource_Normal_DeserializeCorrectly() {
+        _buildEnvironment.Resources.Add(1, new("Resource", [], new() {
+            Provider = MemoryResourceProvider.AsUtf8("""{"Value":69}""", DateTime.MinValue),
+            Options = new() {
+                ImporterName = nameof(ResourceWithValueImporter),
+            },
+        }));
+
+        _buildEnvironment.BuildResources();
+
+        _importEnvironment.Libraries.Add(new MockResourceLibrary(_fileSystem));
+
+        var result = (await new Func<Task<ResourceHandle<object>>>(() => _importEnvironment.Import<object>(1).Task)
+            .Should()
+            .CompleteWithinAsync(0.5.Seconds(), "Simple resource shouldn't take this long."))
+            .Subject;
+
+        result.ResourceId.Should().Be((ResourceID)1);
+        result.Value.Should().NotBeNull().And.BeOfType<ResourceWithValue>().Which.Value.Should().Be(69);
+    }
+}
