@@ -20,7 +20,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
         _environment.Resources.Add(1, new("Resource", [], new() {
             Provider = new MemoryResourceProvider("""{"Value":255}"""u8, DateTime.MinValue),
             Options = new() {
-                ImporterName = nameof(ResourceWithValueImporter),
+                ImporterName = nameof(SimpleResourceImporter),
             },
         }));
         
@@ -45,13 +45,13 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
         _environment.Resources.Add(1, new("Referree", [], new() {
             Provider = new MemoryResourceProvider("""{"Reference":2,"Value":50}"""u8, DateTime.MinValue),
             Options = new() {
-                ImporterName = nameof(ResourceWithReferenceImporter),
+                ImporterName = nameof(ReferencingResourceImporter),
             },
         }));
         _environment.Resources.Add(2, new("Reference", [], new() {
             Provider = new MemoryResourceProvider("""{"Reference":1,"Value":100}"""u8, DateTime.MinValue),
             Options = new() {
-                ImporterName = nameof(ResourceWithReferenceImporter),
+                ImporterName = nameof(ReferencingResourceImporter),
             },
         }));
         
@@ -93,8 +93,8 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
         _environment.Resources.Add(1, new("Resource", [], new() {
             Provider = new MemoryResourceProvider("[1,2,3,4,5]"u8, DateTime.MinValue),
             Options = new() {
-                ImporterName = nameof(ResourceWithOptionsImporter),
-                Options = new ResourceWithOptionsDTO.Options(OutputType.Json),
+                ImporterName = nameof(ConfigurableResourceImporter),
+                Options = new ConfigurableResourceDTO.Options(OutputType.Json),
             },
         }));
         
@@ -120,8 +120,8 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
         _environment.Resources.Add(1, new("Resource", [], new() {
             Provider = new MemoryResourceProvider("[1,2,3,4,5]"u8, DateTime.MinValue),
             Options = new() {
-                ImporterName = nameof(ResourceWithOptionsImporter),
-                Options = new ResourceWithOptionsDTO.Options(OutputType.Binary),
+                ImporterName = nameof(ConfigurableResourceImporter),
+                Options = new ConfigurableResourceDTO.Options(OutputType.Binary),
             },
         }));
         

@@ -6,10 +6,10 @@ using System.Runtime.InteropServices;
 
 namespace Caxivitual.Lunacub.Tests.Common;
 
-public sealed class ResourceWithOptions {
+public sealed class ConfigurableResource {
     public ImmutableArray<int> Array { get; }
 
-    public ResourceWithOptions(ImmutableArray<int> array) {
+    public ConfigurableResource(ImmutableArray<int> array) {
         Array = array;
     }
 }
@@ -19,39 +19,39 @@ public enum OutputType {
     Binary,
 }
 
-public sealed class ResourceWithOptionsDTO : ContentRepresentation {
+public sealed class ConfigurableResourceDTO : ContentRepresentation {
     public ImmutableArray<int> Array { get; }
 
-    public ResourceWithOptionsDTO(ImmutableArray<int> array) {
+    public ConfigurableResourceDTO(ImmutableArray<int> array) {
         Array = array;
     }
 
     public record Options(OutputType OutputType) : IImportOptions;
 }
 
-public sealed class ResourceWithOptionsImporter : Importer<ResourceWithOptionsDTO> {
-    protected override ResourceWithOptionsDTO Import(Stream resourceStream, ImportingContext context) {
+public sealed class ConfigurableResourceImporter : Importer<ConfigurableResourceDTO> {
+    protected override ConfigurableResourceDTO Import(Stream resourceStream, ImportingContext context) {
         return new(JsonSerializer.Deserialize<ImmutableArray<int>>(resourceStream));
     }
 }
 
-public sealed class ResourceWithOptionsSerializerFactory : SerializerFactory {
-    public override bool CanSerialize(Type representationType) => representationType == typeof(ResourceWithOptionsDTO);
+public sealed class ConfigurableResourceSerializerFactory : SerializerFactory {
+    public override bool CanSerialize(Type representationType) => representationType == typeof(ConfigurableResourceDTO);
 
     protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
     }
 
     private sealed class SerializerCore : Serializer {
-        public override string DeserializerName => nameof(ResourceWithOptionsDeserializer);
+        public override string DeserializerName => nameof(ConfigurableResourceDeserializer);
 
         public SerializerCore(ContentRepresentation serializingObject, SerializationContext context) : base(serializingObject, context) {
         }
 
         public override void SerializeObject(Stream outputStream) {
-            var buffer = ((ResourceWithOptionsDTO)SerializingObject).Array;
+            var buffer = ((ConfigurableResourceDTO)SerializingObject).Array;
 
-            switch (((ResourceWithOptionsDTO.Options)Context.Options!).OutputType) {
+            switch (((ConfigurableResourceDTO.Options)Context.Options!).OutputType) {
                 case OutputType.Json:
                     JsonSerializer.Serialize(outputStream, buffer);
                     return;
@@ -71,13 +71,13 @@ public sealed class ResourceWithOptionsSerializerFactory : SerializerFactory {
         public override void SerializeOptions(Stream outputStream) {
             using BinaryWriter writer = new(outputStream, Encoding.UTF8, leaveOpen: true);
             
-            writer.Write((int)((ResourceWithOptionsDTO.Options)Context.Options!).OutputType);
+            writer.Write((int)((ConfigurableResourceDTO.Options)Context.Options!).OutputType);
         }
     }
 }
 
-public sealed class ResourceWithOptionsDeserializer : Deserializer<ResourceWithOptions> {
-    protected override async Task<ResourceWithOptions> DeserializeAsync(Stream dataStream, Stream optionStream, DeserializationContext context, CancellationToken cancellationToken) {
+public sealed class ConfigurableResourceDeserializer : Deserializer<ConfigurableResource> {
+    protected override async Task<ConfigurableResource> DeserializeAsync(Stream dataStream, Stream optionStream, DeserializationContext context, CancellationToken cancellationToken) {
         using BinaryReader optionsReader = new(optionStream, Encoding.UTF8, leaveOpen: true);
         OutputType outputType = (OutputType)optionsReader.ReadInt32();
 

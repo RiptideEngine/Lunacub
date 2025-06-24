@@ -6,8 +6,8 @@ partial class ImportEnvironmentTests {
         _buildEnvironment.Resources.Add(1, new("Resource", [], new() {
             Provider = MemoryResourceProvider.AsUtf8("[0,1,2,3,4]", DateTime.MinValue),
             Options = new() {
-                ImporterName = nameof(ResourceWithOptionsImporter),
-                Options = new ResourceWithOptionsDTO.Options(OutputType.Binary),
+                ImporterName = nameof(ConfigurableResourceImporter),
+                Options = new ConfigurableResourceDTO.Options(OutputType.Binary),
             },
         }));
 
@@ -21,7 +21,7 @@ partial class ImportEnvironmentTests {
             .Subject;
 
         result.ResourceId.Should().Be((ResourceID)1);
-        result.Value.Should().NotBeNull().And.BeOfType<ResourceWithOptions>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
+        result.Value.Should().NotBeNull().And.BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
     }
     
     [Fact]
@@ -29,8 +29,8 @@ partial class ImportEnvironmentTests {
         _buildEnvironment.Resources.Add(1, new("Resource", [], new() {
             Provider = MemoryResourceProvider.AsUtf8("[0,1,2,3,4]", DateTime.MinValue),
             Options = new() {
-                ImporterName = nameof(ResourceWithOptionsImporter),
-                Options = new ResourceWithOptionsDTO.Options(OutputType.Json),
+                ImporterName = nameof(ConfigurableResourceImporter),
+                Options = new ConfigurableResourceDTO.Options(OutputType.Json),
             },
         }));
 
@@ -44,6 +44,6 @@ partial class ImportEnvironmentTests {
             .Subject;
 
         result.ResourceId.Should().Be((ResourceID)1);
-        result.Value.Should().NotBeNull().And.BeOfType<ResourceWithOptions>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
+        result.Value.Should().NotBeNull().And.BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
     }
 }

@@ -8,7 +8,7 @@ partial class ImportEnvironmentTests {
         _buildEnvironment.Resources.Add(1, new("Resource", [], new() {
             Provider = MemoryResourceProvider.AsUtf8("""{"Value":69}""", DateTime.MinValue),
             Options = new() {
-                ImporterName = nameof(ResourceWithValueImporter),
+                ImporterName = nameof(SimpleResourceImporter),
             },
         }));
 
@@ -22,6 +22,6 @@ partial class ImportEnvironmentTests {
             .Subject;
 
         result.ResourceId.Should().Be((ResourceID)1);
-        result.Value.Should().NotBeNull().And.BeOfType<ResourceWithValue>().Which.Value.Should().Be(69);
+        result.Value.Should().NotBeNull().And.BeOfType<SimpleResource>().Which.Value.Should().Be(69);
     }
 }

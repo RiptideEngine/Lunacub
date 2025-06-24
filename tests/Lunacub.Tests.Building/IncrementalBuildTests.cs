@@ -26,7 +26,7 @@ public class IncrementalBuildTests : IClassFixture<ComponentsFixture>, IDisposab
         _environment.Resources.Add(1, new("Resource", [], new() {
             Provider = new MemoryResourceProvider("""{"Value":1}"""u8, DateTime.MinValue),
             Options = new() {
-                ImporterName = nameof(ResourceWithValueImporter),
+                ImporterName = nameof(SimpleResourceImporter),
             },
         }));
         
@@ -39,7 +39,7 @@ public class IncrementalBuildTests : IClassFixture<ComponentsFixture>, IDisposab
         _environment.Resources.Add(1, new("Resource", [], new() {
             Provider = new MemoryResourceProvider("""{"Value":1}"""u8, DateTime.MinValue),
             Options = new() {
-                ImporterName = nameof(ResourceWithValueImporter),
+                ImporterName = nameof(SimpleResourceImporter),
             },
         }));
         
