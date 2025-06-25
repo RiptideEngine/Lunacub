@@ -5,8 +5,8 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Caxivitual.Lunacub.Examples.TextureViewer</AssemblyName>
-        <RootNamespace>Caxivitual.Lunacub.Examples.TextureViewer</RootNamespace>
+        <AssemblyName>Caxivitual.Lunacub.Examples.GasterBlaster</AssemblyName>
+        <RootNamespace>Caxivitual.Lunacub.Examples.GasterBlaster</RootNamespace>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
