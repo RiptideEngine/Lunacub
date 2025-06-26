@@ -11,7 +11,7 @@ public sealed partial class ImportEnvironment : IDisposable {
     /// <summary>
     /// The compiled resource entrypoints.
     /// </summary>
-    public ResourceLibraryCollection Libraries { get; }
+    public ResourceLibraryCollection<PrimitiveRegistryElement> Libraries { get; }
     
     /// <summary>
     /// Gets the dictionary of <see cref="Deserializer"/> that compiled resources request.

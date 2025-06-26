@@ -1,9 +1,7 @@
 ﻿namespace Caxivitual.Lunacub.Tests.Common;
 
-public sealed class MockResourceLibrary : ResourceLibrary {
+public sealed class MockResourceLibrary : ImportResourceLibrary {
     public MockFileSystem FileSystem { get; }
-
-    public override ResourceRegistry Registry { get; }
 
     public MockResourceLibrary(MockFileSystem fs) {
         FileSystem = fs;
@@ -11,11 +9,13 @@ public sealed class MockResourceLibrary : ResourceLibrary {
         string registryFilePath = FileSystem.Path.Combine(MockOutputSystem.ResourceOutputDirectory, "__registry");
 
         using (Stream stream = FileSystem.File.OpenRead(registryFilePath)) {
-            Registry = JsonSerializer.Deserialize<ResourceRegistry>(stream) ?? [];
+            foreach ((var k, var v) in JsonSerializer.Deserialize<ResourceRegistry<PrimitiveRegistryElement>>(stream) ?? []) {
+                Registry.Add(k, v);
+            }
         }
     }
     
-    protected override Stream? CreateStreamImpl(ResourceID rid) {
+    protected override Stream? CreateResourceStreamCore(ResourceID rid, PrimitiveRegistryElement element) {
         string path = FileSystem.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
         
         return FileSystem.File.Exists(path) ? FileSystem.File.OpenRead(path) : null;

@@ -2,21 +2,18 @@
 
 namespace Caxivitual.Lunacub.Importing.Core;
 
-public sealed class MemoryResourceLibrary : ResourceLibrary {
-    public override ResourceRegistry Registry { get; }
+public sealed class MemoryResourceLibrary : ImportResourceLibrary {
     public Dictionary<ResourceID, ImmutableArray<byte>> Resources { get; }
 
-    public MemoryResourceLibrary(ResourceRegistry registry) {
+    public MemoryResourceLibrary() {
         Resources = [];
-        Registry = registry;
     }
     
-    public MemoryResourceLibrary(ResourceRegistry registry, IEnumerable<KeyValuePair<ResourceID, ImmutableArray<byte>>> resources) {
+    public MemoryResourceLibrary(IEnumerable<KeyValuePair<ResourceID, ImmutableArray<byte>>> resources) {
         Resources = new(resources);
-        Registry = registry;
     }
 
-    protected override Stream? CreateStreamImpl(ResourceID rid) {
+    protected override Stream? CreateResourceStreamCore(ResourceID rid, PrimitiveRegistryElement element) {
         if (!Resources.TryGetValue(rid, out var buffer)) return null;
 
         return new MemoryStream(ImmutableCollectionsMarshal.AsArray(buffer) ?? [], false);
