@@ -1,13 +1,13 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
-/// A structure that contains a building options and a <see cref="ResourceProvider"/> instance.
+/// A structure that contains resource address and building options.
 /// </summary>
 public readonly struct BuildingResource : IEquatable<BuildingResource> {
     /// <summary>
-    /// Gets the resource provider instance.
+    /// Gets the array of addresses that will be used by <see cref="BuildResourceLibrary"/> to locate resource content.
     /// </summary>
-    public required ResourceProvider Provider { get; init; }
+    public required ResourceAddresses Addresses { get; init; }
         
     /// <summary>
     /// Gets the resource building options.
@@ -15,23 +15,23 @@ public readonly struct BuildingResource : IEquatable<BuildingResource> {
     public required BuildingOptions Options { get; init; }
         
     [SetsRequiredMembers]
-    public BuildingResource(ResourceProvider provider, BuildingOptions options) {
-        Provider = provider;
+    public BuildingResource(ResourceAddresses address, BuildingOptions options) {
+        Addresses = address;
         Options = options;
     }
 
-    public void Deconstruct(out ResourceProvider provider, out BuildingOptions options) {
-        provider = Provider;
+    public void Deconstruct(out ResourceAddresses addresses, out BuildingOptions options) {
+        addresses = Addresses;
         options = Options;
     }
 
     public bool Equals(BuildingResource other) {
-        return Provider == other.Provider && Options == other.Options;
+        return Addresses == other.Addresses && Options == other.Options;
     }
 
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is BuildingResource other && Equals(other);
 
-    public override int GetHashCode() => HashCode.Combine(Provider, Options);
+    public override int GetHashCode() => HashCode.Combine(Addresses, Options);
 
     public static bool operator ==(BuildingResource left, BuildingResource right) => left.Equals(right);
     public static bool operator !=(BuildingResource left, BuildingResource right) => !(left == right);

@@ -29,7 +29,7 @@ public sealed class BuildEnvironment : IDisposable {
     /// <summary>
     /// Gets the collection of resources need to be built.
     /// </summary>
-    public ResourceRegistry<BuildResourceRegistryElement> Resources { get; }
+    public ResourceLibraryCollection<BuildResourceLibrary, BuildingResource> Libraries { get; }
     
     /// <summary>
     /// Gets the <see cref="OutputSystem"/> instance.
@@ -50,13 +50,13 @@ public sealed class BuildEnvironment : IDisposable {
 
     /// <summary>
     /// Initializes a new instance of <see cref="BuildEnvironment"/> with empty <see cref="Importers"/>,
-    /// <see cref="Processors"/>, <see cref="SerializerFactories"/>, <see cref="Resources"/> and has the provided
+    /// <see cref="Processors"/>, <see cref="SerializerFactories"/>, <see cref="Libraries"/> and has the provided
     /// <see cref="OutputSystem"/> object.
     /// </summary>
     /// <param name="output">The <see cref="OutputSystem"/> object for the instance to use.</param>
     public BuildEnvironment(OutputSystem output) {
         Output = output;
-        Resources = new();
+        Libraries = new();
         IncrementalInfos = new(output);
         Logger = NullLogger.Instance;
     }

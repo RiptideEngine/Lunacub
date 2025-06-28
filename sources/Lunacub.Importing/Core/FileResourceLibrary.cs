@@ -7,15 +7,15 @@ public sealed class FileResourceLibrary : ImportResourceLibrary {
     public string RootDirectory { get; }
 
     public FileResourceLibrary(string rootDirectory) {
-        if (!Directory.Exists(rootDirectory)) {
-            throw new DirectoryNotFoundException($"Resource directory '{rootDirectory}' not found.");
-        }
+        RootDirectory = Path.GetFullPath(rootDirectory);
         
-        RootDirectory = rootDirectory;
+        if (!Directory.Exists(RootDirectory)) {
+            throw new DirectoryNotFoundException($"Resource directory '{RootDirectory}' not found.");
+        }
     }
-    
-    protected override Stream? CreateResourceStreamCore(ResourceID rid, PrimitiveRegistryElement element) {
-        string path = Path.Combine(RootDirectory, $"{rid:X}{CompilingConstants.CompiledResourceExtension}");
+
+    protected override Stream? CreateResourceStreamCore(ResourceID resourceId, byte options) {
+        string path = Path.Combine(RootDirectory, $"{resourceId:X}{CompilingConstants.CompiledResourceExtension}");
         
         return File.Exists(path) ? File.OpenRead(path) : null;
     }

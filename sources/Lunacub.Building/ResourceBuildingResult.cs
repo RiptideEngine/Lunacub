@@ -1,5 +1,4 @@
 ﻿using System.Collections.Frozen;
-using System.Runtime.ExceptionServices;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -18,15 +17,16 @@ public readonly struct ResourceBuildingResult {
     /// </summary>
     public readonly ExceptionDispatchInfo? Exception;
 
+    // TODO: Implement this.
     /// <summary>
     /// Gets the hashing Ids of the procedural resources.
     /// </summary>
-    public readonly IReadOnlyDictionary<ProceduralResourceID, ResourceID> ProceduralResourceIds;
+    private readonly IReadOnlyDictionary<ProceduralResourceID, ResourceID> ProceduralResourceIds;
     
     /// <summary>
     /// Indicates whether the resource building process completed successfully.
     /// </summary>
-    public bool IsSuccess => Status >= BuildStatus.Success;
+    public bool IsSuccess => Status is < BuildStatus.NullResourceStream and >= BuildStatus.Success;
 
     internal ResourceBuildingResult(BuildStatus status, ExceptionDispatchInfo? exception = null) : this(status, FrozenDictionary<ProceduralResourceID, ResourceID>.Empty, exception) { }
 

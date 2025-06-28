@@ -1,6 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
-public abstract class ImportResourceLibrary : ResourceLibrary<PrimitiveRegistryElement> {
+public abstract class ImportResourceLibrary : ResourceLibrary<byte> {
     protected ImportResourceLibrary() : base([]) {
     }
 }

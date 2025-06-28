@@ -37,6 +37,7 @@ public readonly struct IncrementalInfo {
     /// </summary>
     /// <param name="sourceLastWriteTime">The last write time of the source resource data.</param>
     /// <param name="options">The previously build options of the resource.</param>
+    /// <param name="componentVersions">The version strings of <see cref="Importer"/> and <see cref="Processor"/> that used to import and process the resource.</param>
     public IncrementalInfo(DateTime sourceLastWriteTime, BuildingOptions options, ComponentVersions componentVersions) : this(sourceLastWriteTime, options, FrozenSet<ResourceID>.Empty, componentVersions) {}
     
     /// <summary>
@@ -46,6 +47,7 @@ public readonly struct IncrementalInfo {
     /// <param name="sourceLastWriteTime">The last write time of the source resource data.</param>
     /// <param name="options">The previously build options of the resource.</param>
     /// <param name="dependencies">A set of <see cref="ResourceID"/> that contains the resources that the resource depends on.</param>
+    /// <param name="componentVersions">The version strings of <see cref="Importer"/> and <see cref="Processor"/> that used to import and process the resource.</param>
     public IncrementalInfo(DateTime sourceLastWriteTime, BuildingOptions options, IReadOnlySet<ResourceID> dependencies, ComponentVersions componentVersions) {
         SourceLastWriteTime = sourceLastWriteTime;
         Options = options;

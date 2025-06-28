@@ -15,7 +15,7 @@ public sealed class MockResourceLibrary : ImportResourceLibrary {
         }
     }
     
-    protected override Stream? CreateResourceStreamCore(ResourceID rid, PrimitiveRegistryElement element) {
+    protected override Stream? CreateResourceStreamCore(ResourceID rid, PrimitiveRegistryElement options) {
         string path = FileSystem.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
         
         return FileSystem.File.Exists(path) ? FileSystem.File.OpenRead(path) : null;

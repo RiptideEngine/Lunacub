@@ -1,8 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 
-namespace Caxivitual.Lunacub.Importing.Collections;
+namespace Caxivitual.Lunacub;
 
-public sealed class ResourceLibraryCollection<TElement> : Collection<ResourceLibrary<TElement>> where TElement : IRegistryElement {
+public class ResourceLibraryCollection<TLibrary, TElement> : Collection<TLibrary> where TLibrary : ResourceLibrary<TElement> {
     public bool ContainResource(ResourceID rid) {
         foreach (var library in this) {
             if (library.Registry.ContainsKey(rid)) return true;
@@ -19,13 +19,13 @@ public sealed class ResourceLibraryCollection<TElement> : Collection<ResourceLib
         return null;
     }
     
-    protected override void InsertItem(int index, ResourceLibrary<TElement> item) {
+    protected override void InsertItem(int index, TLibrary item) {
         ValidateLibrary(item);
         
         base.InsertItem(index, item);
     }
 
-    protected override void SetItem(int index, ResourceLibrary<TElement> item) {
+    protected override void SetItem(int index, TLibrary item) {
         ValidateLibrary(item);
 
         if (!ReferenceEquals(item, this[index])) {
@@ -34,7 +34,7 @@ public sealed class ResourceLibraryCollection<TElement> : Collection<ResourceLib
     }
 
     [StackTraceHidden]
-    private void ValidateLibrary(ResourceLibrary<TElement> library) {
+    private void ValidateLibrary(TLibrary library) {
         ArgumentNullException.ThrowIfNull(library);
         
         foreach (var insertedLibrary in this) {

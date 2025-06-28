@@ -1,6 +1,9 @@
 ﻿using Caxivitual.Lunacub.Building.Core;
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
+using System.Text;
+using FileResourceLibrary = Caxivitual.Lunacub.Importing.Core.FileResourceLibrary;
+using MemoryResourceLibrary = Caxivitual.Lunacub.Building.Core.MemoryResourceLibrary;
 
 namespace Caxivitual.Lunacub.Examples.SimpleResources;
 
@@ -30,13 +33,20 @@ internal static partial class Program {
             SerializerFactories = {
                 new SimpleResourceSerializerFactory(),
             },
-            Resources = {
-                [1] = new("Resource", [], new() {
-                    Provider = MemoryResourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
-                    Options = new() {
-                        ImporterName = nameof(SimpleResourceImporter),
+            Libraries = {
+                new MemoryResourceLibrary {
+                    Registry = {
+                        [1] = new("Resource", [], new() {
+                            Address = null,
+                            Options = new() {
+                                ImporterName = nameof(SimpleResourceImporter),
+                            },
+                        }),
                     },
-                }),
+                    Resources = {
+                        [1] = MemoryResourceLibrary.AsUtf8("""{"Value":1}""", DateTime.MinValue),
+                    },
+                },
             },
         };
 
@@ -52,16 +62,11 @@ internal static partial class Program {
     }
     
     private static async Task ImportResource(string resourceDirectory) {
-        using ImportEnvironment importEnvironment = new ImportEnvironment {
-            Deserializers = {
-                [nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer(),
-            },
-            Logger = _logger,
-            Libraries = {
-                new FileResourceLibrary(resourceDirectory)
-            }
-        };
-        
+        using ImportEnvironment importEnvironment = new ImportEnvironment();
+        importEnvironment.Deserializers[nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer();
+        importEnvironment.Logger = _logger;
+        importEnvironment.Libraries.Add(new FileResourceLibrary(resourceDirectory));
+
         ResourceHandle<SimpleResource> handle = await importEnvironment.Import<SimpleResource>(1).Task;
         
         _logger.LogInformation("Imported: {value}.", handle.Value);

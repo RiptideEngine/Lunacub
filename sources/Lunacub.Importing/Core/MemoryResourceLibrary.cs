@@ -13,7 +13,7 @@ public sealed class MemoryResourceLibrary : ImportResourceLibrary {
         Resources = new(resources);
     }
 
-    protected override Stream? CreateResourceStreamCore(ResourceID rid, PrimitiveRegistryElement element) {
+    protected override Stream? CreateResourceStreamCore(ResourceID rid, byte options) {
         if (!Resources.TryGetValue(rid, out var buffer)) return null;
 
         return new MemoryStream(ImmutableCollectionsMarshal.AsArray(buffer) ?? [], false);

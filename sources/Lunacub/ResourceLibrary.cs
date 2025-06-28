@@ -1,32 +1,34 @@
-﻿namespace Caxivitual.Lunacub;
+﻿using Caxivitual.Lunacub.Exceptions;
 
-public abstract class ResourceLibrary<TElement> where TElement : IRegistryElement {
-    public ResourceRegistry<TElement> Registry { get; }
+namespace Caxivitual.Lunacub;
 
-    protected ResourceLibrary(ResourceRegistry<TElement> registry) {
+public abstract class ResourceLibrary<TElementOption> {
+    public ResourceRegistry<TElementOption> Registry { get; }
+
+    protected ResourceLibrary(ResourceRegistry<TElementOption> registry) {
         Registry = registry;
     }
 
     public Stream? CreateResourceStream(ResourceID resourceId) {
-        if (!Registry.TryGetValue(resourceId, out TElement? element)) return null;
+        if (!Registry.TryGetValue(resourceId, out ResourceRegistry<TElementOption>.Element element)) return null;
 
-        Stream? stream = CreateResourceStreamCore(resourceId, element);
+        Stream? stream = CreateResourceStreamCore(resourceId, element.Option);
         
         ValidateStream(stream);
 
         return stream;
     }
 
-    protected abstract Stream? CreateResourceStreamCore(ResourceID resourceId, TElement element);
+    protected abstract Stream? CreateResourceStreamCore(ResourceID resourceId, TElementOption options);
 
     private static void ValidateStream(Stream? stream) {
         if (stream != null) {
             if (!stream.CanRead || !stream.CanSeek) {
-                throw new InvalidOperationException("Created Stream must be readable and seekable.");
+                throw new InvalidResourceStreamException("Returned Stream must be readable and seekable.");
             }
     
             if (stream.CanWrite) {
-                throw new InvalidOperationException("Created Stream must not be writable for security reason.");
+                throw new InvalidResourceStreamException("Returned Stream must not be writable for security reason.");
             }
         }
     }

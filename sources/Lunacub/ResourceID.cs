@@ -8,7 +8,6 @@ namespace Caxivitual.Lunacub;
 /// Represents an identification number of a resource.
 /// </summary>
 [JsonConverter(typeof(ResourceIDConverter))]
-[CLSCompliant(false)]
 public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>, ISpanFormattable, IUtf8SpanFormattable, ISpanParsable<ResourceID>, IUtf8SpanParsable<ResourceID> {
     /// <summary>
     /// Represents a default or null value of the <see cref="ResourceID"/> type, used to signify the absence of a
