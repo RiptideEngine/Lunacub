@@ -35,16 +35,14 @@ internal static class Program {
             },
             Libraries = {
                 new(new MemorySourceProvider {
-                    Resources = {
+                    Sources = {
                         ["PrimaryResource"] = MemorySourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
                     },
                 }) {
                     Registry = {
                         [1] = new("Resource", [], new() {
                             Addresses = new("PrimaryResource"),
-                            Options = new() {
-                                ImporterName = nameof(SimpleResourceImporter),
-                            },
+                            Options = new(nameof(SimpleResourceImporter)),
                         }),
                     },
                 },
@@ -66,7 +64,11 @@ internal static class Program {
         using ImportEnvironment importEnvironment = new ImportEnvironment();
         importEnvironment.Deserializers[nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer();
         importEnvironment.Logger = _logger;
-        importEnvironment.Libraries.Add(new(new FileSourceProvider(resourceDirectory)));
+        importEnvironment.Libraries.Add(new(new FileSourceProvider(resourceDirectory)) {
+            Registry = {
+                [1] = new("Resource", [], 0),
+            },
+        });
 
         ResourceHandle<SimpleResource> handle = await importEnvironment.Import<SimpleResource>(1).Task;
         

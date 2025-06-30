@@ -48,7 +48,15 @@ partial class BuildSession {
                     if (Results.ContainsKey(resourceId)) continue;
 
                     try {
-                        dependencyIds = importer.ExtractDependencies(streams);
+                        IReadOnlyCollection<ResourceID> extractedDependencies = importer.ExtractDependencies(streams);
+
+                        if (extractedDependencies is IReadOnlySet<ResourceID> dependencySet && !dependencySet.Contains(resourceId)) {
+                            dependencyIds = dependencySet;
+                        } else {
+                            HashSet<ResourceID> createdSet = new(extractedDependencies);
+                            createdSet.Remove(resourceId);
+                            dependencyIds = createdSet;
+                        }
                     } catch (Exception e) {
                         Results.Add(resourceId, new(BuildStatus.ExtractDependenciesFailed, ExceptionDispatchInfo.Capture(e)));
                         continue;
@@ -91,6 +99,7 @@ partial class BuildSession {
             }
 
             void Visit(ResourceID rid, HashSet<ResourceID> temporaryMarks, HashSet<ResourceID> permanentMarks, Stack<ResourceID> path) {
+                if (!_graph.ContainsKey(rid)) return;
                 if (permanentMarks.Contains(rid)) return;
                 
                 path.Push(rid);

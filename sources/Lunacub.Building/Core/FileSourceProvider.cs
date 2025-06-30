@@ -2,7 +2,7 @@
 
 namespace Caxivitual.Lunacub.Building.Core;
 
-public sealed class FileSourceProvider : SourceProvider {
+public sealed class FileSourceProvider : BuildSourceProvider {
     public string RootDirectory { get; set; }
     
     public FileSourceProvider(string rootDirectory) {

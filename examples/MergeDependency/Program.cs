@@ -1,10 +1,10 @@
 ﻿using Caxivitual.Lunacub.Building.Core;
-using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
 using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
 
-namespace Caxivitual.Lunacub.Examples.ResourceReferencing;
+namespace Caxivitual.Lunacub.Examples.MergeDependency;
 
 internal static class Program {
     private static readonly ILogger _logger = LoggerFactory.Create(builder => {
@@ -21,34 +21,48 @@ internal static class Program {
         BuildResources(reportDir, resOutputDir);
         await ImportResource(resOutputDir);
     }
-
+    
     private static void BuildResources(string reportDirectory, string outputDirectory) {
         _logger.LogInformation("Building resources...");
         
         using BuildEnvironment env = new(new FileOutputSystem(reportDirectory, outputDirectory)) {
+            Logger = _logger,
             Importers = {
                 [nameof(SimpleResourceImporter)] = new SimpleResourceImporter(),
-                [nameof(ReferencingResourceImporter)] = new ReferencingResourceImporter(),
+                [nameof(MergingResourceImporter)] = new MergingResourceImporter(),
+            },
+            Processors = {
+                [nameof(MergingResourceProcessor)] = new MergingResourceProcessor(),
             },
             SerializerFactories = {
                 new SimpleResourceSerializerFactory(),
-                new ReferencingResourceSerializerFactory(),
+                new MergingResourceSerializerFactory(),
             },
             Libraries = {
                 new(new MemorySourceProvider {
                     Sources = {
-                        ["Resource"] = MemorySourceProvider.AsUtf8("""{"ReferenceId":2}""", default),
-                        ["Reference"] = MemorySourceProvider.AsUtf8("""{"Value":1}""", default),
+                        ["Resource1"] = MemorySourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
+                        ["Resource2"] = MemorySourceProvider.AsUtf8("""{"Value":2}""", DateTime.MinValue),
+                        ["Resource3"] = MemorySourceProvider.AsUtf8("""{"Value":3}""", DateTime.MinValue),
+                        ["MergingResource"] = MemorySourceProvider.AsUtf8("""{"Dependencies":[1,2,3]}""", DateTime.MinValue),
                     },
                 }) {
                     Registry = {
-                        [1] = new("Resource", [], new() {
-                            Addresses = new("Resource"),
-                            Options = new(nameof(ReferencingResourceImporter)),
-                        }),
-                        [2] = new("Reference", [], new() {
-                            Addresses = new("Reference"),
+                        [1] = new("Resource1", [], new() {
+                            Addresses = new("Resource1"),
                             Options = new(nameof(SimpleResourceImporter)),
+                        }),
+                        [2] = new("Resource2", [], new() {
+                            Addresses = new("Resource2"),
+                            Options = new(nameof(SimpleResourceImporter)),
+                        }),
+                        [3] = new("Resource3", [], new() {
+                            Addresses = new("Resource3"),
+                            Options = new(nameof(SimpleResourceImporter)),
+                        }),
+                        [4] = new("MergeingResource", [], new() {
+                            Addresses = new("MergingResource"),
+                            Options = new(nameof(MergingResourceImporter), nameof(MergingResourceProcessor)),
                         }),
                     },
                 },
@@ -56,7 +70,7 @@ internal static class Program {
         };
 
         var result = env.BuildResources();
-
+        
         foreach ((var rid, var resourceResult) in result.ResourceResults) {
             if (resourceResult.IsSuccess) {
                 _logger.LogInformation("Resource {rid} build status: {status}.", rid, resourceResult.Status);
@@ -67,26 +81,25 @@ internal static class Program {
     }
     
     private static async Task ImportResource(string resourceDirectory) {
-        _logger.LogInformation("Importing resources...");
-        
         using ImportEnvironment importEnvironment = new ImportEnvironment {
             Deserializers = {
                 [nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer(),
-                [nameof(ReferencingResourceDeserializer)] = new ReferencingResourceDeserializer(),
+                [nameof(MergingResourceDeserializer)] = new MergingResourceDeserializer(),
             },
             Logger = _logger,
             Libraries = {
                 new(new FileSourceProvider(resourceDirectory)) {
                     Registry = {
-                        [1] = new("Resource", [], 0),
-                        [2] = new("Reference", [], 0),
-                    },
+                        [4] = new("Resource", [], 0),
+                    }
                 },
             },
         };
+
+        ResourceHandle<MergingResource> handle = await importEnvironment.Import<MergingResource>(4).Task;
         
-        ResourceHandle<ReferencingResource> handle = await importEnvironment.Import<ReferencingResource>(1).Task;
-        
-        _logger.LogInformation("Reference value: {value}.", handle.Value!.Reference!.Value);
+        _logger.LogInformation("Values: {values}", string.Join(", ", handle.Value!.Values));
+
+        await Task.Delay(100);
     }
 }

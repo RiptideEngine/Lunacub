@@ -11,7 +11,7 @@ public abstract class Importer {
 
     public virtual void ValidateResource(BuildingResource resource) { }
 
-    public virtual IReadOnlySet<ResourceID> ExtractDependencies(SourceStreams sourceStream) {
+    public virtual IReadOnlyCollection<ResourceID> ExtractDependencies(SourceStreams sourceStream) {
         return FrozenSet<ResourceID>.Empty;
     }
     

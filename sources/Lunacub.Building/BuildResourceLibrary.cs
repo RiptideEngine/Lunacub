@@ -4,11 +4,11 @@ using System.Collections.Frozen;
 namespace Caxivitual.Lunacub.Building;
 
 public sealed class BuildResourceLibrary {
-    private readonly SourceProvider _provider;
+    private readonly BuildSourceProvider _provider;
 
     public ResourceRegistry<BuildingResource> Registry { get; }
     
-    public BuildResourceLibrary(SourceProvider sourceProvider) {
+    public BuildResourceLibrary(BuildSourceProvider sourceProvider) {
         _provider = sourceProvider;
         Registry = [];
     }

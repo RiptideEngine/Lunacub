@@ -1,6 +1,6 @@
 ﻿using Caxivitual.Lunacub.Exceptions;
 
-namespace Caxivitual.Lunacub.Building;
+namespace Caxivitual.Lunacub;
 
 public abstract class SourceProvider {
     public Stream? CreateStream(string address) {
@@ -20,6 +20,4 @@ public abstract class SourceProvider {
     }
 
     protected abstract Stream? CreateStreamCore(string address);
-
-    public abstract DateTime GetLastWriteTime(string address);
 }

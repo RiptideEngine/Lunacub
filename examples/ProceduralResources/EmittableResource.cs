@@ -6,11 +6,7 @@ public record EmittableResource {
 }
 
 public sealed class EmittableResourceDTO : ContentRepresentation {
-    public int Value;
-
-    public EmittableResourceDTO(int value) {
-        Value = value;
-    }
+    public int Value { get; set; }
 }
 
 public sealed class ProcessedEmittableResourceDTO : ContentRepresentation {

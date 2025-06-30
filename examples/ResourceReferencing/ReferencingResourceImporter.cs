@@ -5,11 +5,9 @@ namespace Caxivitual.Lunacub.Examples.ResourceReferencing;
 
 [AutoTimestampVersion("yyyMMddHHmmss")]
 public sealed partial class ReferencingResourceImporter : Importer<ReferencingResourceDTO> {
-    private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerOptions.Default) {
-        IncludeFields = true,
-    };
-    
-    protected override ReferencingResourceDTO Import(Stream resourceStream, ImportingContext context) {
-        return JsonSerializer.Deserialize<ReferencingResourceDTO>(resourceStream, _jsonOptions)!;
+    public override ImporterFlags Flags => ImporterFlags.NoDependency;
+
+    protected override ReferencingResourceDTO Import(SourceStreams streams, ImportingContext context) {
+        return JsonSerializer.Deserialize<ReferencingResourceDTO>(streams.PrimaryStream!)!;
     }
 }

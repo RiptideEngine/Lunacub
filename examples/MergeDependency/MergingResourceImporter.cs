@@ -1,8 +1,7 @@
 ﻿using Caxivitual.Lunacub.Building.Attributes;
-using System.Text;
 using System.Text.Json;
 
-namespace Caxivitual.Lunacub.Examples.DependencyImporting;
+namespace Caxivitual.Lunacub.Examples.MergeDependency;
 
 [AutoTimestampVersion("yyyMMddHHmmss")]
 public sealed partial class MergingResourceImporter : Importer<MergingResourceDTO> {

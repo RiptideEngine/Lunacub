@@ -1,6 +1,4 @@
-﻿using System.Numerics;
-
-namespace Caxivitual.Lunacub.Examples.ProceduralResources;
+﻿namespace Caxivitual.Lunacub.Examples.MergeDependency;
 
 public record SimpleResource(int Value);
 

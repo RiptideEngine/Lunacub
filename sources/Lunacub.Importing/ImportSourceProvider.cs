@@ -2,7 +2,7 @@
 
 namespace Caxivitual.Lunacub.Importing;
 
-public abstract class SourceProvider {
+public abstract class ImportSourceProvider : SourceProvider {
     public Stream? CreateStream(ResourceID resourceId) {
         if (CreateStreamCore(resourceId) is { } stream) {
             if (!stream.CanRead || !stream.CanSeek) {

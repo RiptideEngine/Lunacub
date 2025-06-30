@@ -6,7 +6,9 @@ namespace Caxivitual.Lunacub.Examples.ProceduralResources;
 public sealed partial class EmittableResourceProcessor : Processor<EmittableResourceDTO, ProcessedEmittableResourceDTO> {
     protected override ProcessedEmittableResourceDTO Process(EmittableResourceDTO importedObject, ProcessingContext context) {
         context.ProceduralResources.Add(1, new() {
-            Object = new SimpleResourceDTO(importedObject.Value),
+            Object = new SimpleResourceDTO {
+                Value = importedObject.Value,
+            },
         });
 
         return new(importedObject.Value, context.BuildingResourceId.Combine(1));

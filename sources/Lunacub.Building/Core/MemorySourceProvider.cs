@@ -2,15 +2,15 @@
 
 namespace Caxivitual.Lunacub.Building.Core;
 
-public sealed class MemorySourceProvider : SourceProvider {
-    public Dictionary<string, Element> Resources { get; } = [];
+public sealed class MemorySourceProvider : BuildSourceProvider {
+    public Dictionary<string, Element> Sources { get; } = [];
 
     protected override Stream? CreateStreamCore(string address) {
-        return new MemoryStream(ImmutableCollectionsMarshal.AsArray(Resources[address].Content)!, false);
+        return new MemoryStream(ImmutableCollectionsMarshal.AsArray(Sources[address].Content)!, false);
     }
 
     public override DateTime GetLastWriteTime(string address) {
-        return Resources[address].LastWriteTime;
+        return Sources[address].LastWriteTime;
     }
 
     public static Element AsUtf8(ReadOnlySpan<char> content, DateTime lastWriteTime) {

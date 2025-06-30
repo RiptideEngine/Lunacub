@@ -38,14 +38,19 @@ internal static class Program {
                 new SimpleResourceSerializerFactory(),
                 new EmittableResourceSerializerFactory(),
             },
-            Resources = {
-                [1] = new("Resource", [], new() {
-                    Provider = MemorySourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
-                    Options = new() {
-                        ImporterName = nameof(EmittableResourceImporter),
-                        ProcessorName = nameof(EmittableResourceProcessor),
+            Libraries = {
+                new(new MemorySourceProvider() {
+                    Sources = {
+                        ["Resource"] = MemorySourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
                     },
-                }),
+                }) {
+                    Registry = {
+                        [1] = new("Resource", [], new() {
+                            Addresses = new("Resource"),
+                            Options = new(nameof(EmittableResourceImporter), nameof(EmittableResourceProcessor)),
+                        }),
+                    },
+                },
             },
         };
         
@@ -70,7 +75,11 @@ internal static class Program {
             },
             Logger = _logger,
             Libraries = {
-                new FileSourceProvider(resourceDirectory)
+                new(new FileSourceProvider(resourceDirectory)) {
+                    Registry = {
+                        [1] = new("Resource", [], 0),
+                    },
+                },
             },
         };
         

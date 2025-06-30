@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Text.Json;
 using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
+using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
 
 namespace Caxivitual.Lunacub.Examples.DependencyImporting;
 
@@ -39,32 +40,34 @@ internal static class Program {
                 new SimpleResourceSerializerFactory(),
                 new MergingResourceSerializerFactory(),
             },
-            Resources = {
-                [1] = new("1", [], new() {
-                    Provider = new Building.Core.FileSourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource1.json")),
-                    Options = new() {
-                        ImporterName = nameof(SimpleResourceImporter),
+            Libraries = {
+                new(new MemorySourceProvider {
+                    Sources = {
+                        ["Resource1"] = MemorySourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
+                        ["Resource2"] = MemorySourceProvider.AsUtf8("""{"Value":2}""", DateTime.MinValue),
+                        ["Resource3"] = MemorySourceProvider.AsUtf8("""{"Value":3}""", DateTime.MinValue),
+                        ["MergingResource"] = MemorySourceProvider.AsUtf8("""{"Dependencies":[1,2,3]}""", DateTime.MinValue),
                     },
-                }),
-                [2] = new("2", [], new() {
-                    Provider = new Building.Core.FileSourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource2.json")),
-                    Options = new() {
-                        ImporterName = nameof(SimpleResourceImporter),
+                }) {
+                    Registry = {
+                        [1] = new("Resource1", [], new() {
+                            Addresses = new("Resource1"),
+                            Options = new(nameof(SimpleResourceImporter)),
+                        }),
+                        [2] = new("Resource2", [], new() {
+                            Addresses = new("Resource2"),
+                            Options = new(nameof(SimpleResourceImporter)),
+                        }),
+                        [3] = new("Resource3", [], new() {
+                            Addresses = new("Resource3"),
+                            Options = new(nameof(SimpleResourceImporter)),
+                        }),
+                        [4] = new("MergeingResource", [], new() {
+                            Addresses = new("MergingResource"),
+                            Options = new(nameof(MergingResourceImporter), nameof(MergingResourceProcessor)),
+                        }),
                     },
-                }),
-                [3] = new("3", [], new() {
-                    Provider = new Building.Core.FileSourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource3.json")),
-                    Options = new() {
-                        ImporterName = nameof(SimpleResourceImporter),
-                    },
-                }),
-                [4] = new("4", [], new() {
-                    Provider = new Building.Core.FileSourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "MergingResource.json")),
-                    Options = new() {
-                        ImporterName = nameof(MergingResourceImporter),
-                        ProcessorName = nameof(MergingResourceProcessor),
-                    },
-                }),
+                },
             },
         };
 
@@ -89,7 +92,14 @@ internal static class Program {
             },
             Logger = _logger,
             Libraries = {
-                new FileSourceProvider(resourceDirectory),
+                new(new FileSourceProvider(resourceDirectory)) {
+                    Registry = {
+                        [1] = new("Resource1", [], 0),
+                        [2] = new("Resource2", [], 0),
+                        [3] = new("Resource3", [], 0),
+                        [4] = new("MergingResource", [], 0),
+                    }
+                },
             },
         };
 
