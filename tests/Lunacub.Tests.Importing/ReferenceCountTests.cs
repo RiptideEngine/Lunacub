@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Tests.Importing;
+﻿using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
+
+namespace Caxivitual.Lunacub.Tests.Importing;
 
 public class ReferenceCountTests : IClassFixture<ComponentsFixture>, IDisposable {
     private readonly ImportEnvironment _environment;
@@ -8,7 +10,7 @@ public class ReferenceCountTests : IClassFixture<ComponentsFixture>, IDisposable
         using BuildEnvironment buildEnvironment = new(new MockOutputSystem(_fileSystem)) {
             Resources = {
                 [1] = new("Resource", [], new() {
-                    Provider = new MemoryResourceProvider("{}"u8, DateTime.MinValue),
+                    Provider = new MemorySourceProvider("{}"u8, DateTime.MinValue),
                     Options = new() {
                         ImporterName = nameof(DisposableResourceImporter),
                     },

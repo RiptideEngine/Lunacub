@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
 
 namespace Caxivitual.Lunacub.Examples.TextureViewer;
 
@@ -15,7 +16,7 @@ public static class Resources {
     private static Renderer _renderer = null!;
     private static ILogger _logger = null!;
     
-    private static FileResourceLibrary _resourceLibrary = null!;
+    private static FileSourceProvider _sourceProvider = null!;
     private static ImportEnvironment _importEnv = null!;
     
     public static void Initialize(Renderer renderer, ILogger logger) {
@@ -62,7 +63,7 @@ public static class Resources {
 
             foreach ((var id, ResourceElement element) in resourceElements) {
                 environment.Resources.Add(id, new(id.ToString(), [], new() {
-                    Provider = new FileResourceProvider(Path.Combine(resourceDirectoryPath, element.Path)),
+                    Provider = new Building.Core.FileSourceProvider(Path.Combine(resourceDirectoryPath, element.Path)),
                     Options = new() {
                         ImporterName = element.ImporterName,
                         ProcessorName = element.ProcessorName,
@@ -92,7 +93,7 @@ public static class Resources {
         
         _logger.LogInformation("{text}", sb.ToString());
 
-        _resourceLibrary = new(resourcesDirectory);
+        _sourceProvider = new(resourcesDirectory);
     }
 
     private static void CreateImportEnvironment() {
@@ -109,7 +110,7 @@ public static class Resources {
                 }),
             },
             Libraries = {
-                _resourceLibrary,
+                _sourceProvider,
             },
             Logger = _logger,
         };

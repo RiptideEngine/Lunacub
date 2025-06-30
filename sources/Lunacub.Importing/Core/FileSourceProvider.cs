@@ -3,10 +3,10 @@
 namespace Caxivitual.Lunacub.Importing.Core;
 
 [ExcludeFromCodeCoverage]
-public sealed class FileResourceLibrary : ImportResourceLibrary {
+public sealed class FileSourceProvider : SourceProvider {
     public string RootDirectory { get; }
 
-    public FileResourceLibrary(string rootDirectory) {
+    public FileSourceProvider(string rootDirectory) {
         RootDirectory = Path.GetFullPath(rootDirectory);
         
         if (!Directory.Exists(RootDirectory)) {
@@ -14,7 +14,7 @@ public sealed class FileResourceLibrary : ImportResourceLibrary {
         }
     }
 
-    protected override Stream? CreateResourceStreamCore(ResourceID resourceId, byte options) {
+    protected override Stream? CreateStreamCore(ResourceID resourceId) {
         string path = Path.Combine(RootDirectory, $"{resourceId:X}{CompilingConstants.CompiledResourceExtension}");
         
         return File.Exists(path) ? File.OpenRead(path) : null;

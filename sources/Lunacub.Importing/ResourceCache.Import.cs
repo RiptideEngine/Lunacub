@@ -33,7 +33,7 @@ partial class ResourceCache {
     private async Task<ResourceContainer?> GetOrCreateResourceContainer(ResourceID resourceId, Type resourceType) {
         if (resourceId == ResourceID.Null) return null;
         
-        if (!_environment.Libraries.ContainResource(resourceId)) {
+        if (!_environment.Libraries.ContainsResource(resourceId)) {
             Log.UnregisteredResource(_environment.Logger, resourceId);
             return null;
         }

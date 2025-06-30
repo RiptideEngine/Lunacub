@@ -7,7 +7,7 @@ public readonly struct BuildingResource : IEquatable<BuildingResource> {
     /// <summary>
     /// Gets the array of addresses that will be used by <see cref="BuildResourceLibrary"/> to locate resource content.
     /// </summary>
-    public required ResourceAddresses Addresses { get; init; }
+    public required SourceAddresses Addresses { get; init; }
         
     /// <summary>
     /// Gets the resource building options.
@@ -15,12 +15,12 @@ public readonly struct BuildingResource : IEquatable<BuildingResource> {
     public required BuildingOptions Options { get; init; }
         
     [SetsRequiredMembers]
-    public BuildingResource(ResourceAddresses address, BuildingOptions options) {
+    public BuildingResource(SourceAddresses address, BuildingOptions options) {
         Addresses = address;
         Options = options;
     }
 
-    public void Deconstruct(out ResourceAddresses addresses, out BuildingOptions options) {
+    public void Deconstruct(out SourceAddresses addresses, out BuildingOptions options) {
         addresses = Addresses;
         options = Options;
     }

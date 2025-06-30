@@ -9,14 +9,14 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
             throw new JsonException();
         }
 
-        DateTime sourceLastWriteTime = default;
+        SourceLastWriteTimes sourceLastWriteTimes = default;
         BuildingOptions buildingOptions = default;
         IReadOnlySet<ResourceID> dependencies = FrozenSet<ResourceID>.Empty;
         ComponentVersions componentVersions = default;
             
         while (reader.Read()) {
             if (reader.TokenType == JsonTokenType.EndObject) {
-                return new(sourceLastWriteTime, buildingOptions, dependencies, componentVersions);
+                return new(sourceLastWriteTimes, buildingOptions, dependencies, componentVersions);
             }
 
             if (reader.TokenType != JsonTokenType.PropertyName) {
@@ -27,8 +27,8 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
             reader.Read();
 
             switch (propertyName) {
-                case nameof(IncrementalInfo.SourceLastWriteTime):
-                    sourceLastWriteTime= reader.GetDateTime();
+                case nameof(IncrementalInfo.SourcesLastWriteTime):
+                    sourceLastWriteTimes = JsonSerializer.Deserialize<SourceLastWriteTimes>(ref reader, options);
                     break;
                     
                 case nameof(IncrementalInfo.Options):
@@ -55,7 +55,8 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
     public override void Write(Utf8JsonWriter writer, IncrementalInfo info, JsonSerializerOptions options) {
         writer.WriteStartObject();
         
-        writer.WriteString(nameof(IncrementalInfo.SourceLastWriteTime), info.SourceLastWriteTime);
+        writer.WritePropertyName(nameof(IncrementalInfo.SourcesLastWriteTime));
+        JsonSerializer.Serialize(writer, info.SourcesLastWriteTime, options);
         
         writer.WritePropertyName(nameof(IncrementalInfo.Options));
         JsonSerializer.Serialize(writer, info.Options, options);

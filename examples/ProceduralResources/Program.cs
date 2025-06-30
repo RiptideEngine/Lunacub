@@ -2,6 +2,8 @@
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
+using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
 
 namespace Caxivitual.Lunacub.Examples.ProceduralResources;
 
@@ -38,7 +40,7 @@ internal static class Program {
             },
             Resources = {
                 [1] = new("Resource", [], new() {
-                    Provider = MemoryResourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
+                    Provider = MemorySourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
                     Options = new() {
                         ImporterName = nameof(EmittableResourceImporter),
                         ProcessorName = nameof(EmittableResourceProcessor),
@@ -68,7 +70,7 @@ internal static class Program {
             },
             Logger = _logger,
             Libraries = {
-                new FileResourceLibrary(resourceDirectory)
+                new FileSourceProvider(resourceDirectory)
             },
         };
         

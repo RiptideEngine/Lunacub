@@ -13,11 +13,17 @@ public enum BuildStatus {
     /// Indicates that the resource doesn't need to be rebuilt because it's already up-to-date.
     /// </summary>
     Cached = 1,
-
+    
     /// <summary>
-    /// Indicates that the library returned a null <see cref="Stream"/> of the resource file.
+    /// Indicates that the resource is requesting to be imported by an unregistered <see cref="Importer"/>.
     /// </summary>
-    NullResourceStream = 1000,
+    /// <seealso cref="BuildEnvironment.Importers"/>
+    UnknownImporter = 1000,
+    
+    /// <summary>
+    /// Indicates that the <see cref="BuildingResource"/> instance deemed invalid by the <see cref="Importer"/>.
+    /// </summary>
+    InvalidBuildingResource,
     
     /// <summary>
     /// Indicates that the library returned a <see cref="Stream"/> instance that is either writable, or not seekable nor seekable.
@@ -26,15 +32,24 @@ public enum BuildStatus {
     InvalidResourceStream,
     
     /// <summary>
-    /// Indicates that the resource is requesting to be imported by an unregistered <see cref="Importer"/>.
+    /// Indicates that the <see cref="BuildResourceLibrary"/> returned a null primary <see cref="Stream"/> of the resource content.
     /// </summary>
-    /// <seealso cref="BuildEnvironment.Importers"/>
-    UnknownImporter = 2000,
+    NullPrimaryResourceStream,
+    
+    /// <summary>
+    /// Indicates that the <see cref="BuildResourceLibrary"/> returned a null secondary <see cref="Stream"/> of the resource content.
+    /// </summary>
+    NullSecondaryResourceStream,
     
     /// <summary>
     /// Indicates that the <see cref="Importer"/> failed to extract the dependency informations from the resource stream.
     /// </summary>
     ExtractDependenciesFailed,
+    
+    /// <summary>
+    /// Indicates that the <see cref="BuildResourceLibrary"/> failed to retrieve the last write time information.
+    /// </summary>
+    GetSourceLastWriteTimesFailed,
     
     /// <summary>
     /// Indicates that the resource failed to be imported by <see cref="Importer"/> due to an exception.
@@ -45,7 +60,7 @@ public enum BuildStatus {
     /// Indicates that the resource is requesting to be processed by an unregistered <see cref="Processor"/>.
     /// </summary>
     /// <seealso cref="BuildEnvironment.Processors"/>
-    UnknownProcessor = 3000,
+    UnknownProcessor = 2000,
     
     /// <summary>
     /// Indicates that the <see cref="Processor"/> cannot process the <see cref="ContentRepresentation"/> returned by <see cref="Importer"/>.
@@ -60,5 +75,5 @@ public enum BuildStatus {
     /// <summary>
     /// Indicates that the resource failed to be serialized due to an exception.
     /// </summary>
-    SerializationFailed = 4000,
+    SerializationFailed = 3000,
 }

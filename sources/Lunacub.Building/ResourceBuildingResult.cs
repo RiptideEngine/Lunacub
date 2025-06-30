@@ -26,7 +26,7 @@ public readonly struct ResourceBuildingResult {
     /// <summary>
     /// Indicates whether the resource building process completed successfully.
     /// </summary>
-    public bool IsSuccess => Status is < BuildStatus.NullResourceStream and >= BuildStatus.Success;
+    public bool IsSuccess => Status is < BuildStatus.NullPrimaryResourceStream and >= BuildStatus.Success;
 
     internal ResourceBuildingResult(BuildStatus status, ExceptionDispatchInfo? exception = null) : this(status, FrozenDictionary<ProceduralResourceID, ResourceID>.Empty, exception) { }
 

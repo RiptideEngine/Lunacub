@@ -18,7 +18,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
     [Fact]
     public void BuildSimpleResource_OutputCorrectBinary() {
         _environment.Resources.Add(1, new("Resource", [], new() {
-            Provider = new MemoryResourceProvider("""{"Value":255}"""u8, DateTime.MinValue),
+            Provider = new MemorySourceProvider("""{"Value":255}"""u8, DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(SimpleResourceImporter),
             },
@@ -43,13 +43,13 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
     [Fact]
     public unsafe void BuildReferenceResource_OutputCorrectBinary() {
         _environment.Resources.Add(1, new("Referree", [], new() {
-            Provider = new MemoryResourceProvider("""{"Reference":2,"Value":50}"""u8, DateTime.MinValue),
+            Provider = new MemorySourceProvider("""{"Reference":2,"Value":50}"""u8, DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ReferencingResourceImporter),
             },
         }));
         _environment.Resources.Add(2, new("Reference", [], new() {
-            Provider = new MemoryResourceProvider("""{"Reference":1,"Value":100}"""u8, DateTime.MinValue),
+            Provider = new MemorySourceProvider("""{"Reference":1,"Value":100}"""u8, DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ReferencingResourceImporter),
             },
@@ -91,7 +91,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
     [Fact]
     public void BuildOptionsResource_Json_OutputCorrectBinary() {
         _environment.Resources.Add(1, new("Resource", [], new() {
-            Provider = new MemoryResourceProvider("[1,2,3,4,5]"u8, DateTime.MinValue),
+            Provider = new MemorySourceProvider("[1,2,3,4,5]"u8, DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ConfigurableResourceImporter),
                 Options = new ConfigurableResourceDTO.Options(OutputType.Json),
@@ -118,7 +118,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
     [Fact]
     public void BuildOptionsResource_Binary_OutputCorrectBinary() {
         _environment.Resources.Add(1, new("Resource", [], new() {
-            Provider = new MemoryResourceProvider("[1,2,3,4,5]"u8, DateTime.MinValue),
+            Provider = new MemorySourceProvider("[1,2,3,4,5]"u8, DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ConfigurableResourceImporter),
                 Options = new ConfigurableResourceDTO.Options(OutputType.Binary),

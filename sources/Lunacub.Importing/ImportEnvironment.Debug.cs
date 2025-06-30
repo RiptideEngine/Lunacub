@@ -23,7 +23,7 @@ partial class ImportEnvironment {
     /// <returns>The resource status of the resource associates with <paramref name="rid"/>.</returns>
     /// <seealso cref="ResourceStatus"/>
     internal ResourceStatus GetResourceStatus(ResourceID rid) {
-        if (!Libraries.ContainResource(rid)) return ResourceStatus.Unregistered;
+        if (!Libraries.ContainsResource(rid)) return ResourceStatus.Unregistered;
         
         return _resourceCache.GetResourceStatus(rid);
     }

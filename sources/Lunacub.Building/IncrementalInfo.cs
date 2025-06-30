@@ -10,10 +10,12 @@ namespace Caxivitual.Lunacub.Building;
 /// </summary>
 [JsonConverter(typeof(IncrementalInfoConverter))]
 public readonly struct IncrementalInfo {
+    // TODO: Add addresses.
+    
     /// <summary>
     /// Represents the last write time of the source resource data.
     /// </summary>
-    public readonly DateTime SourceLastWriteTime;
+    public readonly SourceLastWriteTimes SourcesLastWriteTime;
     
     /// <summary>
     /// Represents the options from the last build of the resource.
@@ -35,21 +37,21 @@ public readonly struct IncrementalInfo {
     /// Initializes a new instance of <see cref="IncrementalInfo"/> with empty dependencies, specified source resource
     /// last write time and options.
     /// </summary>
-    /// <param name="sourceLastWriteTime">The last write time of the source resource data.</param>
+    /// <param name="sourcesLastWriteTime">The last write times of resource sources.</param>
     /// <param name="options">The previously build options of the resource.</param>
     /// <param name="componentVersions">The version strings of <see cref="Importer"/> and <see cref="Processor"/> that used to import and process the resource.</param>
-    public IncrementalInfo(DateTime sourceLastWriteTime, BuildingOptions options, ComponentVersions componentVersions) : this(sourceLastWriteTime, options, FrozenSet<ResourceID>.Empty, componentVersions) {}
+    public IncrementalInfo(SourceLastWriteTimes sourcesLastWriteTime, BuildingOptions options, ComponentVersions componentVersions) : this(sourcesLastWriteTime, options, FrozenSet<ResourceID>.Empty, componentVersions) {}
     
     /// <summary>
     /// Initializes a new instance of <see cref="IncrementalInfo"/> with a specified source resource last write time, options,
     /// dependencies and dependents.
     /// </summary>
-    /// <param name="sourceLastWriteTime">The last write time of the source resource data.</param>
+    /// <param name="sourcesLastWriteTime">The last write times of resource sources.</param>
     /// <param name="options">The previously build options of the resource.</param>
     /// <param name="dependencies">A set of <see cref="ResourceID"/> that contains the resources that the resource depends on.</param>
     /// <param name="componentVersions">The version strings of <see cref="Importer"/> and <see cref="Processor"/> that used to import and process the resource.</param>
-    public IncrementalInfo(DateTime sourceLastWriteTime, BuildingOptions options, IReadOnlySet<ResourceID> dependencies, ComponentVersions componentVersions) {
-        SourceLastWriteTime = sourceLastWriteTime;
+    public IncrementalInfo(SourceLastWriteTimes sourcesLastWriteTime, BuildingOptions options, IReadOnlySet<ResourceID> dependencies, ComponentVersions componentVersions) {
+        SourcesLastWriteTime = sourcesLastWriteTime;
         Options = options;
         Dependencies = dependencies;
         ComponentVersions = componentVersions;

@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Caxivitual.Lunacub.Building.Exceptions;
+using Caxivitual.Lunacub.Exceptions;
+using Microsoft.Extensions.Logging;
 using System.Collections.Frozen;
 // ReSharper disable VariableHidesOuterVariable
 
@@ -9,35 +11,51 @@ partial class BuildSession {
         _environment.Logger.LogInformation("Building environment resources.");
         
         foreach (var library in _environment.Libraries) {
-            foreach ((var rid, var element) in library.Registry) {
-                var option = element.Option;
-
-                if (!_environment.Importers.TryGetValue(option.Options.ImporterName, out var importer)) {
-                    Results.Add(rid, new(BuildStatus.UnknownImporter));
-                    continue;
-                }
-
-                // TODO: Add an optimization flag in Importer to skip this part.
-                HashSet<ResourceID> dependencyIds;
-
-                if (library.CreateResourceStream(rid) is not { } resourceStream) {
-                    Results.Add(rid, new(BuildStatus.NullResourceStream));
+            foreach ((var resourceId, var element) in library.Registry) {
+                BuildingResource resource = element.Option;
+                
+                if (!_environment.Importers.TryGetValue(resource.Options.ImporterName, out var importer)) {
+                    Results.Add(resourceId, new(BuildStatus.UnknownImporter));
                     continue;
                 }
 
                 try {
-                    IReadOnlyCollection<ResourceID> extractedDependencies = importer.ExtractDependencies(resourceStream);
-                    dependencyIds = extractedDependencies.ToHashSet();
-                    
-                    dependencyIds.Remove(rid); // Preventing self-referencing break everything.
+                    importer.ValidateResource(resource);
                 } catch (Exception e) {
-                    Results.Add(rid, new(BuildStatus.ExtractDependenciesFailed, ExceptionDispatchInfo.Capture(e)));
+                    Results.Add(resourceId, new(BuildStatus.InvalidBuildingResource, ExceptionDispatchInfo.Capture(e)));
                     continue;
-                } finally {
-                    resourceStream.Dispose();
                 }
 
-                _graph.Add(rid, new(library, dependencyIds, element));
+                IReadOnlySet<ResourceID> dependencyIds;
+                
+                if (importer.Flags.HasFlag(ImporterFlags.NoDependency)) {
+                    dependencyIds = FrozenSet<ResourceID>.Empty;
+                } else {
+                    using SourceStreams streams = library.CreateSourceStreams(resourceId);
+                    
+                    if (streams.PrimaryStream == null) {
+                        Results.Add(resourceId, new(BuildStatus.NullPrimaryResourceStream));
+                        continue;
+                    }
+
+                    foreach ((_, var secondaryStream) in streams.SecondaryStreams) {
+                        if (secondaryStream == null) {
+                            Results.Add(resourceId, new(BuildStatus.NullSecondaryResourceStream));
+                            break;
+                        }
+                    }
+
+                    if (Results.ContainsKey(resourceId)) continue;
+
+                    try {
+                        dependencyIds = importer.ExtractDependencies(streams);
+                    } catch (Exception e) {
+                        Results.Add(resourceId, new(BuildStatus.ExtractDependenciesFailed, ExceptionDispatchInfo.Capture(e)));
+                        continue;
+                    }
+                }
+
+                _graph.Add(resourceId, new(library, dependencyIds, element));
             }
         }
 
@@ -120,9 +138,17 @@ partial class BuildSession {
                 return;
             }
 
-            DateTime resourceLastWriteTime = resourceVertex.Library.GetResourceLastWriteTime(rid);
+            // DateTime resourceLastWriteTime = resourceVertex.Library.GetResourceLastWriteTime(rid);
+            SourceLastWriteTimes lastWriteTimes;
+
+            try {
+                lastWriteTimes = resourceVertex.Library.GetSourceLastWriteTimes(rid);
+            } catch (Exception e) {
+                Results.Add(rid, outputResult = new(BuildStatus.GetSourceLastWriteTimesFailed, ExceptionDispatchInfo.Capture(e)));
+                return;
+            }
             
-            if (!dependencyRebuilt && IsResourceCacheable(rid, resourceLastWriteTime, options, resourceVertex.DependencyIds, out IncrementalInfo previousIncrementalInfo)) {
+            if (!dependencyRebuilt && IsResourceCacheable(rid, lastWriteTimes, options, resourceVertex.DependencyIds, out IncrementalInfo previousIncrementalInfo)) {
                 if (new ComponentVersions(importer.Version, processor?.Version) == previousIncrementalInfo.ComponentVersions) {
                     Results.Add(rid, outputResult = new(BuildStatus.Cached));
                     _outputRegistry.Add(rid, new(registryElement.Name, registryElement.Tags));
@@ -186,7 +212,7 @@ partial class BuildSession {
             }
 
             Results.Add(rid, outputResult = new(BuildStatus.Success));
-            _environment.IncrementalInfos.Add(rid, new(resourceLastWriteTime, options, dependencyIds, new(importer.Version, processor?.Version)));
+            _environment.IncrementalInfos.Add(rid, new(lastWriteTimes, options, dependencyIds, new(importer.Version, processor?.Version)));
             _outputRegistry.Add(rid, new(registryElement.Name, registryElement.Tags));
         } finally {
             ReleaseDependencies(resourceVertex.DependencyIds);
@@ -243,6 +269,43 @@ partial class BuildSession {
 
             collectedDependencies = dependencyCollection;
             validDependencies = validDependencyIds;
+        }
+    }
+    
+    private bool Import(ResourceID rid, BuildResourceLibrary library, Importer importer, IImportOptions? options, [NotNullWhen(true)] out ContentRepresentation? imported, out ResourceBuildingResult failureResult) {
+        SourceStreams streams;
+
+        try {
+            streams = library.CreateSourceStreams(rid);
+        } catch (InvalidResourceStreamException e) {
+            Results.Add(rid, failureResult = new(BuildStatus.InvalidResourceStream, ExceptionDispatchInfo.Capture(e)));
+
+            imported = null;
+            return false;
+        }
+
+        try {
+            if (streams.PrimaryStream is null) {
+                Results.Add(rid, failureResult = new(BuildStatus.NullPrimaryResourceStream));
+
+                imported = null;
+                return false;
+            }
+            
+            try {
+                ImportingContext context = new(options, _environment.Logger);
+                imported = importer.ImportObject(streams, context);
+                
+                failureResult = default;
+                return true;
+            } catch (Exception e) {
+                Results.Add(rid, failureResult = new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
+        
+                imported = null;
+                return false;
+            }
+        } finally {
+            streams.Dispose();
         }
     }
 }

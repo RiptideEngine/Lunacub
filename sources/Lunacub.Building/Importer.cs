@@ -7,20 +7,23 @@ namespace Caxivitual.Lunacub.Building;
 /// </summary>
 public abstract class Importer {
     public virtual string? Version => null;
+    public virtual ImporterFlags Flags => ImporterFlags.Default;
 
-    public virtual IReadOnlyCollection<ResourceID> ExtractDependencies(Stream resourceStream) {
+    public virtual void ValidateResource(BuildingResource resource) { }
+
+    public virtual IReadOnlySet<ResourceID> ExtractDependencies(SourceStreams sourceStream) {
         return FrozenSet<ResourceID>.Empty;
     }
     
-    internal abstract ContentRepresentation ImportObject(Stream resourceStream, ImportingContext context);
+    internal abstract ContentRepresentation ImportObject(SourceStreams sourceStreams, ImportingContext context);
 }
 
 /// <inheritdoc cref="Importer"/>
 /// <typeparam name="T">The type of object that the importer will output, must derived from <see cref="ContentRepresentation"/>.</typeparam>
 public abstract class Importer<T> : Importer where T : ContentRepresentation {
-    internal override sealed ContentRepresentation ImportObject(Stream resourceStream, ImportingContext context) {
-        return Import(resourceStream, context);
+    internal override sealed ContentRepresentation ImportObject(SourceStreams sourceStreams, ImportingContext context) {
+        return Import(sourceStreams, context);
     }
 
-    protected abstract T Import(Stream resourceStream, ImportingContext context);
+    protected abstract T Import(SourceStreams sourceStreams, ImportingContext context);
 }

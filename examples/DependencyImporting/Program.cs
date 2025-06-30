@@ -3,6 +3,7 @@ using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Text.Json;
+using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
 
 namespace Caxivitual.Lunacub.Examples.DependencyImporting;
 
@@ -40,25 +41,25 @@ internal static class Program {
             },
             Resources = {
                 [1] = new("1", [], new() {
-                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource1.json")),
+                    Provider = new Building.Core.FileSourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource1.json")),
                     Options = new() {
                         ImporterName = nameof(SimpleResourceImporter),
                     },
                 }),
                 [2] = new("2", [], new() {
-                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource2.json")),
+                    Provider = new Building.Core.FileSourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource2.json")),
                     Options = new() {
                         ImporterName = nameof(SimpleResourceImporter),
                     },
                 }),
                 [3] = new("3", [], new() {
-                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource3.json")),
+                    Provider = new Building.Core.FileSourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Resource3.json")),
                     Options = new() {
                         ImporterName = nameof(SimpleResourceImporter),
                     },
                 }),
                 [4] = new("4", [], new() {
-                    Provider = new FileResourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "MergingResource.json")),
+                    Provider = new Building.Core.FileSourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "MergingResource.json")),
                     Options = new() {
                         ImporterName = nameof(MergingResourceImporter),
                         ProcessorName = nameof(MergingResourceProcessor),
@@ -88,7 +89,7 @@ internal static class Program {
             },
             Logger = _logger,
             Libraries = {
-                new FileResourceLibrary(resourceDirectory),
+                new FileSourceProvider(resourceDirectory),
             },
         };
 

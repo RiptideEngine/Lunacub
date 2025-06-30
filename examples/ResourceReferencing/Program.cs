@@ -1,6 +1,8 @@
 ﻿using Caxivitual.Lunacub.Building.Core;
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
+using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
+using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
 
 namespace Caxivitual.Lunacub.Examples.ResourceReferencing;
 
@@ -34,13 +36,13 @@ internal static class Program {
             },
             Resources = {
                 [1] = new("Resource", [], new() {
-                    Provider = MemoryResourceProvider.AsUtf8("""{"ReferenceId":2}""", DateTime.MinValue),
+                    Provider = MemorySourceProvider.AsUtf8("""{"ReferenceId":2}""", DateTime.MinValue),
                     Options = new() {
                         ImporterName = nameof(ReferencingResourceImporter),
                     },
                 }),
                 [2] = new("Reference", [], new() {
-                    Provider = MemoryResourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
+                    Provider = MemorySourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
                     Options = new() {
                         ImporterName = nameof(SimpleResourceImporter),
                     },
@@ -69,7 +71,7 @@ internal static class Program {
             },
             Logger = _logger,
             Libraries = {
-                new FileResourceLibrary(resourceDirectory),
+                new FileSourceProvider(resourceDirectory),
             }
         };
         

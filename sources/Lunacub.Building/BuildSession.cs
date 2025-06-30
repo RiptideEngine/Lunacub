@@ -1,5 +1,6 @@
 ﻿// ReSharper disable VariableHidesOuterVariable
 
+using Caxivitual.Lunacub.Building.Exceptions;
 using Caxivitual.Lunacub.Exceptions;
 
 namespace Caxivitual.Lunacub.Building;
@@ -27,14 +28,6 @@ internal sealed partial class BuildSession {
         _outputRegistry.Clear();
         
         BuildEnvironmentResources();
-
-        // Dictionary<ResourceID, OutputRegistryElement> registry = Results
-        //     .Where(x => x.Value.IsSuccess)
-        //     .ToDictionary(kvp => kvp.Key, kvp => {
-        //         var registryElement = _environment.Resources[kvp.Key];
-        //         
-        //         return new OutputRegistryElement(registryElement.Name, registryElement.Tags);
-        //     });
         
         Debug.Assert(_graph.Values.All(x => x.ImportOutput == null || IsDisposed(x.ImportOutput)), "Resource leaked after building environment resources.");
         
@@ -53,39 +46,6 @@ internal sealed partial class BuildSession {
             if (!_graph.TryGetValue(dependencyId, out EnvironmentResourceVertex? resourceVertex)) continue;
             
             resourceVertex.Release();
-        }
-    }
-    
-    private bool Import(ResourceID rid, ResourceLibrary<BuildingResource> library, Importer importer, IImportOptions? options, [NotNullWhen(true)] out ContentRepresentation? imported, out ResourceBuildingResult failureResult) {
-        Stream? resourceStream;
-
-        try {
-            if ((resourceStream = library.CreateResourceStream(rid)) is null) {
-                Results.Add(rid, failureResult = new(BuildStatus.NullResourceStream));
-
-                imported = null;
-                return false;
-            }
-        } catch (InvalidResourceStreamException e) {
-            Results.Add(rid, failureResult = new(BuildStatus.InvalidResourceStream, ExceptionDispatchInfo.Capture(e)));
-
-            imported = null;
-            return false;
-        }
-
-        try {
-            ImportingContext context = new(options, _environment.Logger);
-            imported = importer.ImportObject(resourceStream, context);
-
-            failureResult = default;
-            return true;
-        } catch (Exception e) {
-            Results.Add(rid, failureResult = new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
-                
-            imported = null;
-            return false;
-        } finally {
-            resourceStream.Dispose();
         }
     }
 
@@ -109,7 +69,7 @@ internal sealed partial class BuildSession {
         foreach ((var proceduralId, var proceduralResource) in proceduralResources) {
             ResourceID hashedId = rid.Combine(proceduralId);
 
-            Debug.Assert(!_environment.Libraries.ContainResource(hashedId), "ResourceID collided.");
+            Debug.Assert(!_environment.Libraries.ContainsResource(hashedId), "ResourceID collided.");
             receiver.Add(hashedId, proceduralResource);
         }
     }
@@ -118,7 +78,7 @@ internal sealed partial class BuildSession {
     /// Determines whether a resource should be rebuilt based on timeline, configurations, dependencies from previous build informations.
     /// </summary>
     /// <param name="rid">Resource to determines whether rebuilding needed.</param>
-    /// <param name="resourceLastWriteTime">The last write time of resource.</param>
+    /// <param name="sourceLastWriteTimes">The last write times of resource's sources.</param>
     /// <param name="currentOptions">Building options of the resource.</param>
     /// <param name="currentDependencies">Dependencies of the resource.</param>
     /// <param name="previousIncrementalInfo">
@@ -127,12 +87,10 @@ internal sealed partial class BuildSession {
     /// </param>
     /// <returns><see langword="true"/> if the resource should be rebuilt; otherwise, <see langword="false"/>.</returns>
     /// <remarks>The function does not account for the version of building components.</remarks>
-    private bool IsResourceCacheable(ResourceID rid, DateTime resourceLastWriteTime, BuildingOptions currentOptions, IReadOnlySet<ResourceID> currentDependencies, out IncrementalInfo previousIncrementalInfo) {
+    private bool IsResourceCacheable(ResourceID rid, SourceLastWriteTimes sourceLastWriteTimes, BuildingOptions currentOptions, IReadOnlySet<ResourceID> currentDependencies, out IncrementalInfo previousIncrementalInfo) {
         // If resource has been built before, and have old report, we can begin checking for caching.
         if (_environment.Output.GetResourceLastBuildTime(rid) is { } resourceLastBuildTime && _environment.IncrementalInfos.TryGet(rid, out previousIncrementalInfo)) {
-            // Check if resource's last write time is the same as the time stored in report.
-            // Check if destination's last write time is later than resource's last write time.
-            if (resourceLastWriteTime == previousIncrementalInfo.SourceLastWriteTime && resourceLastBuildTime > resourceLastWriteTime) {
+            if (CompareLastWriteTimes(previousIncrementalInfo.SourcesLastWriteTime, sourceLastWriteTimes)) {
                 // If the options are equal, no need to rebuild.
                 if (currentOptions.Equals(previousIncrementalInfo.Options)) {
                     if (previousIncrementalInfo.Dependencies.SequenceEqual(currentDependencies)) {
@@ -146,13 +104,32 @@ internal sealed partial class BuildSession {
     
         previousIncrementalInfo = default;
         return false;
+
+        // Check if resource's last write time is the same as the time stored in report.
+        // Check if destination's last write time is later than resource's last write time.
+        static bool CompareLastWriteTimes(SourceLastWriteTimes previous, SourceLastWriteTimes current) {
+            if (previous.Primary != current.Primary) return false;
+            if (previous.Secondaries.Count != current.Secondaries.Count) return false;
+
+            foreach ((var previousSourceName, var previousSourceLastWriteTime) in previous.Secondaries) {
+                if (!current.Secondaries.TryGetValue(previousSourceName, out var curentSourceLastWriteTime)) return false;
+                if (previousSourceLastWriteTime != curentSourceLastWriteTime) return false;
+            }
+
+            return true;
+        }
     }
 
     private sealed class EnvironmentResourceVertex {
         public readonly BuildResourceLibrary Library;
+        
+        /// <summary>
+        /// Gets the Id of the dependency resources, the collection is unsanitied, thus it can reference unregistered resource
+        /// id, or self-referencing.
+        /// </summary>
         public IReadOnlySet<ResourceID> DependencyIds;
         public readonly ResourceRegistry<BuildingResource>.Element RegistryElement;
-
+        
         public ContentRepresentation? ImportOutput { get; private set; }
         
         public int ReferenceCount;

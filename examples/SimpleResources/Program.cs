@@ -2,12 +2,12 @@
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
 using System.Text;
-using FileResourceLibrary = Caxivitual.Lunacub.Importing.Core.FileResourceLibrary;
-using MemoryResourceLibrary = Caxivitual.Lunacub.Building.Core.MemoryResourceLibrary;
+using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
+using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
 
 namespace Caxivitual.Lunacub.Examples.SimpleResources;
 
-internal static partial class Program {
+internal static class Program {
     private static readonly ILogger _logger = LoggerFactory.Create(builder => {
         builder.AddConsole();
     }).CreateLogger("Program");
@@ -34,17 +34,18 @@ internal static partial class Program {
                 new SimpleResourceSerializerFactory(),
             },
             Libraries = {
-                new MemoryResourceLibrary {
+                new(new MemorySourceProvider {
+                    Resources = {
+                        ["PrimaryResource"] = MemorySourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
+                    },
+                }) {
                     Registry = {
                         [1] = new("Resource", [], new() {
-                            Address = null,
+                            Addresses = new("PrimaryResource"),
                             Options = new() {
                                 ImporterName = nameof(SimpleResourceImporter),
                             },
                         }),
-                    },
-                    Resources = {
-                        [1] = MemoryResourceLibrary.AsUtf8("""{"Value":1}""", DateTime.MinValue),
                     },
                 },
             },
@@ -65,7 +66,7 @@ internal static partial class Program {
         using ImportEnvironment importEnvironment = new ImportEnvironment();
         importEnvironment.Deserializers[nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer();
         importEnvironment.Logger = _logger;
-        importEnvironment.Libraries.Add(new FileResourceLibrary(resourceDirectory));
+        importEnvironment.Libraries.Add(new(new FileSourceProvider(resourceDirectory)));
 
         ResourceHandle<SimpleResource> handle = await importEnvironment.Import<SimpleResource>(1).Task;
         

@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Tests.Importing;
+﻿using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
+
+namespace Caxivitual.Lunacub.Tests.Importing;
 
 public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
     private readonly ComponentsFixture _componentsFixture;
@@ -29,7 +31,7 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
     [Fact]
     public async Task ImportSimpleResource_ReturnsCorrectObject() {
         _buildEnvironment.Resources.Add(1, new("Resource", [], new() {
-            Provider = MemoryResourceProvider.AsUtf8("""{"Value":69}""", DateTime.MinValue),
+            Provider = MemorySourceProvider.AsUtf8("""{"Value":69}""", DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(SimpleResourceImporter),
             },
@@ -50,7 +52,7 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
     [Fact]
     public async Task ImportConfigurableResource_WithBinaryOption_ReturnsCorrectObject() {
         _buildEnvironment.Resources.Add(1, new("Resource", [], new() {
-            Provider = MemoryResourceProvider.AsUtf8("[0,1,2,3,4]", DateTime.MinValue),
+            Provider = MemorySourceProvider.AsUtf8("[0,1,2,3,4]", DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ConfigurableResourceImporter),
                 Options = new ConfigurableResourceDTO.Options(OutputType.Binary),
@@ -72,7 +74,7 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
     [Fact]
     public async Task ImportConfigurableResource_WithJsonOption_ReturnsCorrectObject() {
         _buildEnvironment.Resources.Add(1, new("Resource", [], new() {
-            Provider = MemoryResourceProvider.AsUtf8("[0,1,2,3,4]", DateTime.MinValue),
+            Provider = MemorySourceProvider.AsUtf8("[0,1,2,3,4]", DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ConfigurableResourceImporter),
                 Options = new ConfigurableResourceDTO.Options(OutputType.Json),
@@ -94,7 +96,7 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
     [Fact]
     public async Task ImportReferencingResource_UnregisteredReference_ReturnsCorrectObjects() {
         _buildEnvironment.Resources.Add(1, new("A", [], new() {
-            Provider = MemoryResourceProvider.AsUtf8("""{"Value":1,"Reference":255}""", DateTime.MinValue),
+            Provider = MemorySourceProvider.AsUtf8("""{"Value":1,"Reference":255}""", DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ReferencingResourceImporter),
             },
@@ -118,13 +120,13 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
     [Fact]
     public async Task ImportReferencingResource_Normal_ReturnsCorrectObjects() {
         _buildEnvironment.Resources.Add(1, new("A", [], new() {
-            Provider = MemoryResourceProvider.AsUtf8("""{"Value":1,"Reference":2}""", DateTime.MinValue),
+            Provider = MemorySourceProvider.AsUtf8("""{"Value":1,"Reference":2}""", DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ReferencingResourceImporter),
             },
         }));
         _buildEnvironment.Resources.Add(2, new("B", [], new() {
-            Provider = MemoryResourceProvider.AsUtf8("""{"Value":2,"Reference":0}""", DateTime.MinValue),
+            Provider = MemorySourceProvider.AsUtf8("""{"Value":2,"Reference":0}""", DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ReferencingResourceImporter),
             },
@@ -151,25 +153,25 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
     [Fact]
     public async Task ImportReferencingResource_Chain4_ReturnsCorrectObjects() {
         _buildEnvironment.Resources.Add(1, new("A", [], new() {
-            Provider = MemoryResourceProvider.AsUtf8("""{"Value":1,"Reference":2}""", DateTime.MinValue),
+            Provider = MemorySourceProvider.AsUtf8("""{"Value":1,"Reference":2}""", DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ReferencingResourceImporter),
             },
         }));
         _buildEnvironment.Resources.Add(2, new("B", [], new() {
-            Provider = MemoryResourceProvider.AsUtf8("""{"Value":2,"Reference":3}""", DateTime.MinValue),
+            Provider = MemorySourceProvider.AsUtf8("""{"Value":2,"Reference":3}""", DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ReferencingResourceImporter),
             },
         }));
         _buildEnvironment.Resources.Add(3, new("C", [], new() {
-            Provider = MemoryResourceProvider.AsUtf8("""{"Value":3,"Reference":4}""", DateTime.MinValue),
+            Provider = MemorySourceProvider.AsUtf8("""{"Value":3,"Reference":4}""", DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ReferencingResourceImporter),
             },
         }));
         _buildEnvironment.Resources.Add(4, new("D", [], new() {
-            Provider = MemoryResourceProvider.AsUtf8("""{"Value":4,"Reference":0}""", DateTime.MinValue),
+            Provider = MemorySourceProvider.AsUtf8("""{"Value":4,"Reference":0}""", DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(ReferencingResourceImporter),
             },

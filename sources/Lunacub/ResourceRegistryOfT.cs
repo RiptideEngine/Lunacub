@@ -18,6 +18,8 @@ public class ResourceRegistry<T> : IDictionary<ResourceID, ResourceRegistry<T>.E
     
     ICollection<ResourceID> IDictionary<ResourceID, Element>.Keys => _resources.Keys;
     ICollection<Element> IDictionary<ResourceID, Element>.Values => _resources.Values;
+    
+    // TODO: Probably adding Notifications.
 
     public void Add(ResourceID resourceId, Element element) {
         ValidateResourceId(resourceId);

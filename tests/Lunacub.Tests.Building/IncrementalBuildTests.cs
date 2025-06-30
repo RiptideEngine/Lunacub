@@ -24,7 +24,7 @@ public class IncrementalBuildTests : IClassFixture<ComponentsFixture>, IDisposab
     [Fact]
     public void BuildResources_Normal_ShouldNotRebuild() {
         _environment.Resources.Add(1, new("Resource", [], new() {
-            Provider = new MemoryResourceProvider("""{"Value":1}"""u8, DateTime.MinValue),
+            Provider = new MemorySourceProvider("""{"Value":1}"""u8, DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(SimpleResourceImporter),
             },
@@ -37,7 +37,7 @@ public class IncrementalBuildTests : IClassFixture<ComponentsFixture>, IDisposab
     [Fact]
     public void BuildResources_RemoveIncrementalInfo_ShouldRebuild() {
         _environment.Resources.Add(1, new("Resource", [], new() {
-            Provider = new MemoryResourceProvider("""{"Value":1}"""u8, DateTime.MinValue),
+            Provider = new MemorySourceProvider("""{"Value":1}"""u8, DateTime.MinValue),
             Options = new() {
                 ImporterName = nameof(SimpleResourceImporter),
             },
