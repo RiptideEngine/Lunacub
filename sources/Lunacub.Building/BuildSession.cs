@@ -109,8 +109,10 @@ internal sealed partial class BuildSession {
         // Check if destination's last write time is later than resource's last write time.
         static bool CompareLastWriteTimes(SourceLastWriteTimes previous, SourceLastWriteTimes current) {
             if (previous.Primary != current.Primary) return false;
-            if (previous.Secondaries.Count != current.Secondaries.Count) return false;
+            if (previous.Secondaries == null) return current.Secondaries == null;
 
+            if (current.Secondaries == null) return false;
+                
             foreach ((var previousSourceName, var previousSourceLastWriteTime) in previous.Secondaries) {
                 if (!current.Secondaries.TryGetValue(previousSourceName, out var curentSourceLastWriteTime)) return false;
                 if (previousSourceLastWriteTime != curentSourceLastWriteTime) return false;
