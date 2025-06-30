@@ -47,6 +47,8 @@ internal sealed class ResourceRegistryJsonConverterFactory : JsonConverterFactor
                 
                 ResourceID resourceID = _resourceIdConverter.Read(ref reader, ResourceIDType, options);
 
+                reader.Read();
+
                 if (_elementConverter.Read(ref reader, typeof(ResourceRegistry<T>.Element), options) is { } element) {
                     registry[resourceID] = element;
                 }
