@@ -30,7 +30,7 @@ public sealed class BuildResourceLibrary {
 
                 try {
                     foreach ((var name, var address) in addresses.Secondaries) {
-                        secondaryStreams.Add(name, _provider.CreateStream(name));
+                        secondaryStreams.Add(name, _provider.CreateStream(address));
                     }
                 } catch {
                     foreach (var stream in secondaryStreams.Values) {

@@ -5,10 +5,10 @@ using SixLabors.ImageSharp.PixelFormats;
 
 namespace Caxivitual.Lunacub.Examples.GasterBlaster;
 
-public sealed class Texture2DDTO : ContentRepresentation {
+public sealed class SpriteDTO : ContentRepresentation {
     public Image<Rgba32> Image { get; private set; }
 
-    public Texture2DDTO(Image<Rgba32> image) {
+    public SpriteDTO(Image<Rgba32> image) {
         Image = image;
     }
 

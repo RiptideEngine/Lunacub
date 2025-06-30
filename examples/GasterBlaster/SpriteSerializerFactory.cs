@@ -4,7 +4,7 @@ using SixLabors.ImageSharp;
 namespace Caxivitual.Lunacub.Examples.GasterBlaster;
 
 public sealed class Texture2DSerializerFactory : SerializerFactory {
-    public override bool CanSerialize(Type representationType) => representationType == typeof(Texture2DDTO);
+    public override bool CanSerialize(Type representationType) => representationType == typeof(SpriteDTO);
 
     protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);

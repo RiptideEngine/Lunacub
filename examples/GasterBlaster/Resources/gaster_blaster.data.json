@@ -1,0 +1,83 @@
+﻿{
+  "Name": "Gaster Blaster",
+  "Subsprites": [
+    {
+      "Name": "Frame1",
+      "Region": {
+        "Origin": {
+          "X": 0,
+          "Y": 0
+        },
+        "Size": {
+          "X": 43,
+          "Y": 57
+        }
+      }
+    },
+    {
+      "Name": "Frame2",
+      "Region": {
+        "Origin": {
+          "X": 48,
+          "Y": 0
+        },
+        "Size": {
+          "X": 43,
+          "Y": 57
+        }
+      }
+    },
+    {
+      "Name": "Frame3",
+      "Region": {
+        "Origin": {
+          "X": 96,
+          "Y": 0
+        },
+        "Size": {
+          "X": 43,
+          "Y": 57
+        }
+      }
+    },
+    {
+      "Name": "Frame4",
+      "Region": {
+        "Origin": {
+          "X": 144,
+          "Y": 0
+        },
+        "Size": {
+          "X": 43,
+          "Y": 57
+        }
+      }
+    },
+    {
+      "Name": "Frame5",
+      "Region": {
+        "Origin": {
+          "X": 192,
+          "Y": 0
+        },
+        "Size": {
+          "X": 43,
+          "Y": 57
+        }
+      }
+    },
+    {
+      "Name": "Frame6",
+      "Region": {
+        "Origin": {
+          "X": 240,
+          "Y": 0
+        },
+        "Size": {
+          "X": 43,
+          "Y": 57
+        }
+      }
+    }
+  ]
+}
