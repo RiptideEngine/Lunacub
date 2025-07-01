@@ -1,55 +1,36 @@
-﻿using Caxivitual.Lunacub.Importing;
-using Silk.NET.WebGPU;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+﻿// ReSharper disable AccessToDisposedClosure
+
+using Caxivitual.Lunacub.Extensions;
+using Caxivitual.Lunacub.Importing;
+using System.Text;
 
 namespace Caxivitual.Lunacub.Examples.GasterBlaster;
 
-public sealed class Texture2DDeserializer(Renderer renderer) : Deserializer<Texture2D> {
-    protected override async Task<Texture2D> DeserializeAsync(Stream dataStream, Stream optionStream, DeserializationContext context, CancellationToken cancellationToken) {
-        using Image<Rgba32> image = await Image.LoadAsync<Rgba32>(dataStream, cancellationToken);
+public sealed class SpriteDeserializer : Deserializer<Sprite> {
+    protected override Task<Sprite> DeserializeAsync(Stream dataStream, Stream optionStream, DeserializationContext context, CancellationToken cancellationToken) {
+        using BinaryReader reader = new(dataStream, Encoding.UTF8, leaveOpen: true);
 
-        Texture2D outputTexture = new Texture2D(renderer, (uint)image.Width, (uint)image.Height, TextureFormat.Rgba8Unorm);
-
-        try {
-            image.ProcessPixelRows(accessor => {
-                unsafe {
-                    TextureDataLayout layout = new() {
-                        Offset = 0,
-                        BytesPerRow = (uint)sizeof(Rgba32) * (uint)accessor.Width,
-                        RowsPerImage = (uint)accessor.Height,
-                    };
-                    Extent3D writeSize = new() {
-                        Width = (uint)accessor.Width,
-                        Height = 1,
-                        DepthOrArrayLayers = 1
-                    };
-
-                    for (int y = 0; y < accessor.Height; y++) {
-                        var row = accessor.GetRowSpan(y);
-
-                        fixed (Rgba32* pRow = row) {
-                            ImageCopyTexture dest = new() {
-                                Aspect = TextureAspect.All,
-                                MipLevel = 0,
-                                Texture = outputTexture.Texture,
-                                Origin = new() {
-                                    X = 0,
-                                    Y = (uint)y,
-                                    Z = 0
-                                },
-                            };
-
-                            renderer.WebGPU.QueueWriteTexture(renderer.RenderingDevice.Queue, &dest, pRow, (nuint)sizeof(Rgba32) * (uint)accessor.Width, &layout, &writeSize);
-                        }
-                    }
-                }
-            });
-            
-            return outputTexture;
-        } catch {
-            outputTexture.Dispose();
-            throw;
+        string name = reader.ReadString();
+        
+        List<Subsprite> subsprites = new(reader.ReadInt32());
+        
+        for (int i = 0, c = subsprites.Capacity; i < c; i++) {
+            subsprites.Add(new(reader.ReadString(), new(reader.ReadUInt32(), reader.ReadUInt32(), reader.ReadUInt32(), reader.ReadUInt32())));
         }
+
+        ResourceID textureId = reader.ReadResourceID();
+
+        Sprite sprite = new() {
+            Name = name,
+        };
+        sprite.Subsprites.AddRange(subsprites);
+        
+        context.RequestReference<Texture2D>(1, textureId);
+
+        return Task.FromResult(sprite);
+    }
+
+    protected override void ResolveReferences(Sprite instance, DeserializationContext context) {
+        instance.Texture = context.GetReference<Texture2D>(1) ?? throw new ArgumentException("Null texture.");
     }
 }

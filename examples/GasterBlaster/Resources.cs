@@ -16,7 +16,6 @@ public static class Resources {
     private static Renderer _renderer = null!;
     private static ILogger _logger = null!;
     
-    private static FileSourceProvider _sourceProvider = null!;
     private static ImportEnvironment _importEnv = null!;
     
     public static void Initialize(Renderer renderer, ILogger logger) {
@@ -27,11 +26,11 @@ public static class Resources {
         _renderer = renderer;
         _logger = logger;
 
-        BuildResources();
-        CreateImportEnvironment();
+        string compiledResourceDirectory = BuildResources();
+        CreateImportEnvironment(compiledResourceDirectory);
     }
     
-    private static void BuildResources() {
+    private static string BuildResources() {
         string outputDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resource Outputs");
         string reportDirectory = Path.Combine(outputDirectory, "Reports");
         string resourcesDirectory = Path.Combine(outputDirectory, "Resources");
@@ -41,42 +40,46 @@ public static class Resources {
         
         using BuildEnvironment environment = new BuildEnvironment(new FileOutputSystem(reportDirectory, resourcesDirectory)) {
             Importers = {
+                [nameof(SpriteImporter)] = new SpriteImporter(),
                 [nameof(Texture2DImporter)] = new Texture2DImporter(),
             },
             Processors = {
             },
             SerializerFactories = {
+                new SpriteSerializerFactory(),
                 new Texture2DSerializerFactory(),
             },
             Logger = _logger,
         };
         
         string resourceDirectoryPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources");
-        string resourceRegistryPath = Path.Combine(resourceDirectoryPath, "ResourceRegistry.json");
 
-        if (!Path.Exists(resourceRegistryPath)) {
-            throw new("Missing Resource Registry.");
-        }
-
-        using (FileStream fs = new FileStream(resourceRegistryPath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-            var resourceElements = JsonSerializer.Deserialize<Dictionary<ResourceID, ResourceElement>>(fs)!;
-
-            foreach ((var id, ResourceElement element) in resourceElements) {
-                environment.Resources.Add(id, new(id.ToString(), [], new() {
-                    Provider = new Building.Core.FileSourceProvider(Path.Combine(resourceDirectoryPath, element.Path)),
-                    Options = new() {
-                        ImporterName = element.ImporterName,
-                        ProcessorName = element.ProcessorName,
-                    },
-                }));
-            }
-        }
+        environment.Libraries.Add(new(new Building.Core.FileSourceProvider(resourceDirectoryPath)) {
+            Registry = {
+                [1] = new("Blaster Texture", [], new() {
+                    Addresses = new("gaster_blaster.png"),
+                    Options = new(nameof(Texture2DImporter)),
+                }),
+                [2] = new("Blaster Sprite", [], new() {
+                    Addresses = new("gaster_blaster.sprjson"),
+                    Options = new(nameof(SpriteImporter)),
+                }),
+                [3] = new("Blaster Ray Texture", [], new() {
+                    Addresses = new("gaster_blaster_ray.png"),
+                    Options = new(nameof(Texture2DImporter)),
+                }),
+                [4] = new("Blaster Ray Sprite", [], new() {
+                    Addresses = new("gaster_blaster_ray.sprjson"),
+                    Options = new(nameof(SpriteImporter)),
+                }),
+            },
+        });
 
         var result = environment.BuildResources();
 
         StringBuilder sb = new StringBuilder(1024);
         sb.AppendLine("Resource building result:");
-        sb.Append("- Resource Count: ").Append(environment.Resources.Count).AppendLine(".");
+        sb.Append("- Resource Count: ").Append(result.ResourceResults.Count).AppendLine(".");
         sb.Append("- Times: ").Append(result.BuildStartTime).Append(" - ").Append(result.BuildFinishTime).AppendLine(".");
         sb.AppendLine("- Results:");
 
@@ -93,12 +96,13 @@ public static class Resources {
         
         _logger.LogInformation("{text}", sb.ToString());
 
-        _sourceProvider = new(resourcesDirectory);
+        return resourcesDirectory;
     }
 
-    private static void CreateImportEnvironment() {
+    private static void CreateImportEnvironment(string compiledResourceDirectory) {
         _importEnv = new() {
             Deserializers = {
+                [nameof(SpriteDeserializer)] = new SpriteDeserializer(),
                 [nameof(Texture2DDeserializer)] = new Texture2DDeserializer(_renderer),
             },
             Disposers = {
@@ -110,7 +114,14 @@ public static class Resources {
                 }),
             },
             Libraries = {
-                _sourceProvider,
+                new(new FileSourceProvider(compiledResourceDirectory)) {
+                    Registry = {
+                        [1] = new("Blaster Texture", [], 0),
+                        [2] = new("Blaster Sprite", [], 0),
+                        [3] = new("Blaster Ray Texture", [], 0),
+                        [4] = new("Blaster Ray Sprite", [], 0),
+                    }
+                },
             },
             Logger = _logger,
         };
@@ -120,12 +131,4 @@ public static class Resources {
 
     public static ReleaseStatus Release(ResourceID rid) => _importEnv.Release(rid);
     public static ReleaseStatus Release<T>(ResourceHandle<T> handle) where T : class => _importEnv.Release(handle);
-
-    // public static IEnumerable<ResourceID> EnumerateResourceIds() => _importEnv.Libraries.SelectMany(x => x);
-
-    private readonly record struct ResourceElement(
-        string Path,
-        [property: JsonPropertyName("Importer")] string ImporterName,
-        [property: JsonPropertyName("Processor")] string? ProcessorName
-    );
 }

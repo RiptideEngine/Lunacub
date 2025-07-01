@@ -1,8 +1,11 @@
 ﻿using Caxivitual.Lunacub.Importing;
 using Microsoft.Extensions.Logging;
+using Silk.NET.Input;
 using Silk.NET.WebGPU;
+using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using WebGPUBuffer = Silk.NET.WebGPU.Buffer;
 
 namespace Caxivitual.Lunacub.Examples.GasterBlaster;
@@ -12,40 +15,51 @@ internal static unsafe class ApplicationLifecycle {
     private static readonly ILogger _logger = LoggerFactory.Create(builder => {
         builder.AddConsole();
     }).CreateLogger("Program");
-
-    // Mesh
-    private static WebGPUBuffer* _vertexBuffer = null!;
-    private static WebGPUBuffer* _indexBuffer = null!;
     
     // Material
     private static Shader _shader = null!;
-    private static BindGroupLayout* _bindGroupLayout = null!;
+    
+    private static BindGroupLayout* _globalBindGroupLayout = null!;
+    private static BindGroupLayout* _entityBindGroupLayout = null!;
     private static PipelineLayout* _pipelineLayout = null!;
     private static RenderPipeline* _renderPipeline = null!;
     
     // Drawing
     private static WebGPUBuffer* _transformationBuffer = null!;
     private static Sampler* _sampler = null!;
-    private static readonly SortedList<ResourceID, MaterialResource> _materialResources = [];
+    
+    private static ResourceHandle<Texture2D> _blasterTexture;
+    private static ResourceHandle<Sprite> _blasterSprite;
+    private static ResourceHandle<Texture2D> _blasterRayTexture;
+    private static ResourceHandle<Sprite> _blasterRaySprite;
+    
+    private static BindGroup* _globalBindGroup;
+    private static BindGroup* _blasterBindGroup;
+    private static BindGroup* _blasterRayBindGroup;
+
+    // private static GasterBlaster _blaster;
+    private static readonly List<Entity> _entities = [];
+    private static readonly List<Entity> _appendingEntities = [];
+    private static readonly List<Entity> _deletingEntities = [];
+
+    private static uint uniformOffsetAlignment;
     
     public static void Initialize() {
         _renderer = new(Application.MainWindow);
         Resources.Initialize(_renderer, _logger);
+
+        SupportedLimits limits;
+        _renderer.WebGPU.DeviceGetLimits(_renderer.RenderingDevice.Device, &limits);
+
+        uniformOffsetAlignment = limits.Limits.MinUniformBufferOffsetAlignment;
         
         // Drawing Resources
         _transformationBuffer = _renderer.WebGPU.DeviceCreateBuffer(_renderer.RenderingDevice.Device, new BufferDescriptor {
             Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
-            Size = 64,
+            Size = ((64 + uniformOffsetAlignment - 1) & ~(uniformOffsetAlignment - 1)) * 16,
             MappedAtCreation = false,
         });
-        
-        _renderer.WebGPU.QueueWriteBuffer(_renderer.RenderingDevice.Queue, _transformationBuffer, 0, [
-            Matrix4x4.CreateLookToLeftHanded(new(0, 0, -1), Vector3.UnitZ, Vector3.UnitY) *
-            Matrix4x4.CreateOrthographicLeftHanded(2f * Application.MainWindow.FramebufferSize.X / Application.MainWindow.FramebufferSize.Y, 2, 0.01f, 10f),
-        ], 64);
 
-        // ImportingOperation<Texture2D> textureImportOp = Resources.Import<Texture2D>(2);
-        
         _sampler = _renderer.WebGPU.DeviceCreateSampler(_renderer.RenderingDevice.Device, new SamplerDescriptor {
             AddressModeU = AddressMode.ClampToEdge,
             AddressModeV = AddressMode.ClampToEdge,
@@ -53,78 +67,54 @@ internal static unsafe class ApplicationLifecycle {
             Compare = CompareFunction.Undefined,
             LodMinClamp = 0,
             LodMaxClamp = float.MaxValue,
-            MinFilter = FilterMode.Linear,
-            MagFilter = FilterMode.Linear,
+            MinFilter = FilterMode.Nearest,
+            MagFilter = FilterMode.Nearest,
             MipmapFilter = MipmapFilterMode.Nearest,
             MaxAnisotropy = 1,
         });
-
-        // Mesh
-        _vertexBuffer = _renderer.WebGPU.DeviceCreateBuffer(_renderer.RenderingDevice.Device, new BufferDescriptor {
-            MappedAtCreation = false,
-            Size = (ulong)sizeof(Vertex) * 4,
-            Usage = BufferUsage.Vertex | BufferUsage.CopyDst,
-        });
-        _indexBuffer = _renderer.WebGPU.DeviceCreateBuffer(_renderer.RenderingDevice.Device, new BufferDescriptor {
-            MappedAtCreation = false,
-            Size = sizeof(ushort) * 6,
-            Usage = BufferUsage.Index | BufferUsage.CopyDst,
-        });
-        
-        _renderer.WebGPU.QueueWriteBuffer<Vertex>(_renderer.RenderingDevice.Queue, _vertexBuffer, 0, [
-            new(new(-0.5f, 0.5f, 0), Vector2.Zero),
-            new(new(0.5f, 0.5f, 0), Vector2.UnitX),
-            new(new(0.5f, -0.5f, 0), Vector2.One),
-            new(new(-0.5f, -0.5f, 0), Vector2.UnitY),
-        ], (nuint)sizeof(Vertex) * 4);
-        
-        _renderer.WebGPU.QueueWriteBuffer<ushort>(_renderer.RenderingDevice.Queue, _indexBuffer, 0, [
-            0, 1, 2, 2, 3, 0,
-        ], (nuint)sizeof(ushort) * 6);
         
         // Create material.
         _shader = Shader.FromFile(_renderer, Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Shader.wgsl"));
 
-        BindGroupLayoutEntry* bindGroupLayoutEntries = stackalloc BindGroupLayoutEntry[] {
-            new BindGroupLayoutEntry {
+        _globalBindGroupLayout = CreateBindGroupLayout([
+            new() {
                 Binding = 0,
                 Buffer = new() {
                     Type = BufferBindingType.Uniform,
-                    HasDynamicOffset = false,
+                    HasDynamicOffset = true,
                     MinBindingSize = 64,
                 },
-                Visibility = ShaderStage.Vertex,
+                Visibility = ShaderStage.Vertex | ShaderStage.Fragment,
             },
-            new BindGroupLayoutEntry {
-                Binding = 1,
+        ]);
+
+        _entityBindGroupLayout = CreateBindGroupLayout([
+            new() {
+                Binding = 0,
                 Texture = new() {
                     Multisampled = false,
                     SampleType = TextureSampleType.Float,
                     ViewDimension = TextureViewDimension.Dimension2D,
                 },
-                Visibility = ShaderStage.Fragment,
+                Visibility = ShaderStage.Vertex | ShaderStage.Fragment,
             },
-            new BindGroupLayoutEntry {
-                Binding = 2,
+            new() {
+                Binding = 1,
                 Sampler = new() {
                     Type = SamplerBindingType.Filtering,
                 },
-                Visibility = ShaderStage.Fragment,
+                Visibility = ShaderStage.Vertex | ShaderStage.Fragment,
             },
+        ]);
+
+        BindGroupLayout** bindGroupLayouts = stackalloc BindGroupLayout*[] {
+            _entityBindGroupLayout,
+            _globalBindGroupLayout,
         };
 
-        _bindGroupLayout = _renderer.WebGPU.DeviceCreateBindGroupLayout(_renderer.RenderingDevice.Device, new BindGroupLayoutDescriptor {
-            Entries = bindGroupLayoutEntries,
-            EntryCount = 3,
-        });
-
-        BindGroupLayout** bindGroupLayouts = stackalloc BindGroupLayout*[1] {
-            _bindGroupLayout,
-        };
-
-        _pipelineLayout = _renderer.WebGPU.DeviceCreatePipelineLayout(_renderer.RenderingDevice.Device,new PipelineLayoutDescriptor {
+        _pipelineLayout = _renderer.WebGPU.DeviceCreatePipelineLayout(_renderer.RenderingDevice.Device, new PipelineLayoutDescriptor {
             BindGroupLayouts = bindGroupLayouts,
-            BindGroupLayoutCount = 1,
+            BindGroupLayoutCount = 2,
         });
 
         fixed (byte* vsEntrypoint = "vsmain\0"u8, psEntrypoint = "psmain\0"u8) {
@@ -202,44 +192,127 @@ internal static unsafe class ApplicationLifecycle {
             });
         }
 
-        ImportingOperation<Texture2D> importOperation = Resources.Import<Texture2D>(1);
+        ImportingOperation<Texture2D> blasterTextureImport = Resources.Import<Texture2D>(1);
+        ImportingOperation<Sprite> blasterSpriteImport = Resources.Import<Sprite>(2);
+        ImportingOperation<Texture2D> blasterRayTextureImport = Resources.Import<Texture2D>(3);
+        ImportingOperation<Sprite> blasterRaySpriteImport = Resources.Import<Sprite>(4);
 
-        importOperation.Task.Wait();
+        Task.WaitAll(blasterTextureImport.Task, blasterSpriteImport.Task, blasterRayTextureImport.Task, blasterRaySpriteImport.Task);
         
-        var textureHandle = importOperation.Task.Result;
+        _blasterTexture = blasterTextureImport.Task.Result;
+        _blasterSprite = blasterSpriteImport.Task.Result;
+        _blasterRayTexture = blasterRayTextureImport.Task.Result;
+        _blasterRaySprite = blasterRaySpriteImport.Task.Result;
         
         // Drawing
-        BindGroupEntry* bindGroupEntries = stackalloc BindGroupEntry[] {
-            new BindGroupEntry {
+        _globalBindGroup = CreateBindGroup([
+            new() {
                 Binding = 0,
                 Buffer = _transformationBuffer,
-                Offset = 0,
                 Size = 64,
             },
-            new BindGroupEntry {
-                Binding = 1,
-                TextureView = textureHandle.Value!.View,
-            },
-            new BindGroupEntry {
-                Binding = 2,
-                Sampler = _sampler,
-            }
-        };
+        ], _globalBindGroupLayout);
         
-        var bindGroup = _renderer.WebGPU.DeviceCreateBindGroup(_renderer.RenderingDevice.Device, new BindGroupDescriptor {
-            Entries = bindGroupEntries,
-            EntryCount = 3,
-            Layout = _bindGroupLayout,
+        _blasterBindGroup = CreateBindGroup([
+            new() {
+                Binding = 0,
+                TextureView = _blasterTexture.Value!.View,
+            },
+            new() {
+                Binding = 1,
+                Sampler = _sampler,
+            },
+        ], _entityBindGroupLayout);
+        
+        _blasterRayBindGroup = CreateBindGroup([
+            new() {
+                Binding = 0,
+                TextureView = _blasterRayTexture.Value!.View,
+            },
+            new() {
+                Binding = 1,
+                Sampler = _sampler,
+            },
+        ], _entityBindGroupLayout);
+
+        // _blaster = new(_renderer, _blasterSprite.Value!, _blasterRaySprite.Value!, _renderPipeline, _blasterBindGroup, _blasterRayBindGroup) {
+        //     Position = new(0, 5),
+        //     LandingPosition = Vector2.Zero,
+        // };
+        
+        _entities.Add(new GasterBlaster(_renderer, _blasterSprite.Value!, _blasterRaySprite.Value!, _renderPipeline, _blasterBindGroup, _blasterRayBindGroup) {
+            Position = new(0, 5),
+            LandingPosition = Vector2.Zero,
         });
         
-        _materialResources.Add(1, new(textureHandle, bindGroup));
+        // _entities.Add(new BlasterRay(_renderer, _blasterRaySprite.Value!, _renderPipeline, _blasterRayBindGroup));
+
+        static BindGroupLayout* CreateBindGroupLayout(ReadOnlySpan<BindGroupLayoutEntry> entries) {
+            fixed (BindGroupLayoutEntry* ptr = entries) {
+                return _renderer.WebGPU.DeviceCreateBindGroupLayout(_renderer.RenderingDevice.Device, new BindGroupLayoutDescriptor {
+                    Entries = ptr,
+                    EntryCount = (uint)entries.Length,
+                });
+            }
+        }
     }
 
-    public static void Update() {
+    public static void Update(double deltaTime) {
+        _entities.AddRange(_appendingEntities);
+        _appendingEntities.Clear();
+
+        foreach (var removingEntity in _deletingEntities) {
+            if (_entities.Remove(removingEntity)) {
+                removingEntity.Dispose();
+            }
+        }
+
+        _deletingEntities.Clear();
         
+        _entities.ForEach(e => e.Update(deltaTime));
     }
 
     public static void Render() {
+        uint transformationBufferCapacity = (uint)(_renderer.WebGPU.BufferGetSize(_transformationBuffer) / uniformOffsetAlignment);
+
+        if (_entities.Count > transformationBufferCapacity) {
+            _renderer.WebGPU.BufferDestroy(_transformationBuffer);
+            _renderer.WebGPU.BufferRelease(_transformationBuffer);
+            _renderer.WebGPU.BindGroupRelease(_globalBindGroup);
+            
+            _transformationBuffer = _renderer.WebGPU.DeviceCreateBuffer(_renderer.RenderingDevice.Device, new BufferDescriptor {
+                Usage = BufferUsage.Uniform | BufferUsage.CopyDst,
+                Size = ((64 + uniformOffsetAlignment - 1) & ~(uniformOffsetAlignment - 1)) * transformationBufferCapacity * 2,
+                MappedAtCreation = false,
+            });
+            
+            _globalBindGroup = CreateBindGroup([
+                new() {
+                    Binding = 0,
+                    Buffer = _transformationBuffer,
+                    Size = _renderer.WebGPU.BufferGetSize(_transformationBuffer),
+                },
+            ], _globalBindGroupLayout);
+        }
+        
+        Matrix4x4 viewProjection = Matrix4x4.CreateLookToLeftHanded(new(0, 0, -1), Vector3.UnitZ, Vector3.UnitY) *
+                                   Matrix4x4.CreateOrthographicLeftHanded(8f * Application.MainWindow.FramebufferSize.X / Application.MainWindow.FramebufferSize.Y, 8, 0.01f, 10f);
+
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(_entities.Count * (int)uniformOffsetAlignment);
+
+        try {
+            for (int i = 0; i < _entities.Count; i++) {
+                Matrix4x4 mvp = new Matrix4x4(_entities[i].TransformMatrix) * viewProjection;
+                Unsafe.WriteUnaligned(ref buffer[i * uniformOffsetAlignment], mvp);
+            }
+
+            fixed (byte* ptr = buffer) {
+                _renderer.WebGPU.QueueWriteBuffer(_renderer.RenderingDevice.Queue, _transformationBuffer, 0, ptr, (nuint)_entities.Count * uniformOffsetAlignment);
+            }
+        } finally {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+        
         _renderer.BeginRenderingFrame();
         
         RenderPassColorAttachment colorAttachment = new() {
@@ -254,19 +327,33 @@ internal static unsafe class ApplicationLifecycle {
         
         var cmdEncoder = webgpu.DeviceCreateCommandEncoder(_renderer.RenderingDevice.Device, new CommandEncoderDescriptor());
         
-        var renderPass = webgpu.CommandEncoderBeginRenderPass(cmdEncoder, new RenderPassDescriptor() {
+        var renderPass = webgpu.CommandEncoderBeginRenderPass(cmdEncoder, new RenderPassDescriptor {
             ColorAttachmentCount = 1,
             ColorAttachments = &colorAttachment,
             DepthStencilAttachment = null,
         });
 
-        MaterialResource materialResource = _materialResources.GetValueAtIndex(0);
+        uint* dynamicOffsets = stackalloc uint[1];
+
+        for (int i = 0; i < _entities.Count; i++) {
+            var entity = _entities[i];
+            
+            if (entity.RenderingMesh is not { } renderingMesh) continue;
         
-        webgpu.RenderPassEncoderSetVertexBuffer(renderPass, 0, _vertexBuffer, 0, (ulong)sizeof(Vertex) * 4);
-        webgpu.RenderPassEncoderSetIndexBuffer(renderPass, _indexBuffer, IndexFormat.Uint16, 0, sizeof(ushort) * 6);
-        webgpu.RenderPassEncoderSetBindGroup(renderPass, 0, materialResource.BindGroup, 0, null);
-        webgpu.RenderPassEncoderSetPipeline(renderPass, _renderPipeline);
-        webgpu.RenderPassEncoderDrawIndexed(renderPass, 6, 1, 0, 0, 0);
+            RenderPipeline* pipeline = entity.RenderPipeline;
+            if (pipeline == null) continue;
+        
+            BindGroup* bindGroup = entity.RenderBindGroup;
+            if (bindGroup == null) continue;
+            
+            webgpu.RenderPassEncoderSetVertexBuffer(renderPass, 0, renderingMesh.VertexBuffer, 0, renderingMesh.VertexBufferSize);
+            webgpu.RenderPassEncoderSetIndexBuffer(renderPass, renderingMesh.IndexBuffer, renderingMesh.IndexFormat, 0, renderingMesh.IndexBufferSize);
+            webgpu.RenderPassEncoderSetBindGroup(renderPass, 0, bindGroup, 0, null);
+            dynamicOffsets[0] = (uint)i * uniformOffsetAlignment;
+            webgpu.RenderPassEncoderSetBindGroup(renderPass, 1, _globalBindGroup, 1, dynamicOffsets);
+            webgpu.RenderPassEncoderSetPipeline(renderPass, pipeline);
+            webgpu.RenderPassEncoderDrawIndexed(renderPass, renderingMesh.IndexCount, 1, 0, 0, 0);
+        }
         
         webgpu.RenderPassEncoderEnd(renderPass);
         
@@ -281,12 +368,23 @@ internal static unsafe class ApplicationLifecycle {
     }
 
     public static void Shutdown() {
-        foreach (var materialResource in _materialResources) {
-            _renderer.WebGPU.BindGroupRelease(materialResource.Value.BindGroup);
-            
-            var releaseStatus = Resources.Release(materialResource.Value.TextureHandle);
-            Debug.Assert(releaseStatus == ReleaseStatus.Success);
-        }
+        _renderer.WebGPU.BindGroupRelease(_blasterRayBindGroup);
+        _renderer.WebGPU.BindGroupRelease(_blasterBindGroup);
+        _renderer.WebGPU.BindGroupRelease(_globalBindGroup);
+        
+        var releaseStatus = Resources.Release(_blasterTexture);
+        Debug.Assert(releaseStatus == ReleaseStatus.Success, $"Failed to release texture: {releaseStatus}.");
+        
+        releaseStatus = Resources.Release(_blasterSprite);
+        Debug.Assert(releaseStatus is ReleaseStatus.Success or ReleaseStatus.NotDisposed, $"Failed to release sprite: {releaseStatus}.");
+        
+        releaseStatus = Resources.Release(_blasterRayTexture);
+        Debug.Assert(releaseStatus == ReleaseStatus.Success, $"Failed to release texture: {releaseStatus}.");
+        
+        releaseStatus = Resources.Release(_blasterRaySprite);
+        Debug.Assert(releaseStatus is ReleaseStatus.Success or ReleaseStatus.NotDisposed, $"Failed to release sprite: {releaseStatus}.");
+        
+        _entities.ForEach(e => e.Dispose());
         
         if (_renderPipeline != null) {
             _renderer.WebGPU.RenderPipelineRelease(_renderPipeline);
@@ -298,22 +396,17 @@ internal static unsafe class ApplicationLifecycle {
             _pipelineLayout = null;
         }
         
-        if (_bindGroupLayout != null) {
-            _renderer.WebGPU.BindGroupLayoutRelease(_bindGroupLayout);
-            _bindGroupLayout = null;
+        if (_globalBindGroupLayout != null) {
+            _renderer.WebGPU.BindGroupLayoutRelease(_globalBindGroupLayout);
+            _globalBindGroupLayout = null;
+        }
+        
+        if (_entityBindGroupLayout != null) {
+            _renderer.WebGPU.BindGroupLayoutRelease(_entityBindGroupLayout);
+            _entityBindGroupLayout = null;
         }
         
         _shader.Dispose();
-        
-        if (_indexBuffer != null) {
-            _renderer.WebGPU.BufferRelease(_indexBuffer);
-            _indexBuffer = null;
-        }
-        
-        if (_vertexBuffer != null) {
-            _renderer.WebGPU.BufferRelease(_vertexBuffer);
-            _vertexBuffer = null;
-        }
 
         if (_sampler != null) {
             _renderer.WebGPU.SamplerRelease(_sampler);
@@ -328,14 +421,17 @@ internal static unsafe class ApplicationLifecycle {
         _renderer.Dispose();
         _renderer = null!;
     }
-
-    private readonly struct MaterialResource {
-        public readonly ResourceHandle<Texture2D> TextureHandle;
-        public readonly BindGroup* BindGroup;
-
-        public MaterialResource(ResourceHandle<Texture2D> textureHandle, BindGroup* bindGroup) {
-            TextureHandle = textureHandle;
-            BindGroup = bindGroup;
+    
+    public static void AddEntity(Entity entity) => _appendingEntities.Add(entity);
+    public static void DeleteEntity(Entity entity) => _deletingEntities.Add(entity);
+    
+    private static BindGroup* CreateBindGroup(ReadOnlySpan<BindGroupEntry> entries, BindGroupLayout* layout) {
+        fixed (BindGroupEntry* ptr = entries) {
+            return _renderer.WebGPU.DeviceCreateBindGroup(_renderer.RenderingDevice.Device, new BindGroupDescriptor {
+                Entries = ptr,
+                EntryCount = (uint)entries.Length,
+                Layout = layout,
+            });
         }
     }
 }

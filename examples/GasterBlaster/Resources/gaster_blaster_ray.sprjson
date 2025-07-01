@@ -1,0 +1,32 @@
+﻿{
+  "Name": "Gaster Blaster Ray",
+  "TextureId": 3,
+  "Subsprites": [
+    {
+      "Name": "RayHead",
+      "Region": {
+        "Origin": {
+          "X": 0,
+          "Y": 0
+        },
+        "Size": {
+          "X": 43,
+          "Y": 20
+        }
+      }
+    },
+    {
+      "Name": "RayBody",
+      "Region": {
+        "Origin": {
+          "X": 0,
+          "Y": 20
+        },
+        "Size": {
+          "X": 43,
+          "Y": 10
+        }
+      }
+    }
+  ]
+}

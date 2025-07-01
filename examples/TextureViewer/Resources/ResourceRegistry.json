@@ -1,5 +1,9 @@
 ﻿{
   "1": {
+    "Name": "Crate",
+    "Tags": [
+      "Texture"
+    ],
     "Path": "crate.png",
     "Importer": "Texture2DImporter"
   }

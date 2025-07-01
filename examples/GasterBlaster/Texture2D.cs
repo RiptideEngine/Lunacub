@@ -8,6 +8,14 @@ public sealed unsafe class Texture2D : BaseDisposable {
     public Texture* Texture { get; private set; }
     public TextureView* View { get; private set; }
 
+    public Vector2D<uint> Size {
+        get {
+            if (Texture == null) return default;
+            
+            return new(_renderer.WebGPU.TextureGetWidth(Texture), _renderer.WebGPU.TextureGetHeight(Texture));
+        }
+    }
+
     public Texture2D(Renderer renderer, uint width, uint height, TextureFormat format) {
         _renderer = renderer;
         

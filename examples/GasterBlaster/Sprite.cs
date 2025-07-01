@@ -1,15 +1,13 @@
-﻿using Silk.NET.Maths;
-
-namespace Caxivitual.Lunacub.Examples.GasterBlaster;
+﻿namespace Caxivitual.Lunacub.Examples.GasterBlaster;
 
 public sealed class Sprite {
-    public string Name { get; private set; }
-    public Texture2D Texture { get; private set; }
-    public Rectangle<uint> Region { get; private set; }
+    public string Name { get; set; }
+    public Texture2D Texture { get; set; }
+    public List<Subsprite> Subsprites { get; }
 
-    public Sprite(string name, Texture2D texture, Rectangle<uint> region) {
-        Name = name;
-        Texture = texture;
-        Region = region;
+    public Sprite() {
+        Name = string.Empty;
+        Subsprites = [];
+        Texture = null!;
     }
 }

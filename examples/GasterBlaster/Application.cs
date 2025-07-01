@@ -18,7 +18,7 @@ internal static class Application {
             InputContext = MainWindow!.CreateInput();
             ApplicationLifecycle.Initialize();
         };
-        MainWindow.Update += _ => ApplicationLifecycle.Update();
+        MainWindow.Update += ApplicationLifecycle.Update;
         MainWindow.Render += _ => ApplicationLifecycle.Render();
         MainWindow.Closing += () => {
             ApplicationLifecycle.Shutdown();

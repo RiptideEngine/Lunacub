@@ -2,29 +2,24 @@
 using Caxivitual.Lunacub.Building.Attributes;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using System.Diagnostics;
+using System.Text.Json;
 
 namespace Caxivitual.Lunacub.Examples.GasterBlaster;
 
 public sealed class SpriteDTO : ContentRepresentation {
-    public Image<Rgba32> Image { get; private set; }
-
-    public SpriteDTO(Image<Rgba32> image) {
-        Image = image;
-    }
-
-    protected override void DisposeImpl(bool disposing) {
-        base.DisposeImpl(disposing);
-
-        if (disposing) {
-            Image.Dispose();
-            Image = null!;
-        }
-    }
+    public string Name { get; set; }
+    public ResourceID TextureId { get; set; }
+    public List<Subsprite> Subsprites { get; set; }
 }
 
 [AutoTimestampVersion("yyyyMMdd_HHmmss")]
-public sealed partial class Texture2DImporter : Importer<Texture2DDTO> {
-    protected override Texture2DDTO Import(Stream resourceStream, ImportingContext context) {
-        return new(Image.Load<Rgba32>(resourceStream));
+public sealed partial class SpriteImporter : Importer<SpriteDTO> {
+    public override ImporterFlags Flags => ImporterFlags.NoDependency;
+
+    protected override SpriteDTO Import(SourceStreams sourceStreams, ImportingContext context) {
+        return JsonSerializer.Deserialize<SpriteDTO>(sourceStreams.PrimaryStream!, new JsonSerializerOptions {
+            IncludeFields = true,
+        })!;
     }
 }

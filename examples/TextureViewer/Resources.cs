@@ -3,6 +3,7 @@ using Caxivitual.Lunacub.Building.Core;
 using Caxivitual.Lunacub.Importing;
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
+using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -16,7 +17,6 @@ public static class Resources {
     private static Renderer _renderer = null!;
     private static ILogger _logger = null!;
     
-    private static FileSourceProvider _sourceProvider = null!;
     private static ImportEnvironment _importEnv = null!;
     
     public static void Initialize(Renderer renderer, ILogger logger) {
@@ -27,11 +27,11 @@ public static class Resources {
         _renderer = renderer;
         _logger = logger;
 
-        BuildResources();
-        CreateImportEnvironment();
+        string compiledResourceDirectory = BuildResources();
+        CreateImportEnvironment(compiledResourceDirectory);
     }
     
-    private static void BuildResources() {
+    private static string BuildResources() {
         string outputDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resource Outputs");
         string reportDirectory = Path.Combine(outputDirectory, "Reports");
         string resourcesDirectory = Path.Combine(outputDirectory, "Resources");
@@ -58,12 +58,14 @@ public static class Resources {
             throw new("Missing Resource Registry.");
         }
 
+        BuildResourceLibrary library = new(new Building.Core.FileSourceProvider(resourceDirectoryPath));
+
         using (FileStream fs = new FileStream(resourceRegistryPath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
             var resourceElements = JsonSerializer.Deserialize<Dictionary<ResourceID, ResourceElement>>(fs)!;
 
             foreach ((var id, ResourceElement element) in resourceElements) {
-                environment.Resources.Add(id, new(id.ToString(), [], new() {
-                    Provider = new Building.Core.FileSourceProvider(Path.Combine(resourceDirectoryPath, element.Path)),
+                library.Registry.Add(id, new(element.Name, element.Tags, new() {
+                    Addresses = new(Path.Combine(resourceDirectoryPath, element.Path)),
                     Options = new() {
                         ImporterName = element.ImporterName,
                         ProcessorName = element.ProcessorName,
@@ -72,11 +74,13 @@ public static class Resources {
             }
         }
 
+        environment.Libraries.Add(library);
+
         var result = environment.BuildResources();
 
         StringBuilder sb = new StringBuilder(1024);
         sb.AppendLine("Resource building result:");
-        sb.Append("- Resource Count: ").Append(environment.Resources.Count).AppendLine(".");
+        sb.Append("- Resource Count: ").Append(result.ResourceResults.Count).AppendLine(".");
         sb.Append("- Times: ").Append(result.BuildStartTime).Append(" - ").Append(result.BuildFinishTime).AppendLine(".");
         sb.AppendLine("- Results:");
 
@@ -93,10 +97,10 @@ public static class Resources {
         
         _logger.LogInformation("{text}", sb.ToString());
 
-        _sourceProvider = new(resourcesDirectory);
+        return resourcesDirectory;
     }
 
-    private static void CreateImportEnvironment() {
+    private static void CreateImportEnvironment(string compiledResourceDirectory) {
         _importEnv = new() {
             Deserializers = {
                 [nameof(Texture2DDeserializer)] = new Texture2DDeserializer(_renderer),
@@ -109,11 +113,18 @@ public static class Resources {
                     return true;
                 }),
             },
-            Libraries = {
-                _sourceProvider,
-            },
             Logger = _logger,
         };
+
+        ImportResourceLibrary library = new(new FileSourceProvider(compiledResourceDirectory));
+
+        using (FileStream registryStream = File.OpenRead(Path.Combine(compiledResourceDirectory, "__registry"))) {
+            foreach ((var resourceId, var element) in JsonSerializer.Deserialize<ResourceRegistry<byte>>(registryStream)!) {
+                library.Registry.Add(resourceId, element);
+            }
+        }
+
+        _importEnv.Libraries.Add(library);
     }
 
     public static ImportingOperation<T> Import<T>(ResourceID rid) where T : class => _importEnv.Import<T>(rid);
@@ -124,6 +135,8 @@ public static class Resources {
     // public static IEnumerable<ResourceID> EnumerateResourceIds() => _importEnv.Libraries.SelectMany(x => x);
 
     private readonly record struct ResourceElement(
+        string Name,
+        ImmutableArray<string> Tags,
         string Path,
         [property: JsonPropertyName("Importer")] string ImporterName,
         [property: JsonPropertyName("Processor")] string? ProcessorName

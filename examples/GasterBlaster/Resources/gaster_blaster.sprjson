@@ -1,5 +1,6 @@
 ﻿{
   "Name": "Gaster Blaster",
+  "TextureId": 1,
   "Subsprites": [
     {
       "Name": "Frame1",
