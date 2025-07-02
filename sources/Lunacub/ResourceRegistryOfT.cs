@@ -28,13 +28,15 @@ public class ResourceRegistry<T> : IDictionary<ResourceID, ResourceRegistry<T>.E
         ref var elementReference = ref CollectionsMarshal.GetValueRefOrAddDefault(_resources, resourceId, out bool exists);
 
         if (exists) {
-            throw new ArgumentException($"Resource Id {resourceId} is already registered.");
+            string message = string.Format(ExceptionMessages.ResourceIdAlreadyRegistered, resourceId.ToString());
+            throw new ArgumentException(message, nameof(resourceId));
         }
 
         ref var nameMappingReference = ref CollectionsMarshal.GetValueRefOrAddDefault(_nameMap, element.Name, out exists);
 
         if (exists) {
-            throw new ArgumentException($"Resource name '{element.Name}' is already registered to resource with id {nameMappingReference}.");
+            string message = string.Format(ExceptionMessages.ResourceNameAlreadyRegistered, element.Name, nameMappingReference.ToString());
+            throw new ArgumentException(message, nameof(element));
         }
 
         elementReference = element;
@@ -152,31 +154,37 @@ public class ResourceRegistry<T> : IDictionary<ResourceID, ResourceRegistry<T>.E
     [StackTraceHidden]
     protected virtual void ValidateElement(Element element) {
         if (string.IsNullOrEmpty(element.Name)) {
-            throw new ArgumentException("Resource name cannot be null or empty string.", nameof(element));
+            throw new ArgumentException(ExceptionMessages.DisallowNullOrEmptyResourceName, nameof(element));
         }
 
         for (int i = 0, e = element.Tags.Length; i < e; i++) {
             var tag = element.Tags[i];
 
             if (string.IsNullOrEmpty(tag)) {
-                throw new ArgumentException($"Tag index {i} cannot be null or empty string.", nameof(element));
+                string message = string.Format(ExceptionMessages.DisallowNullOrEmptyTag, i);
+                throw new ArgumentException(message, nameof(element));
             }
 
             int invalidCharacterIndex = tag.AsSpan().IndexOfAnyExcept(Constants.ValidTagCharacters);
             if (invalidCharacterIndex != -1) {
-                throw new ArgumentException($"Tag '{tag}' contains invalid character at position {invalidCharacterIndex}.", nameof(element));
+                string message = string.Format(ExceptionMessages.InvalidTagCharacter, tag, invalidCharacterIndex);
+                throw new ArgumentException(message, nameof(element));
             }
         }
     }
 
     public Dictionary<ResourceID, Element>.Enumerator GetEnumerator() => _resources.GetEnumerator();
 
-    IEnumerator<KeyValuePair<ResourceID, Element>> IEnumerable<KeyValuePair<ResourceID, Element>>.GetEnumerator() => _resources.GetEnumerator();
+    IEnumerator<KeyValuePair<ResourceID, Element>> IEnumerable<KeyValuePair<ResourceID, Element>>.GetEnumerator() {
+        return _resources.GetEnumerator();
+    }
+    
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public readonly record struct Element(string Name, ImmutableArray<string> Tags, T Option);
 }
 
 file static class Constants {
-    public static System.Buffers.SearchValues<char> ValidTagCharacters { get; } = System.Buffers.SearchValues.Create("_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    public static System.Buffers.SearchValues<char> ValidTagCharacters { get; } = 
+        System.Buffers.SearchValues.Create("_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 }

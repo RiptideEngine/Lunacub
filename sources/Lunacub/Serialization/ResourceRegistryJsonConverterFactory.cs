@@ -15,7 +15,14 @@ internal sealed class ResourceRegistryJsonConverterFactory : JsonConverterFactor
     public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) {
         Type elementType = typeToConvert.GetGenericArguments()[0];
 
-        JsonConverter converter = (JsonConverter)Activator.CreateInstance(typeof(InnerConverter<>).MakeGenericType(elementType), BindingFlags.Instance | BindingFlags.Public, null, [options], null)!;
+        Type converterType = typeof(InnerConverter<>).MakeGenericType(elementType);
+        JsonConverter converter = (JsonConverter)Activator.CreateInstance(
+            converterType, 
+            BindingFlags.Instance | BindingFlags.Public, 
+            Type.DefaultBinder,
+            [options],
+            null
+        )!;
 
         return converter;
     }

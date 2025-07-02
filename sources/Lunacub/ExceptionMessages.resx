@@ -33,4 +33,25 @@
     <data name="ChunkContentLengthOverflow" xml:space="preserve">
         <value>Chunk {0} has content length surpassed Stream's length.</value>
     </data>
+    <data name="ResourceIdAlreadyRegistered" xml:space="preserve">
+        <value>Resource Id {0} is already registered.</value>
+    </data>
+    <data name="ResourceNameAlreadyRegistered" xml:space="preserve">
+        <value>Resource name '0}' is already registered to resource with id {1}.</value>
+    </data>
+    <data name="InvalidTagCharacter" xml:space="preserve">
+        <value>Tag '{0}' contains invalid character at position {1}.</value>
+    </data>
+    <data name="DisallowNullOrEmptyResourceName" xml:space="preserve">
+        <value>Resource name cannot be null or empty string.</value>
+    </data>
+    <data name="DisallowNullOrEmptyTag" xml:space="preserve">
+        <value>Tag index {0} cannot be null or empty string.</value>
+    </data>
+    <data name="SourceStreamMustBeSeekableOrReadable" xml:space="preserve">
+        <value>Source Stream at address '{0}' must be readable and seekable.</value>
+    </data>
+    <data name="SourceStreamMustNotBeWritable" xml:space="preserve">
+        <value>Source Stream at address '{0}' must not be writable.</value>
+    </data>
 </root>

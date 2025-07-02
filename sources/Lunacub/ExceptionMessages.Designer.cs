@@ -78,6 +78,24 @@ namespace Caxivitual.Lunacub {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Resource name cannot be null or empty string..
+        /// </summary>
+        internal static string DisallowNullOrEmptyResourceName {
+            get {
+                return ResourceManager.GetString("DisallowNullOrEmptyResourceName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tag index {0} cannot be null or empty string..
+        /// </summary>
+        internal static string DisallowNullOrEmptyTag {
+            get {
+                return ResourceManager.GetString("DisallowNullOrEmptyTag", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Expected chunk tag {0} at position {1}..
         /// </summary>
         internal static string ExpectedChunkAtPosition {
@@ -96,11 +114,56 @@ namespace Caxivitual.Lunacub {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Tag &apos;{0}&apos; contains invalid character at position {1}..
+        /// </summary>
+        internal static string InvalidTagCharacter {
+            get {
+                return ResourceManager.GetString("InvalidTagCharacter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The comparer must implement IAlternateEqualityComparer&lt;{0}, {1}&gt;.
         /// </summary>
         internal static string RequiresComparerImplementsAlternateLookup {
             get {
                 return ResourceManager.GetString("RequiresComparerImplementsAlternateLookup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Resource Id {0} is already registered..
+        /// </summary>
+        internal static string ResourceIdAlreadyRegistered {
+            get {
+                return ResourceManager.GetString("ResourceIdAlreadyRegistered", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Resource name &apos;0}&apos; is already registered to resource with id {1}..
+        /// </summary>
+        internal static string ResourceNameAlreadyRegistered {
+            get {
+                return ResourceManager.GetString("ResourceNameAlreadyRegistered", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Source Stream at address &apos;{0}&apos; must be readable and seekable..
+        /// </summary>
+        internal static string SourceStreamMustBeSeekableOrReadable {
+            get {
+                return ResourceManager.GetString("SourceStreamMustBeSeekableOrReadable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Source Stream at address &apos;{0}&apos; must not be writable..
+        /// </summary>
+        internal static string SourceStreamMustNotBeWritable {
+            get {
+                return ResourceManager.GetString("SourceStreamMustNotBeWritable", resourceCulture);
             }
         }
     }

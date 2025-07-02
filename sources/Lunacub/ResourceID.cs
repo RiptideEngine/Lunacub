@@ -8,7 +8,13 @@ namespace Caxivitual.Lunacub;
 /// Represents an identification number of a resource.
 /// </summary>
 [JsonConverter(typeof(ResourceIDConverter))]
-public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>, ISpanFormattable, IUtf8SpanFormattable, ISpanParsable<ResourceID>, IUtf8SpanParsable<ResourceID> {
+public readonly struct ResourceID :
+    IEquatable<ResourceID>, 
+    IEquatable<UInt128>,
+    ISpanFormattable,
+    IUtf8SpanFormattable,
+    ISpanParsable<ResourceID>,
+    IUtf8SpanParsable<ResourceID> {
     /// <summary>
     /// Represents a default or null value of the <see cref="ResourceID"/> type, used to signify the absence of a
     /// valid resource identifier.
@@ -50,7 +56,11 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     }
 
     /// <inheritdoc cref="Parse(ReadOnlySpan{char},NumberStyles,IFormatProvider?)"/>
-    public static ResourceID Parse(ReadOnlySpan<byte> span, NumberStyles style = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
+    public static ResourceID Parse(
+        ReadOnlySpan<byte> span,
+        NumberStyles style = NumberStyles.Integer,
+        IFormatProvider? formatProvider = null
+    ) {
         return new(UInt128.Parse(span, style, formatProvider));
     }
     
@@ -71,7 +81,11 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="span"/>.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="span"/>.</param>
     /// <returns>The result of parsing <paramref name="span"/>.</returns>
-    public static ResourceID Parse(ReadOnlySpan<char> span, NumberStyles style = NumberStyles.Integer, IFormatProvider? formatProvider = null) {
+    public static ResourceID Parse(
+        ReadOnlySpan<char> span,
+        NumberStyles style = NumberStyles.Integer,
+        IFormatProvider? formatProvider = null
+    ) {
         return new(UInt128.Parse(span, style, formatProvider));
     }
     
@@ -87,7 +101,12 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     }
     
     /// <inheritdoc cref="TryParse(ReadOnlySpan{char},NumberStyles,IFormatProvider?,out Caxivitual.Lunacub.ResourceID)"/>
-    public static bool TryParse(ReadOnlySpan<byte> span, NumberStyles style, IFormatProvider? formatProvider, out ResourceID result) {
+    public static bool TryParse(
+        ReadOnlySpan<byte> span,
+        NumberStyles style,
+        IFormatProvider? formatProvider,
+        out ResourceID result
+    ) {
         if (UInt128.TryParse(span, style, formatProvider, out var value)) {
             result = new(value);
             return true;
@@ -171,7 +190,11 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     /// <returns>
     ///     <see langword="true"/> if <paramref name="s"/> was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? formatProvider, out ResourceID result) {
+    public static bool TryParse(
+        [NotNullWhen(true)] string? s,
+        NumberStyles style,
+        IFormatProvider? formatProvider,
+    out ResourceID result) {
         return TryParse(s.AsSpan(), style, formatProvider, out result);
     }
 
@@ -203,16 +226,33 @@ public readonly struct ResourceID : IEquatable<ResourceID>, IEquatable<UInt128>,
     /// Tries to format this instance into numerical representation into the provided span of characters.
     /// </summary>
     /// <param name="destination">The span in which to write this instance's value formatted as a span of characters.</param>
-    /// <param name="charsWritten">When this method returns, contains the number of characters that were written in <paramref name="destination"/>.</param>
-    /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for <paramref name="destination"/>.</param>
-    /// <param name="provider">An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.</param>
+    /// <param name="charsWritten">
+    ///     When this method returns, contains the number of characters that were written in <paramref name="destination"/>.
+    /// </param>
+    /// <param name="format">
+    ///     A span containing the characters that represent a standard or custom format string that defines the acceptable format for
+    ///     <paramref name="destination"/>.
+    /// </param>
+    /// <param name="provider">
+    ///     An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.
+    /// </param>
     /// <returns></returns>
-    public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
+    public bool TryFormat(
+        Span<char> destination,
+        out int charsWritten,
+        ReadOnlySpan<char> format,
+        IFormatProvider? provider
+    ) {
         return Value.TryFormat(destination, out charsWritten, format, provider);
     }
 
     /// <inheritdoc cref="TryFormat(Span{char}, out int, ReadOnlySpan{char}, IFormatProvider)"/>
-    public bool TryFormat(Span<byte> destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
+    public bool TryFormat(
+        Span<byte> destination,
+        out int bytesWritten,
+        ReadOnlySpan<char> format,
+        IFormatProvider? provider
+    ) {
         return Value.TryFormat(destination, out bytesWritten, format, provider);
     }
 

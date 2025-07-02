@@ -6,11 +6,13 @@ public abstract class SourceProvider {
     public Stream? CreateStream(string address) {
         if (CreateStreamCore(address) is { } stream) {
             if (!stream.CanRead || !stream.CanSeek) {
-                throw new InvalidResourceStreamException($"Returned Stream at address '{address}' must be readable and seekable.");
+                string message = string.Format(ExceptionMessages.SourceStreamMustBeSeekableOrReadable, address);
+                throw new InvalidResourceStreamException(message);
             }
     
             if (stream.CanWrite) {
-                throw new InvalidResourceStreamException($"Returned Stream at address '{address}' must not be writable for security reason.");
+                string message = string.Format(ExceptionMessages.SourceStreamMustNotBeWritable, address);
+                throw new InvalidResourceStreamException(message);
             }
 
             return stream;
