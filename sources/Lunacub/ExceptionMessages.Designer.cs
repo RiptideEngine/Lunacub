@@ -60,6 +60,42 @@ namespace Caxivitual.Lunacub {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Chunk {0} has content length surpassed Stream&apos;s length..
+        /// </summary>
+        internal static string ChunkContentLengthOverflow {
+            get {
+                return ResourceManager.GetString("ChunkContentLengthOverflow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Chunk {0} has position surpassed stream&apos;s length..
+        /// </summary>
+        internal static string ChunkPositionSurpassedStreamLength {
+            get {
+                return ResourceManager.GetString("ChunkPositionSurpassedStreamLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Expected chunk tag {0} at position {1}..
+        /// </summary>
+        internal static string ExpectedChunkAtPosition {
+            get {
+                return ResourceManager.GetString("ExpectedChunkAtPosition", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Stream does not contain sufficient data to read header for chunk {0}..
+        /// </summary>
+        internal static string FailedToReadChunkHeader {
+            get {
+                return ResourceManager.GetString("FailedToReadChunkHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The comparer must implement IAlternateEqualityComparer&lt;{0}, {1}&gt;.
         /// </summary>
         internal static string RequiresComparerImplementsAlternateLookup {

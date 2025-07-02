@@ -10,11 +10,18 @@ internal static class Program {
         
         foreach (var directory in args) {
             if (!Directory.Exists(directory)) continue;
+            
+            string binDirectory = Path.Combine(directory, "bin");
+            string objDirectory = Path.Combine(directory, "obj");
 
             foreach (var filePath in Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories)) {
+                if (filePath.StartsWith(binDirectory) || filePath.StartsWith(objDirectory)) continue;
+                
                 ReadOnlySpan<char> fileName = Path.GetFileName(filePath.AsSpan());
 
-                if (fileName.EndsWith(".g.cs") || fileName.EndsWith(".generated.cs")) continue;
+                if (fileName.EndsWith(".g.cs") ||
+                    fileName.EndsWith(".generated.cs") ||
+                    fileName.EndsWith(".Designer.cs")) continue;
 
                 await using Utf8TextReader reader = new Utf8StreamReader(filePath).AsTextReader();
 

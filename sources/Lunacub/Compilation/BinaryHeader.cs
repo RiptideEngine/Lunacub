@@ -74,30 +74,48 @@ public readonly struct BinaryHeader {
         }
     }
 
-    private static unsafe void ValidateChunkInformations(Stream stream, ReadOnlySpan<KeyValuePair<uint, uint>> chunkPositions, ImmutableArray<ChunkInformation>.Builder chunkInfoBuilder) {
+    private static unsafe void ValidateChunkInformations(
+        Stream stream,
+        ReadOnlySpan<KeyValuePair<uint, uint>> chunkPositions,
+        ImmutableArray<ChunkInformation>.Builder chunkInfoBuilder)
+    {
         Span<uint> buffer = stackalloc uint[2];
         
         foreach ((uint chunkTag, uint position) in chunkPositions) {
             ReadOnlySpan<byte> chunkTagBytes = new ReadOnlySpan<byte>(&chunkTag, sizeof(uint));
-            
-            if (position >= stream.Length) throw new CorruptedBinaryException($"Chunk {Encoding.ASCII.GetString(chunkTagBytes)} has position surpassed Stream's length.");
+
+            if (position >= stream.Length) {
+                string chunkName = Encoding.ASCII.GetString(chunkTagBytes);
+                string message = string.Format(ExceptionMessages.ChunkPositionSurpassedStreamLength, chunkName);
+                
+                throw new CorruptedBinaryException(message);
+            }
             
             stream.Seek(position, SeekOrigin.Begin);
 
             if (stream.Read(MemoryMarshal.AsBytes(buffer)) < 8) {
-                throw new CorruptedBinaryException($"Stream does not contain sufficient data to validate chunk offset and length for chunk '{Encoding.ASCII.GetString(chunkTagBytes)}'.");
+                string chunkName = Encoding.ASCII.GetString(chunkTagBytes);
+                string message = string.Format(ExceptionMessages.FailedToReadChunkHeader, chunkName);
+                
+                throw new CorruptedBinaryException(message);
             }
 
             uint validatingChunk = buffer[0];
             
             if (validatingChunk != chunkTag) {
-                throw new CorruptedBinaryException($"Expected chunk tag {Encoding.ASCII.GetString(chunkTagBytes)} at position {position}.");
+                string chunkName = Encoding.ASCII.GetString(chunkTagBytes);
+                string message = string.Format(ExceptionMessages.ExpectedChunkAtPosition, chunkName, position);
+                
+                throw new CorruptedBinaryException(message);
             }
             
             uint contentLength = buffer[1];
             
             if (stream.Position + contentLength > stream.Length) {
-                throw new CorruptedBinaryException($"Chunk {Encoding.ASCII.GetString(chunkTagBytes)} has content length surpassed Stream's length.");
+                string chunkName = Encoding.ASCII.GetString(chunkTagBytes);
+                string message = string.Format(ExceptionMessages.ChunkContentLengthOverflow, chunkName);
+                
+                throw new CorruptedBinaryException(message);
             }
             
             chunkInfoBuilder.Add(new(chunkTag, contentLength, stream.Position));

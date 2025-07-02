@@ -21,4 +21,16 @@
     <data name="RequiresComparerImplementsAlternateLookup" xml:space="preserve">
         <value>The comparer must implement IAlternateEqualityComparer&lt;{0}, {1}&gt;</value>
     </data>
+    <data name="ChunkPositionSurpassedStreamLength" xml:space="preserve">
+        <value>Chunk {0} has position surpassed stream's length.</value>
+    </data>
+    <data name="FailedToReadChunkHeader" xml:space="preserve">
+        <value>Stream does not contain sufficient data to read header for chunk {0}.</value>
+    </data>
+    <data name="ExpectedChunkAtPosition" xml:space="preserve">
+        <value>Expected chunk tag {0} at position {1}.</value>
+    </data>
+    <data name="ChunkContentLengthOverflow" xml:space="preserve">
+        <value>Chunk {0} has content length surpassed Stream's length.</value>
+    </data>
 </root>
