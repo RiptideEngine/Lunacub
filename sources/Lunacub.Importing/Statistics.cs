@@ -53,7 +53,6 @@ public sealed class Statistics {
 
     private struct AtomicCounter {
         private uint _value;
-        public uint Value => _value;
 
         private AtomicCounter(uint value) {
             _value = value;
