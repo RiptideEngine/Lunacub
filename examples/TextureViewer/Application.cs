@@ -3,7 +3,7 @@ using Silk.NET.Windowing;
 
 namespace Caxivitual.Lunacub.Examples.TextureViewer;
 
-internal sealed class Application {
+internal static class Application {
     public static IWindow MainWindow { get; private set; } = null!;
     public static IInputContext InputContext { get; private set; } = null!;
     
