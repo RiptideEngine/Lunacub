@@ -84,7 +84,7 @@ public sealed unsafe class GasterBlaster : Entity {
                     switch (_animationState) {
                         case 4:
                             _ray = new(_renderer, RaySprite, _pipeline, _rayBindGroup) {
-                                Position = Position + new Vector2(0, -0.25f)
+                                Position = Position + new Vector2(0, -0.25f),
                             };
                             ApplicationLifecycle.AddEntity(_ray);
 

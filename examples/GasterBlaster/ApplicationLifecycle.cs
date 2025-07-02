@@ -290,7 +290,7 @@ internal static unsafe class ApplicationLifecycle {
                 new() {
                     Binding = 0,
                     Buffer = _transformationBuffer,
-                    Size = _renderer.WebGPU.BufferGetSize(_transformationBuffer),
+                    Size = 64,
                 },
             ], _globalBindGroupLayout);
         }
