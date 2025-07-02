@@ -16,8 +16,8 @@ public sealed class ReferencingResourceDTO : ContentRepresentation {
 }
 
 public sealed class ReferencingResourceImporter : Importer<ReferencingResourceDTO> {
-    protected override ReferencingResourceDTO Import(Stream resourceStream, ImportingContext context) {
-        return JsonSerializer.Deserialize<ReferencingResourceDTO>(resourceStream)!;
+    protected override ReferencingResourceDTO Import(SourceStreams sourceStreams, ImportingContext context) {
+        return JsonSerializer.Deserialize<ReferencingResourceDTO>(sourceStreams.PrimaryStream!)!;
     }
 }
 

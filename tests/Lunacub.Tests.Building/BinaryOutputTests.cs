@@ -17,12 +17,18 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
     
     [Fact]
     public void BuildSimpleResource_OutputCorrectBinary() {
-        _environment.Resources.Add(1, new("Resource", [], new() {
-            Provider = new MemorySourceProvider("""{"Value":255}"""u8, DateTime.MinValue),
-            Options = new() {
-                ImporterName = nameof(SimpleResourceImporter),
+        _environment.Libraries.Add(new(new MemorySourceProvider {
+            Sources = {
+                ["Resource"] = MemorySourceProvider.AsUtf8("""{"Value":255}""", DateTime.MinValue),
             },
-        }));
+        }) {
+            Registry = {
+                [1] = new("Resource", [], new() {
+                    Addresses = new("Resource"),
+                    Options = new(nameof(SimpleResourceImporter)),
+                }),
+            },
+        });
         
         new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.ResourceResults.Should().ContainSingle();
 
@@ -42,19 +48,24 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
     
     [Fact]
     public unsafe void BuildReferenceResource_OutputCorrectBinary() {
-        _environment.Resources.Add(1, new("Referree", [], new() {
-            Provider = new MemorySourceProvider("""{"Reference":2,"Value":50}"""u8, DateTime.MinValue),
-            Options = new() {
-                ImporterName = nameof(ReferencingResourceImporter),
+        _environment.Libraries.Add(new(new MemorySourceProvider {
+            Sources = {
+                ["Resource"] = MemorySourceProvider.AsUtf8("""{"Reference":2,"Value":50}""", DateTime.MinValue),
+                ["Reference"] = MemorySourceProvider.AsUtf8("""{"Reference":1,"Value":100}""", DateTime.MinValue),
             },
-        }));
-        _environment.Resources.Add(2, new("Reference", [], new() {
-            Provider = new MemorySourceProvider("""{"Reference":1,"Value":100}"""u8, DateTime.MinValue),
-            Options = new() {
-                ImporterName = nameof(ReferencingResourceImporter),
+        }) {
+            Registry = {
+                [1] = new("Resource", [], new() {
+                    Addresses = new("Resource"),
+                    Options = new(nameof(ReferencingResourceImporter)),
+                }),
+                [2] = new("Reference", [], new() {
+                    Addresses = new("Reference"),
+                    Options = new(nameof(ReferencingResourceImporter))
+                })
             },
-        }));
-        
+        });
+
         new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.ResourceResults.Should().HaveCount(2);
 
         MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
@@ -89,14 +100,19 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
     }
     
     [Fact]
-    public void BuildOptionsResource_Json_OutputCorrectBinary() {
-        _environment.Resources.Add(1, new("Resource", [], new() {
-            Provider = new MemorySourceProvider("[1,2,3,4,5]"u8, DateTime.MinValue),
-            Options = new() {
-                ImporterName = nameof(ConfigurableResourceImporter),
-                Options = new ConfigurableResourceDTO.Options(OutputType.Json),
+    public void BuildConfigurableResource_Json_OutputCorrectBinary() {
+        _environment.Libraries.Add(new(new MemorySourceProvider {
+            Sources = {
+                ["Resource"] = MemorySourceProvider.AsUtf8("[1,2,3,4,5]", DateTime.MinValue),
             },
-        }));
+        }) {
+            Registry = {
+                [1] = new("Resource", [], new() {
+                    Addresses = new("Resource"),
+                    Options = new(nameof(ConfigurableResourceImporter), null, new ConfigurableResourceDTO.Options(OutputType.Json)),
+                }),
+            },
+        });
         
         new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.ResourceResults.Should().ContainSingle();
 
@@ -116,14 +132,19 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
     }
     
     [Fact]
-    public void BuildOptionsResource_Binary_OutputCorrectBinary() {
-        _environment.Resources.Add(1, new("Resource", [], new() {
-            Provider = new MemorySourceProvider("[1,2,3,4,5]"u8, DateTime.MinValue),
-            Options = new() {
-                ImporterName = nameof(ConfigurableResourceImporter),
-                Options = new ConfigurableResourceDTO.Options(OutputType.Binary),
+    public void BuildConfigurableResource_Binary_OutputCorrectBinary() {
+        _environment.Libraries.Add(new(new MemorySourceProvider {
+            Sources = {
+                ["Resource"] = MemorySourceProvider.AsUtf8("[1,2,3,4,5]", DateTime.MinValue),
             },
-        }));
+        }) {
+            Registry = {
+                [1] = new("Resource", [], new() {
+                    Addresses = new("Resource"),
+                    Options = new(nameof(ConfigurableResourceImporter), null, new ConfigurableResourceDTO.Options(OutputType.Binary)),
+                }),
+            },
+        });
         
         new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.ResourceResults.Should().ContainSingle();
 

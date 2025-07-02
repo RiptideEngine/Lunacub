@@ -30,8 +30,8 @@ public sealed class ConfigurableResourceDTO : ContentRepresentation {
 }
 
 public sealed class ConfigurableResourceImporter : Importer<ConfigurableResourceDTO> {
-    protected override ConfigurableResourceDTO Import(Stream resourceStream, ImportingContext context) {
-        return new(JsonSerializer.Deserialize<ImmutableArray<int>>(resourceStream));
+    protected override ConfigurableResourceDTO Import(SourceStreams sourceStreams, ImportingContext context) {
+        return new(JsonSerializer.Deserialize<ImmutableArray<int>>(sourceStreams.PrimaryStream!));
     }
 }
 

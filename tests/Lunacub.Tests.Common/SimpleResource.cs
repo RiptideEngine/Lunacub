@@ -9,8 +9,8 @@ public sealed class SimpleResourceDTO : ContentRepresentation {
 }
 
 public sealed class SimpleResourceImporter : Importer<SimpleResourceDTO> {
-    protected override SimpleResourceDTO Import(Stream resourceStream, ImportingContext context) {
-        return JsonSerializer.Deserialize<SimpleResourceDTO>(resourceStream)!;
+    protected override SimpleResourceDTO Import(SourceStreams sourceStreams, ImportingContext context) {
+        return JsonSerializer.Deserialize<SimpleResourceDTO>(sourceStreams.PrimaryStream!)!;
     }
 }
 

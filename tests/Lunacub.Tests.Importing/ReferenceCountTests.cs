@@ -8,13 +8,19 @@ public class ReferenceCountTests : IClassFixture<ComponentsFixture>, IDisposable
     public ReferenceCountTests(ComponentsFixture componentsFixture) {
         MockFileSystem _fileSystem = new();
         using BuildEnvironment buildEnvironment = new(new MockOutputSystem(_fileSystem)) {
-            Resources = {
-                [1] = new("Resource", [], new() {
-                    Provider = new MemorySourceProvider("{}"u8, DateTime.MinValue),
-                    Options = new() {
-                        ImporterName = nameof(DisposableResourceImporter),
+            Libraries = {
+                new(new MemorySourceProvider {
+                    Sources = {
+                        ["Resource"] = MemorySourceProvider.AsUtf8("""{}""", DateTime.MinValue),
                     },
-                }),
+                }) {
+                    Registry = {
+                        [1] = new("Resource", [], new() {
+                            Addresses = new("Resource"),
+                            Options = new(nameof(DisposableResourceImporter)),
+                        }),
+                    },
+                },
             },
         };
         
@@ -24,7 +30,11 @@ public class ReferenceCountTests : IClassFixture<ComponentsFixture>, IDisposable
 
         _environment = new() {
             Libraries = {
-                new MockResourceLibrary(_fileSystem),
+                new(new MockImportSourceProvider(_fileSystem)) {
+                    Registry = {
+                        [1] = new("Resource", [], 0),
+                    },
+                },
             },
         };
         componentsFixture.ApplyComponents(_environment);
@@ -86,7 +96,11 @@ public class ReferenceCountTests : IClassFixture<ComponentsFixture>, IDisposable
     public async Task ReleaseFromHandle_Once_DecrementsRefCountCorrectly() {
         await _environment.Import<DisposableResource>(1);
         await _environment.Import<DisposableResource>(1);
+        
         var handle = await _environment.Import<DisposableResource>(1);
+
+        handle.ResourceId.Should().Be((ResourceID)1);
+        handle.Value.Should().NotBeNull();
         
         (await _environment.GetResourceReferenceCountAsync(1)).Should().Be(3);
 
