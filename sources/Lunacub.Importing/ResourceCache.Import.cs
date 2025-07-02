@@ -71,83 +71,40 @@ partial class ResourceCache {
             await Task.Yield();
 
             if (_environment.Libraries.CreateResourceStream(container.ResourceId) is not { } resourceStream) {
-                return await Task.FromException<VesselDeserializeResult>(new InvalidOperationException($"Null resource stream provided despite contains resource '{container.ResourceId}'."));
+                throw new InvalidOperationException($"Null resource stream provided despite contains resource '{container.ResourceId}'.");
             }
 
-            var layout = BinaryHeader.Extract(resourceStream);
+            BinaryHeader header;
 
-            switch (layout.MajorVersion) {
-                case 1: return await ImportResourceVesselV1(resourceType, resourceStream, layout, container.CancellationTokenSource.Token);
+            try {
+                header = BinaryHeader.Extract(resourceStream);
+            } catch {
+                await resourceStream.DisposeAsync();
+                throw;
+            }
+
+            switch (header.MajorVersion) {
+                case 1:
+                    return await new ResourceImporterVersion1().ImportVessel(
+                        _environment,
+                        resourceType,
+                        resourceStream,
+                        header,
+                        container.CancellationTokenSource.Token
+                    );
 
                 default:
                     await resourceStream.DisposeAsync();
-                    throw new NotSupportedException($"Compiled resource version {layout.MajorVersion}.{layout.MinorVersion} is not supported.");
+
+                    string message = string.Format(
+                        ExceptionMessages.UnsupportedCompiledResourceVersion,
+                        header.MajorVersion,
+                        header.MinorVersion
+                    );
+                    throw new NotSupportedException(message);
             }
         }
-
-        async Task<VesselDeserializeResult> ImportResourceVesselV1(Type type, Stream resourceStream, BinaryHeader header, CancellationToken cancellationToken) {
-            bool disposeResourceStream = true;
-
-            try {
-                if (header.MinorVersion != 0) {
-                    throw new NotSupportedException($"Compiled resource version 1.{header.MinorVersion} is not supported.");
-                }
-
-                if (!header.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out ChunkInformation dataChunkInfo)) {
-                    throw new CorruptedBinaryException($"Compiled resource missing {Encoding.ASCII.GetString(CompilingConstants.ResourceDataChunkTag)} chunk.");
-                }
-
-                if (!header.TryGetChunkInformation(CompilingConstants.DeserializationChunkTag, out ChunkInformation deserializationChunkInfo)) {
-                    throw new CorruptedBinaryException($"Compiled resource missing {Encoding.ASCII.GetString(CompilingConstants.DeserializationChunkTag)} chunk.");
-                }
-
-                resourceStream.Seek(deserializationChunkInfo.ContentOffset, SeekOrigin.Begin);
-
-                using BinaryReader reader = new(resourceStream, Encoding.UTF8, true);
-
-                string deserializerName = reader.ReadString();
-
-                if (!_environment.Deserializers.TryGetValue(deserializerName, out Deserializer? deserializer)) {
-                    throw new ArgumentException($"Deserializer name '{deserializerName}' is unregistered.");
-                }
-
-                if (!deserializer.OutputType.IsAssignableTo(type)) {
-                    return default;
-                }
-
-                await using Stream optionsStream = await CopyOptionsStreamAsync(resourceStream, header, cancellationToken);
-
-                resourceStream.Seek(dataChunkInfo.ContentOffset, SeekOrigin.Begin);
-                optionsStream.Seek(0, SeekOrigin.Begin);
-
-                await using PartialReadStream dataStream = new(resourceStream, dataChunkInfo.ContentOffset, dataChunkInfo.Length, ownStream: false);
-                DeserializationContext context = new(_environment.Logger);
-
-                object deserialized = await deserializer.DeserializeObjectAsync(dataStream, optionsStream, context, cancellationToken);
-
-                if (deserializer.Streaming) {
-                    disposeResourceStream = false;
-                }
-
-                return new(deserializer, deserialized, context);
-            } finally {
-                if (disposeResourceStream) await resourceStream.DisposeAsync();
-            }
-            
-            static async Task<Stream> CopyOptionsStreamAsync(Stream stream, BinaryHeader header, CancellationToken token) {
-                if (header.TryGetChunkInformation(CompilingConstants.ImportOptionsChunkTag, out ChunkInformation optionsChunkInfo)) {
-                    stream.Seek(optionsChunkInfo.ContentOffset, SeekOrigin.Begin);
-                    
-                    MemoryStream optionsStream = new((int)optionsChunkInfo.Length);
-                    await stream.CopyToAsync(optionsStream, (int)optionsChunkInfo.Length, token, 128);
-            
-                    return optionsStream;
-                }
-                
-                return Stream.Null;
-            }
-        }
-
+        
         async Task<object> ResolveReference(ResourceContainer container) {
             try {
                 Debug.Assert(container.VesselImportTask != null);
@@ -168,17 +125,22 @@ partial class ResourceCache {
                 
                 // Get the ResourceContainers of the reference resources.
                 // TODO: Make a specialize function that lock and grab all at once instead of locking each one.
-                Dictionary<ReferencePropertyKey, Task<ResourceContainer?>> referenceContainerTasks = context.RequestingReferences.ToDictionary(kvp => kvp.Key, kvp => GetOrCreateResourceContainer(kvp.Value.ResourceId, kvp.Value.Type));
+                Dictionary<ReferencePropertyKey, Task<ResourceContainer?>> referenceContainerTasks = context.RequestingReferences
+                    .ToDictionary(kvp => kvp.Key, kvp => GetOrCreateResourceContainer(kvp.Value.ResourceId, kvp.Value.Type));
+                
                 await Task.WhenAll(referenceContainerTasks.Values);
 
                 // Wait for reference resources to finish importing the vessel.
-                Dictionary<ReferencePropertyKey, ResourceContainer> referenceContainers = referenceContainerTasks.Where(x => x.Value is { IsCompletedSuccessfully: true, Result: not null }).ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Result)!;
+                Dictionary<ReferencePropertyKey, ResourceContainer> referenceContainers = referenceContainerTasks
+                    .Where(x => x.Value is { IsCompletedSuccessfully: true, Result: not null })
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Result)!;
                 
                 await Task.WhenAll(referenceContainers.Values.Select(async referenceContainer => {
                     try {
                         Debug.Assert(referenceContainer.VesselImportTask != null);
                         return await referenceContainer.VesselImportTask;
                     } catch (Exception e) {
+                        referenceContainer.ReferenceCount--;
                         // _environment.Logger.LogError(Log.DependencyImportExceptionOccuredEvent, e, "Exception occured while importing dependency resource {rid}.", rid);
                         return default;
                     }
@@ -186,14 +148,20 @@ partial class ResourceCache {
 
                 // Resolve references.
                 try {
-                    context.References = referenceContainers.Where(x => x.Value.VesselImportTask!.IsCompletedSuccessfully).Select(x => KeyValuePair.Create(x.Key, x.Value.VesselImportTask.Result.Output)).Where(x => x.Value != null!).ToDictionary()!;
+                    context.References = referenceContainers
+                        .Where(x => x.Value.VesselImportTask!.IsCompletedSuccessfully)
+                        .Select(x => KeyValuePair.Create(x.Key, x.Value.VesselImportTask!.Result.Output))
+                        .Where(x => x.Value != null!)
+                        .ToDictionary()!;
                     
                     deserializer.ResolveReferences(deserialized, context);
                 } catch (Exception e) {
                     // _environment.Logger.LogError(Logging.ResolveDependenciesEvent, e, "Exception occured while resolving dependencies.");
                 }
 
-                container.ReferenceContainers = referenceContainers.Count == 0 ? FrozenSet<ResourceContainer>.Empty : referenceContainers.Select(x => x.Value).ToFrozenSet(ReferenceResourceContainerComparer.Instance);
+                container.ReferenceContainers = referenceContainers.Count == 0 ?
+                    FrozenSet<ResourceContainer>.Empty :
+                    referenceContainers.Select(x => x.Value).ToFrozenSet(ReferenceResourceContainerComparer.Instance);
 
                 return deserialized;
             } catch {

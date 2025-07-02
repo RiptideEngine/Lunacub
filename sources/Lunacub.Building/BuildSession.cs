@@ -29,11 +29,17 @@ internal sealed partial class BuildSession {
         
         BuildEnvironmentResources();
         
-        Debug.Assert(_graph.Values.All(x => x.ImportOutput == null || IsDisposed(x.ImportOutput)), "Resource leaked after building environment resources.");
+        Debug.Assert(
+            _graph.Values.All(x => x.ImportOutput == null || IsDisposed(x.ImportOutput)), 
+            "Resource leaked after building environment resources."
+        );
         
         BuildProceduralResources();
         
-        Debug.Assert(_graph.Values.All(x => x.ImportOutput == null || IsDisposed(x.ImportOutput)), "Resource leaked after building procedural resources.");
+        Debug.Assert(
+            _graph.Values.All(x => x.ImportOutput == null || IsDisposed(x.ImportOutput)),
+            "Resource leaked after building procedural resources."
+        );
 
         _environment.Output.OutputResourceRegistry(_outputRegistry);
     }
@@ -49,7 +55,12 @@ internal sealed partial class BuildSession {
         }
     }
 
-    private void SerializeProcessedObject(ContentRepresentation processed, ResourceID rid, IImportOptions? options, IReadOnlyCollection<string> tags) {
+    private void SerializeProcessedObject(
+        ContentRepresentation processed,
+        ResourceID rid,
+        IImportOptions? options,
+        IReadOnlyCollection<string> tags
+    ) {
         var factory = _environment.SerializerFactories.GetSerializableFactory(processed.GetType())!;
         
         if (factory == null) {
@@ -65,7 +76,11 @@ internal sealed partial class BuildSession {
         _environment.Output.CopyCompiledResourceOutput(ms, rid);
     }
 
-    private void AppendProceduralResources(ResourceID rid, IReadOnlyDictionary<ProceduralResourceID, BuildingProceduralResource> proceduralResources, Dictionary<ResourceID, BuildingProceduralResource> receiver) {
+    private void AppendProceduralResources(
+        ResourceID rid,
+        IReadOnlyDictionary<ProceduralResourceID, BuildingProceduralResource> proceduralResources,
+        Dictionary<ResourceID, BuildingProceduralResource> receiver
+    ) {
         foreach ((var proceduralId, var proceduralResource) in proceduralResources) {
             ResourceID hashedId = rid.Combine(proceduralId);
 
@@ -87,9 +102,16 @@ internal sealed partial class BuildSession {
     /// </param>
     /// <returns><see langword="true"/> if the resource should be rebuilt; otherwise, <see langword="false"/>.</returns>
     /// <remarks>The function does not account for the version of building components.</remarks>
-    private bool IsResourceCacheable(ResourceID rid, SourceLastWriteTimes sourceLastWriteTimes, BuildingOptions currentOptions, IReadOnlySet<ResourceID> currentDependencies, out IncrementalInfo previousIncrementalInfo) {
+    private bool IsResourceCacheable(
+        ResourceID rid,
+        SourceLastWriteTimes sourceLastWriteTimes,
+        BuildingOptions currentOptions,
+        IReadOnlySet<ResourceID> currentDependencies,
+        out IncrementalInfo previousIncrementalInfo
+    ) {
         // If resource has been built before, and have old report, we can begin checking for caching.
-        if (_environment.Output.GetResourceLastBuildTime(rid) is { } resourceLastBuildTime && _environment.IncrementalInfos.TryGet(rid, out previousIncrementalInfo)) {
+        if (_environment.Output.GetResourceLastBuildTime(rid) is { } resourceLastBuildTime &&
+            _environment.IncrementalInfos.TryGet(rid, out previousIncrementalInfo)) {
             if (CompareLastWriteTimes(previousIncrementalInfo.SourcesLastWriteTime, sourceLastWriteTimes)) {
                 // If the options are equal, no need to rebuild.
                 if (currentOptions.Equals(previousIncrementalInfo.Options)) {
@@ -136,7 +158,11 @@ internal sealed partial class BuildSession {
         
         public int ReferenceCount;
 
-        public EnvironmentResourceVertex(BuildResourceLibrary library, IReadOnlySet<ResourceID> dependencies, ResourceRegistry<BuildingResource>.Element registryElement) {
+        public EnvironmentResourceVertex(
+            BuildResourceLibrary library,
+            IReadOnlySet<ResourceID> dependencies,
+            ResourceRegistry<BuildingResource>.Element registryElement
+        ) {
             Library = library;
             DependencyIds = dependencies;
             RegistryElement = registryElement;

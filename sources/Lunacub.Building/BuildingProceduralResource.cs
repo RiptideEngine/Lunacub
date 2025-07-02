@@ -36,10 +36,16 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     }
 
     [SetsRequiredMembers]
-    public BuildingProceduralResource(ContentRepresentation obj, string? processorName) : this(obj, processorName, [], null) { }
+    public BuildingProceduralResource(ContentRepresentation obj, string? processorName) :
+        this(obj, processorName, [], null) { }
 
     [SetsRequiredMembers]
-    public BuildingProceduralResource(ContentRepresentation obj, string? processorName, IReadOnlyCollection<string> tags, IImportOptions? options) {
+    public BuildingProceduralResource(
+        ContentRepresentation obj,
+        string? processorName,
+        IReadOnlyCollection<string> tags,
+        IImportOptions? options
+    ) {
         Object = obj;
         DependencyIds = FrozenSet<ResourceID>.Empty;
         ProcessorName = processorName;
@@ -88,6 +94,13 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
         return sb.ToString();
     }
 
-    [ExcludeFromCodeCoverage] public static bool operator ==(BuildingProceduralResource left, BuildingProceduralResource right) => left.Equals(right);
-    [ExcludeFromCodeCoverage] public static bool operator !=(BuildingProceduralResource left, BuildingProceduralResource right) => !(left == right);
+    [ExcludeFromCodeCoverage]
+    public static bool operator ==(BuildingProceduralResource left, BuildingProceduralResource right) {
+        return left.Equals(right);
+    }
+
+    [ExcludeFromCodeCoverage]
+    public static bool operator !=(BuildingProceduralResource left, BuildingProceduralResource right) {
+        return !(left == right);
+    }
 }

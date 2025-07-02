@@ -40,7 +40,14 @@ public sealed class ProcessingContext {
     /// </summary>
     public ILogger Logger { get; }
     
-    internal ProcessingContext(BuildEnvironment environment, ResourceID buildingResourceId, IImportOptions? options, IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies, ILogger logger) {
+    internal ProcessingContext(
+        BuildEnvironment environment,
+        ResourceID buildingResourceId,
+        IImportOptions? options,
+        IReadOnlyDictionary<ResourceID,
+        ContentRepresentation> dependencies,
+        ILogger logger
+    ) {
         Environment = environment;
         BuildingResourceId = buildingResourceId;
         Options = options;

@@ -36,7 +36,9 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
                     break;
                 
                 case nameof(IncrementalInfo.Dependencies):
-                    dependencies = JsonSerializer.Deserialize<HashSet<ResourceID>>(ref reader, options) is { } set ? set.ToFrozenSet() : FrozenSet<ResourceID>.Empty;
+                    dependencies = JsonSerializer.Deserialize<HashSet<ResourceID>>(ref reader, options) is { } set ?
+                        set.ToFrozenSet() :
+                        FrozenSet<ResourceID>.Empty;
                     break;
                 
                 case nameof(IncrementalInfo.ComponentVersions):

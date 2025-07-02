@@ -31,4 +31,7 @@
     <data name="EmptyOrWhitespaceKey" xml:space="preserve">
         <value>Key cannot be empty or consist of only whitespace characters.</value>
     </data>
+    <data name="SourceAddressOutsideRootDirectory" xml:space="preserve">
+        <value>Concatenated source path '{0}' lies outside root directory '{1}'</value>
+    </data>
 </root>

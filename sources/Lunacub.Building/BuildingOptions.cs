@@ -32,7 +32,8 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
     }
     
     /// <summary>
-    /// Initializes the structure with provided <paramref name="importerName"/> and <see cref="processorName"/> and <see langword="null"/> <see cref="Options"/>.
+    ///     Initializes the structure with provided <paramref name="importerName"/> and <see cref="processorName"/> and
+    ///     <see langword="null"/> <see cref="Options"/>.
     /// </summary>
     /// <param name="importerName">
     ///     The importer name in <see cref="BuildEnvironment.Importers"/> used to build resource.
@@ -45,7 +46,8 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
     public BuildingOptions(string importerName, string? processorName = null) : this(importerName, processorName, null) { }
     
     /// <summary>
-    /// Initializes the structure with provided <paramref name="importerName"/> and <see cref="processorName"/> <see langword="null"/> <see cref="Options"/>.
+    ///     Initializes the structure with provided <paramref name="importerName"/> and <see cref="processorName"/> <see langword="null"/>
+    ///     <see cref="Options"/>.
     /// </summary>
     /// <param name="importerName">
     ///     The importer name in <see cref="BuildEnvironment.Importers"/> used to build resource.

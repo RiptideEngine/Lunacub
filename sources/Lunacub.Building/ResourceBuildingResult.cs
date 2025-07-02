@@ -12,8 +12,7 @@ public readonly struct ResourceBuildingResult {
     public readonly BuildStatus Status;
     
     /// <summary>
-    /// The exception got thrown while building resource. Not guarantee to be non-null when <see cref="Status"/> denotes
-    /// failure.
+    /// The exception got thrown while building resource. Not guarantee to be non-null when <see cref="Status"/> denotes failure.
     /// </summary>
     public readonly ExceptionDispatchInfo? Exception;
 
@@ -28,9 +27,14 @@ public readonly struct ResourceBuildingResult {
     /// </summary>
     public bool IsSuccess => Status is < BuildStatus.NullPrimaryResourceStream and >= BuildStatus.Success;
 
-    internal ResourceBuildingResult(BuildStatus status, ExceptionDispatchInfo? exception = null) : this(status, FrozenDictionary<ProceduralResourceID, ResourceID>.Empty, exception) { }
+    internal ResourceBuildingResult(BuildStatus status, ExceptionDispatchInfo? exception = null) :
+        this(status, FrozenDictionary<ProceduralResourceID, ResourceID>.Empty, exception) { }
 
-    internal ResourceBuildingResult(BuildStatus status, IReadOnlyDictionary<ProceduralResourceID, ResourceID> proceduralResourceIds, ExceptionDispatchInfo? exception = null) {
+    internal ResourceBuildingResult(
+        BuildStatus status,
+        IReadOnlyDictionary<ProceduralResourceID, ResourceID> proceduralResourceIds,
+        ExceptionDispatchInfo? exception = null
+    ) {
         Status = status;
         Exception = exception;
         ProceduralResourceIds = proceduralResourceIds;

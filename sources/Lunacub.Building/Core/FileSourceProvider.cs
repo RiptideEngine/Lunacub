@@ -16,7 +16,8 @@ public sealed class FileSourceProvider : BuildSourceProvider {
     protected override Stream CreateStreamCore(string address) {
         string path = Path.Combine(RootDirectory, address);
         if (!path.StartsWith(RootDirectory)) {
-            throw new InvalidResourceStreamException($"Concatenated resource path '{path}' lies outside root directory '{RootDirectory}'.");
+            string message = string.Format(ExceptionMessages.SourceAddressOutsideRootDirectory, path, RootDirectory);
+            throw new InvalidResourceStreamException(message);
         }
         
         return File.OpenRead(path);
@@ -25,23 +26,10 @@ public sealed class FileSourceProvider : BuildSourceProvider {
     public override DateTime GetLastWriteTime(string address) {
         string path = Path.Combine(RootDirectory, address);
         if (!path.StartsWith(RootDirectory)) {
-            throw new InvalidResourceStreamException($"Concatenated resource path '{path}' lies outside root directory '{RootDirectory}'.");
+            string message = string.Format(ExceptionMessages.SourceAddressOutsideRootDirectory, path, RootDirectory);
+            throw new InvalidResourceStreamException(message);
         }
 
         return File.GetLastWriteTime(path);
     }
-
-    // protected override Stream? CreateResourceStreamCore(ResourceID resourceId, BuildingResource element) {
-    //     string path = Path.Combine(RootDirectory, element.Address);
-    //     if (!path.StartsWith(RootDirectory)) return null;
-    //
-    //     return File.OpenRead(path);
-    // }
-    //
-    // protected override DateTime GetResourceLastWriteTimeCore(ResourceID resourceId, BuildingResource resource) {
-    //     string path = Path.Combine(RootDirectory, resource.Address);
-    //     if (!path.StartsWith(RootDirectory)) return default;
-    //     
-    //     return File.GetLastWriteTime(path);
-    // }
 }

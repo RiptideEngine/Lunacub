@@ -5,8 +5,13 @@ namespace Caxivitual.Lunacub.Building;
 /// <summary>
 /// Represents an identification number of a resource.
 /// </summary>
-[CLSCompliant(false)]
-public readonly struct ProceduralResourceID : IEquatable<ProceduralResourceID>, IEquatable<UInt128>, ISpanFormattable, IUtf8SpanFormattable, ISpanParsable<ProceduralResourceID>, IUtf8SpanParsable<ProceduralResourceID> {
+public readonly struct ProceduralResourceID :
+    IEquatable<ProceduralResourceID>,
+    IEquatable<UInt128>,
+    ISpanFormattable,
+    IUtf8SpanFormattable,
+    ISpanParsable<ProceduralResourceID>,
+    IUtf8SpanParsable<ProceduralResourceID> {
     /// <summary>
     /// The underlying 128-bit unsigned integer value of <see cref="ProceduralResourceID"/>.
     /// </summary>
@@ -39,13 +44,17 @@ public readonly struct ProceduralResourceID : IEquatable<ProceduralResourceID>, 
     /// <param name="str">A string represents a 128-bit unsigned integer to parse.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="str"/>.</param>
     /// <returns></returns>
-    public static ProceduralResourceID Parse(string str, IFormatProvider? formatProvider) => new(UInt128.Parse(str, formatProvider));
+    public static ProceduralResourceID Parse(string str, IFormatProvider? formatProvider) {
+        return new(UInt128.Parse(str, formatProvider));
+    }
     
     /// <inheritdoc cref="Parse(ReadOnlySpan{char})"/>
     public static ProceduralResourceID Parse(ReadOnlySpan<byte> span) => new(UInt128.Parse(span));
 
     /// <inheritdoc cref="Parse(ReadOnlySpan{char},IFormatProvider?)"/>
-    public static ProceduralResourceID Parse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider) => new(UInt128.Parse(span, formatProvider));
+    public static ProceduralResourceID Parse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider) {
+        return new(UInt128.Parse(span, formatProvider));
+    }
     
     /// <summary>
     /// Parses a span of characters into a <see cref="ProceduralResourceID"/>.
@@ -60,7 +69,9 @@ public readonly struct ProceduralResourceID : IEquatable<ProceduralResourceID>, 
     /// <param name="span">A span of character represents a 128-bit unsigned integer to parse.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="span"/>.</param>
     /// <returns>The result of parsing <paramref name="span"/>.</returns>
-    public static ProceduralResourceID Parse(ReadOnlySpan<char> span, IFormatProvider? formatProvider) => new(UInt128.Parse(span, formatProvider));
+    public static ProceduralResourceID Parse(ReadOnlySpan<char> span, IFormatProvider? formatProvider) {
+        return new(UInt128.Parse(span, formatProvider));
+    }
 
     /// <summary>
     /// Tries to parse a string into a <see cref="ProceduralResourceID"/>.
@@ -184,10 +195,17 @@ public readonly struct ProceduralResourceID : IEquatable<ProceduralResourceID>, 
     /// Tries to format this instance into numerical representation into the provided span of characters.
     /// </summary>
     /// <param name="destination">The span in which to write this instance's value formatted as a span of characters.</param>
-    /// <param name="charsWritten">When this method returns, contains the number of characters that were written in <paramref name="destination"/>.</param>
-    /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for <paramref name="destination"/>.</param>
-    /// <param name="provider">An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.</param>
-    /// <returns></returns>
+    /// <param name="charsWritten">
+    ///     When this method returns, contains the number of characters that were written in <paramref name="destination"/>.
+    /// </param>
+    /// <param name="format">
+    ///     A span containing the characters that represent a standard or custom format string that defines the acceptable format for
+    ///     <paramref name="destination"/>.
+    /// </param>
+    /// <param name="provider">
+    ///     An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.
+    /// </param>
+    /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>
     public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) {
         return Value.TryFormat(destination, out charsWritten, format, provider);
     }
@@ -224,8 +242,8 @@ public readonly struct ProceduralResourceID : IEquatable<ProceduralResourceID>, 
     /// </summary>
     /// <param name="other">The object to compare to.</param>
     /// <returns>
-    ///     <see langword="true"/> if <paramref name="other"/> is a <see cref="ProceduralResourceID"/> and is equal to the current instance,
-    ///     or if <paramref name="other"/> is a 128-bit unsigned integer and is equal to the <see cref="Value"/> of the current
+    ///     <see langword="true"/> if <paramref name="other"/> is a <see cref="ProceduralResourceID"/> and is equal to the current
+    ///     instance, or if <paramref name="other"/> is a 128-bit unsigned integer and is equal to the <see cref="Value"/> of the current
     ///     instance; otherwise, <see langword="false"/>.
     /// </returns>
     /// <seealso cref="Equals(ProceduralResourceID)"/>

@@ -19,7 +19,11 @@ public readonly struct BuildingResult {
     /// </summary>
     public readonly IReadOnlyDictionary<ResourceID, ResourceBuildingResult> ResourceResults;
 
-    internal BuildingResult(DateTime startTime, DateTime finishTime, IReadOnlyDictionary<ResourceID, ResourceBuildingResult> resourceResults) {
+    internal BuildingResult(
+        DateTime startTime,
+        DateTime finishTime,
+        IReadOnlyDictionary<ResourceID, ResourceBuildingResult> resourceResults
+    ) {
         BuildStartTime = startTime;
         BuildFinishTime = finishTime;
         ResourceResults = resourceResults;

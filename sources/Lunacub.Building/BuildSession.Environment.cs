@@ -118,7 +118,11 @@ partial class BuildSession {
         }
     }
     
-    private void BuildEnvironmentResource(ResourceID rid, EnvironmentResourceVertex resourceVertex, out ResourceBuildingResult outputResult) {
+    private void BuildEnvironmentResource(
+        ResourceID rid,
+        EnvironmentResourceVertex resourceVertex,
+        out ResourceBuildingResult outputResult
+    ) {
         Debug.Assert(rid != ResourceID.Null);
         
         if (Results.TryGetValue(rid, out outputResult)) return;
@@ -140,9 +144,10 @@ partial class BuildSession {
 
             Importer importer = _environment.Importers[options.ImporterName];
 
+            string? processorName = options.ProcessorName;
             Processor? processor = null;
 
-            if (!string.IsNullOrEmpty(options.ProcessorName) && !_environment.Processors.TryGetValue(options.ProcessorName, out processor)) {
+            if (!string.IsNullOrEmpty(processorName) && !_environment.Processors.TryGetValue(processorName, out processor)) {
                 Results.Add(rid, outputResult = new(BuildStatus.UnknownProcessor));
                 return;
             }
@@ -157,17 +162,19 @@ partial class BuildSession {
                 return;
             }
             
-            if (!dependencyRebuilt && IsResourceCacheable(rid, lastWriteTimes, options, resourceVertex.DependencyIds, out IncrementalInfo previousIncrementalInfo)) {
-                if (new ComponentVersions(importer.Version, processor?.Version) == previousIncrementalInfo.ComponentVersions) {
-                    Results.Add(rid, outputResult = new(BuildStatus.Cached));
-                    _outputRegistry.Add(rid, new(registryElement.Name, registryElement.Tags));
-                    return;
+            if (!dependencyRebuilt) {
+                if (IsResourceCacheable(rid, lastWriteTimes, options, resourceVertex.DependencyIds, out var previousIncrementalInfo)) {
+                    if (new ComponentVersions(importer.Version, processor?.Version) == previousIncrementalInfo.ComponentVersions) {
+                        Results.Add(rid, outputResult = new(BuildStatus.Cached));
+                        _outputRegistry.Add(rid, new(registryElement.Name, registryElement.Tags));
+                        return;
+                    }
                 }
             }
             
             // Import if haven't.
             if (resourceVertex.ImportOutput == null) {
-                if (!Import(rid, resourceVertex.Library, importer, options.Options, out ContentRepresentation? importOutput, out outputResult)) {
+                if (!Import(rid, resourceVertex.Library, importer, options.Options, out var importOutput, out outputResult)) {
                     return;
                 }
                 
@@ -191,7 +198,11 @@ partial class BuildSession {
                     return;
                 }
 
-                CollectDependencies(resourceVertex.DependencyIds, out IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies, out IReadOnlySet<ResourceID> validDependencyIds);
+                CollectDependencies(
+                    resourceVertex.DependencyIds,
+                    out IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies,
+                    out IReadOnlySet<ResourceID> validDependencyIds
+                );
                 resourceVertex.DependencyIds = validDependencyIds;
 
                 ContentRepresentation processed;
@@ -230,7 +241,11 @@ partial class BuildSession {
 
         return;
 
-        void CollectDependencies(IReadOnlyCollection<ResourceID> dependencyIds, out IReadOnlyDictionary<ResourceID, ContentRepresentation> collectedDependencies, out IReadOnlySet<ResourceID> validDependencies) {
+        void CollectDependencies(
+            IReadOnlyCollection<ResourceID> dependencyIds,
+            out IReadOnlyDictionary<ResourceID, ContentRepresentation> collectedDependencies,
+            out IReadOnlySet<ResourceID> validDependencies
+        ) {
             if (dependencyIds.Count == 0) {
                 collectedDependencies = FrozenDictionary<ResourceID, ContentRepresentation>.Empty;
                 validDependencies = FrozenSet<ResourceID>.Empty;
@@ -266,8 +281,9 @@ partial class BuildSession {
                         }
                         
                         BuildingOptions options = dependencyVertex.RegistryElement.Option.Options;
-                        
-                        if (Import(dependencyId, dependencyVertex.Library, _environment.Importers[options.ImporterName], options.Options, out ContentRepresentation? imported, out _)) {
+
+                        Importer importer = _environment.Importers[options.ImporterName];
+                        if (Import(dependencyId, dependencyVertex.Library, importer, options.Options, out var imported, out _)) {
                             dependencyVertex.SetImportResult(imported);
                             dependencyCollection.Add(dependencyId, imported);
                             validDependencyIds.Add(dependencyId);
@@ -281,7 +297,14 @@ partial class BuildSession {
         }
     }
     
-    private bool Import(ResourceID rid, BuildResourceLibrary library, Importer importer, IImportOptions? options, [NotNullWhen(true)] out ContentRepresentation? imported, out ResourceBuildingResult failureResult) {
+    private bool Import(
+        ResourceID rid,
+        BuildResourceLibrary library,
+        Importer importer,
+        IImportOptions? options,
+        [NotNullWhen(true)] out ContentRepresentation? imported,
+        out ResourceBuildingResult failureResult
+    ) {
         SourceStreams streams;
 
         try {

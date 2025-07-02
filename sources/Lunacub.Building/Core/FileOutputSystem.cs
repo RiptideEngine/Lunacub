@@ -20,14 +20,18 @@ public class FileOutputSystem : OutputSystem {
     }
 
     public override void CollectIncrementalInfos(IDictionary<ResourceID, IncrementalInfo> receiver) {
-        foreach (var file in Directory.EnumerateFiles(ReportDirectory, $"*{CompilingConstants.ReportExtension}", SearchOption.TopDirectoryOnly)) {
-            if (!ResourceID.TryParse(Path.GetFileNameWithoutExtension(file), NumberStyles.HexNumber, null, out var rid)) continue;
+        string searchPattern = $"*{CompilingConstants.ReportExtension}";
+        
+        foreach (var file in Directory.EnumerateFiles(ReportDirectory, searchPattern, SearchOption.TopDirectoryOnly)) {
+            if (!ResourceID.TryParse(Path.GetFileNameWithoutExtension(file), NumberStyles.HexNumber, null, out var rid)) {
+                continue;
+            }
 
             try {
                 using FileStream reportFile = File.OpenRead(file);
                 
                 receiver.Add(rid, JsonSerializer.Deserialize<IncrementalInfo>(reportFile));
-            } catch (Exception e) {
+            } catch (Exception) {
                 // Ignore any failed attempt to deserialize report.
             }
         }
@@ -43,13 +47,16 @@ public class FileOutputSystem : OutputSystem {
     }
 
     public override DateTime? GetResourceLastBuildTime(ResourceID rid) {
-        string path = Path.Combine(ResourceOutputDirectory, $"{rid:X}{CompilingConstants.CompiledResourceExtension}");
+        string fileName = $"{rid:X}{CompilingConstants.CompiledResourceExtension}";
+        string path = Path.Combine(ResourceOutputDirectory, fileName);
         
         return File.Exists(path) ? File.GetLastWriteTime(path) : null;
     }
 
     public override void CopyCompiledResourceOutput(Stream sourceStream, ResourceID rid) {
-        using FileStream fs = File.OpenWrite(Path.Combine(ResourceOutputDirectory, $"{rid:X}{CompilingConstants.CompiledResourceExtension}"));
+        string fileName = $"{rid:X}{CompilingConstants.CompiledResourceExtension}";
+        using FileStream fs = File.OpenWrite(Path.Combine(ResourceOutputDirectory, fileName));
+        
         fs.SetLength(0);
         fs.Flush();
         

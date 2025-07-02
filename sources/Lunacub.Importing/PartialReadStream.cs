@@ -64,7 +64,11 @@ internal sealed class PartialReadStream : Stream {
         switch (origin) {
             case SeekOrigin.Begin:
                 if (offset < 0) {
-                    throw new ArgumentOutOfRangeException(nameof(offset), offset, "Offset origin Begin must be greater than or equal to zero.");
+                    throw new ArgumentOutOfRangeException(
+                        nameof(offset),
+                        offset,
+                        "Offset origin Begin must be greater than or equal to zero."
+                    );
                 }
 
                 offset = long.Min(offset, _length);

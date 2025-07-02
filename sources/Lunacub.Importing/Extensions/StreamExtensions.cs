@@ -29,7 +29,13 @@ internal static class StreamExtensions {
         return oldAmount - amount;
     }
     
-    public static async ValueTask<int> CopyToAsync(this Stream source, Stream destination, int amount, CancellationToken token, int bufferSize = DefaultBufferSize) {
+    public static async ValueTask<int> CopyToAsync(
+        this Stream source,
+        Stream destination,
+        int amount,
+        CancellationToken token,
+        int bufferSize = DefaultBufferSize
+    ) {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(destination);
         

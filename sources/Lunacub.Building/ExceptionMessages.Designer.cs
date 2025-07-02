@@ -78,6 +78,15 @@ namespace Caxivitual.Lunacub.Building {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Concatenated source path &apos;{0}&apos; lies outside root directory &apos;{1}&apos;.
+        /// </summary>
+        internal static string SourceAddressOutsideRootDirectory {
+            get {
+                return ResourceManager.GetString("SourceAddressOutsideRootDirectory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Failed to find Importer with key &apos;{0}&apos;..
         /// </summary>
         internal static string UnregisteredImporter {

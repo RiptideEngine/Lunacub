@@ -19,7 +19,9 @@ public abstract class Importer {
 }
 
 /// <inheritdoc cref="Importer"/>
-/// <typeparam name="T">The type of object that the importer will output, must derived from <see cref="ContentRepresentation"/>.</typeparam>
+/// <typeparam name="T">
+///     The type of object that the importer will output, must derived from <see cref="ContentRepresentation"/>.
+/// </typeparam>
 public abstract class Importer<T> : Importer where T : ContentRepresentation {
     internal override sealed ContentRepresentation ImportObject(SourceStreams sourceStreams, ImportingContext context) {
         return Import(sourceStreams, context);

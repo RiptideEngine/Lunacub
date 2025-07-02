@@ -15,7 +15,10 @@ public sealed class MemoryOutputSystem : OutputSystem {
 
     public MemoryOutputSystem() : this([], []) { }
 
-    public MemoryOutputSystem(IEnumerable<KeyValuePair<ResourceID, ResourceOutput>> outputs, IEnumerable<KeyValuePair<ResourceID, IncrementalInfo>> incrementalInfos) {
+    public MemoryOutputSystem(
+        IEnumerable<KeyValuePair<ResourceID, ResourceOutput>> outputs,
+        IEnumerable<KeyValuePair<ResourceID, IncrementalInfo>> incrementalInfos
+    ) {
         _outputs = new(outputs);
         _incrementalInfos = new(incrementalInfos);
         OutputRegistry = FrozenDictionary<ResourceID, OutputRegistryElement>.Empty;

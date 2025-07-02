@@ -21,4 +21,19 @@
     <data name="EmptyOrWhitespaceKey" xml:space="preserve">
         <value>Key cannot be empty or consist of only whitespace characters.</value>
     </data>
+    <data name="ResourceStreamMustBeSeekableOrReadable" xml:space="preserve">
+        <value>Resource Stream for resource with ID of '{0}' must be readable and seekable.</value>
+    </data>
+    <data name="ResourceStreamMustNotBeWritable" xml:space="preserve">
+        <value>Resource Stream for resource with ID of '{0}' must not be writable.</value>
+    </data>
+    <data name="ResourceMissingChunk" xml:space="preserve">
+        <value>Cannot find chunk {0} in compiled resource binary.</value>
+    </data>
+    <data name="UnregisteredDeserializer" xml:space="preserve">
+        <value>Failed to find Deserializer with key '{0}'.</value>
+    </data>
+    <data name="UnsupportedCompiledResourceVersion" xml:space="preserve">
+        <value>Compiled resource version {0}.{1} is not supported.</value>
+    </data>
 </root>

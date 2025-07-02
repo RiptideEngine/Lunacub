@@ -236,7 +236,7 @@ public readonly struct ResourceID :
     /// <param name="provider">
     ///     An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.
     /// </param>
-    /// <returns></returns>
+    /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>
     public bool TryFormat(
         Span<char> destination,
         out int charsWritten,

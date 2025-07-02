@@ -32,6 +32,7 @@ internal static class Program {
                         lineNumber++;
                         
                         if (line.IsEmpty || line.Trim().IsEmpty) continue;
+                        if (line.TrimStart().Span.StartsWith("//")) continue;
 
                         if (line.Length >= 140) {
                             ref var reports = ref CollectionsMarshal.GetValueRefOrAddDefault(fileReports, filePath, out bool exists);

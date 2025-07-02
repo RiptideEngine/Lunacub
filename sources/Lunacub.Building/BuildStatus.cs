@@ -63,7 +63,8 @@ public enum BuildStatus {
     UnknownProcessor = 2000,
     
     /// <summary>
-    /// Indicates that the <see cref="Processor"/> cannot process the <see cref="ContentRepresentation"/> returned by <see cref="Importer"/>.
+    /// Indicates that the <see cref="Processor"/> cannot process the <see cref="ContentRepresentation"/> returned by
+    /// <see cref="Importer"/>.
     /// </summary>
     Unprocessable,
     

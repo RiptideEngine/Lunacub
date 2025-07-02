@@ -15,8 +15,12 @@ public abstract class Processor {
 }
 
 /// <inheritdoc cref="Processor"/>
-/// <typeparam name="TInput">The type of object that the processor will operate on, must derived from <see cref="ContentRepresentation"/>.</typeparam>
-/// <typeparam name="TOutput">The type of object that the processor will output, must derived from <see cref="ContentRepresentation"/>.</typeparam>
+/// <typeparam name="TInput">
+///     The type of object that the processor will operate on, must derived from <see cref="ContentRepresentation"/>.
+/// </typeparam>
+/// <typeparam name="TOutput">
+///     The type of object that the processor will output, must derived from <see cref="ContentRepresentation"/>.
+/// </typeparam>
 public abstract class Processor<TInput, TOutput> : Processor where TInput : ContentRepresentation where TOutput : ContentRepresentation {
     internal override sealed bool CanProcess(ContentRepresentation input) => input is TInput t && CanProcess(t);
     

@@ -39,8 +39,11 @@ public readonly struct IncrementalInfo {
     /// </summary>
     /// <param name="sourcesLastWriteTime">The last write times of resource sources.</param>
     /// <param name="options">The previously build options of the resource.</param>
-    /// <param name="componentVersions">The version strings of <see cref="Importer"/> and <see cref="Processor"/> that used to import and process the resource.</param>
-    public IncrementalInfo(SourceLastWriteTimes sourcesLastWriteTime, BuildingOptions options, ComponentVersions componentVersions) : this(sourcesLastWriteTime, options, FrozenSet<ResourceID>.Empty, componentVersions) {}
+    /// <param name="componentVersions">
+    ///     The version strings of <see cref="Importer"/> and <see cref="Processor"/> that used to import and process the resource.
+    /// </param>
+    internal IncrementalInfo(SourceLastWriteTimes sourcesLastWriteTime, BuildingOptions options, ComponentVersions componentVersions) :
+        this(sourcesLastWriteTime, options, FrozenSet<ResourceID>.Empty, componentVersions) {}
     
     /// <summary>
     /// Initializes a new instance of <see cref="IncrementalInfo"/> with a specified source resource last write time, options,
@@ -49,8 +52,15 @@ public readonly struct IncrementalInfo {
     /// <param name="sourcesLastWriteTime">The last write times of resource sources.</param>
     /// <param name="options">The previously build options of the resource.</param>
     /// <param name="dependencies">A set of <see cref="ResourceID"/> that contains the resources that the resource depends on.</param>
-    /// <param name="componentVersions">The version strings of <see cref="Importer"/> and <see cref="Processor"/> that used to import and process the resource.</param>
-    public IncrementalInfo(SourceLastWriteTimes sourcesLastWriteTime, BuildingOptions options, IReadOnlySet<ResourceID> dependencies, ComponentVersions componentVersions) {
+    /// <param name="componentVersions">
+    ///     The version strings of <see cref="Importer"/> and <see cref="Processor"/> that used to import and process the resource
+    /// </param>
+    internal IncrementalInfo(
+        SourceLastWriteTimes sourcesLastWriteTime,
+        BuildingOptions options,
+        IReadOnlySet<ResourceID> dependencies,
+        ComponentVersions componentVersions
+    ) {
         SourcesLastWriteTime = sourcesLastWriteTime;
         Options = options;
         Dependencies = dependencies;
