@@ -23,4 +23,8 @@
 
     <Import Project="$(SolutionDir)commons\languagecommon.props"/>
     <Import Project="$(SolutionDir)commons\nugetcommon.props"/>
+
+    <PropertyGroup>
+        <PreBuildEvent>dotnet run --project $(SolutionDir)tools\Lunacub.SourceValidator\Lunacub.SourceValidator.csproj $(MSBuildThisFileDirectory)</PreBuildEvent>
+    </PropertyGroup>
 </Project>

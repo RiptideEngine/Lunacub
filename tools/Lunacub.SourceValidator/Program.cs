@@ -49,7 +49,7 @@ internal static class Program {
             for (int i = 0; i < reports.Count; i++) {
                 var report = reports[i];
                 
-                sb.Append("- ").Append(i).Append(". Line ").Append(report.Line).Append(": ").Append(report.Message).AppendLine();
+                sb.Append("- ").Append(i + 1).Append(". Line ").Append(report.Line).Append(": ").Append(report.Message).AppendLine();
             }
         }
         
