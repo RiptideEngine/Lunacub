@@ -33,7 +33,7 @@ internal static class Program {
                         
                         if (line.IsEmpty || line.Trim().IsEmpty) continue;
 
-                        if (line.Length >= 130) {
+                        if (line.Length >= 140) {
                             ref var reports = ref CollectionsMarshal.GetValueRefOrAddDefault(fileReports, filePath, out bool exists);
 
                             if (!exists) {

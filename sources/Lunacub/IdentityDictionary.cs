@@ -17,7 +17,13 @@ public abstract class IdentityDictionary<T> : IDictionary<string, T> {
     
     protected IdentityDictionary(IEqualityComparer<string> comparer) {
         if (comparer is not IAlternateEqualityComparer<ReadOnlySpan<char>, string?>) {
-            throw new ArgumentException(string.Format(ExceptionMessages.RequiresComparerImplementsAlternateLookup, "ReadOnlySpan<char>", "string"), nameof(comparer));
+            string message = string.Format(
+                ExceptionMessages.RequiresComparerImplementsAlternateLookup, 
+                "ReadOnlySpan<char>", 
+                "string"
+            );
+            
+            throw new ArgumentException(message, nameof(comparer));
         }
             
         _dict = new(comparer);
