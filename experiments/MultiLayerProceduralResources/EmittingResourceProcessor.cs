@@ -8,7 +8,10 @@ public sealed partial class EmittingResourceProcessor : Processor<EmittingResour
     protected override EmittingResourceDTO Process(EmittingResourceDTO importedObject, ProcessingContext context) {
         if (importedObject.Count > 0) {
             context.ProceduralResources.Add(1, new() {
-                Object = new EmittingResourceDTO(importedObject.Value, importedObject.Count - 1),
+                Object = new EmittingResourceDTO {
+                    Value = importedObject.Value,
+                    Count = importedObject.Count - 1,
+                },
                 ProcessorName = nameof(EmittingResourceProcessor),
             });
         }
