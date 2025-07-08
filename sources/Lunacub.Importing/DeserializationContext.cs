@@ -3,8 +3,8 @@
 namespace Caxivitual.Lunacub.Importing;
 
 public sealed class DeserializationContext {
-    private readonly Dictionary<ReferencePropertyKey, RequestingDependency> _requestingReferences;
-    internal IReadOnlyDictionary<ReferencePropertyKey, RequestingDependency> RequestingReferences => _requestingReferences;
+    private readonly Dictionary<ReferencePropertyKey, RequestingReference> _requestingReferences;
+    internal IReadOnlyDictionary<ReferencePropertyKey, RequestingReference> RequestingReferences => _requestingReferences;
     internal Dictionary<ReferencePropertyKey, object?>? References { get; set; }
     
     public Dictionary<object, object> ValueContainer { get; }
@@ -37,5 +37,5 @@ public sealed class DeserializationContext {
         return null;
     }
 
-    public readonly record struct RequestingDependency(ResourceID ResourceId, Type Type);
+    public readonly record struct RequestingReference(ResourceID ResourceId, Type Type);
 }

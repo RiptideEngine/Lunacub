@@ -50,7 +50,7 @@ public sealed partial class ImportEnvironment : IDisposable {
         Libraries = [];
         Deserializers = [];
         Disposers = [];
-        _resourceCache = new(this);
+        _importDispatcher = new(this);
         _logger = NullLogger.Instance;
     }
 
@@ -60,7 +60,7 @@ public sealed partial class ImportEnvironment : IDisposable {
         _disposed = true;
 
         if (disposing) {
-            _resourceCache.Dispose();
+            _importDispatcher.Dispose();
         }
     }
 

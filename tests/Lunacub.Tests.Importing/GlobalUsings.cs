@@ -8,6 +8,6 @@ global using Caxivitual.Lunacub.Importing.Core;
 global using FluentAssertions;
 global using FluentAssertions.Extensions;
 
-global using Xunit.Abstractions;
+global using Xunit.v3;
 
 global using System.IO.Abstractions.TestingHelpers;

@@ -6,6 +6,8 @@ public sealed class ImportResourceLibrary {
     public ResourceRegistry<byte> Registry { get; }
     
     public ImportResourceLibrary(ImportSourceProvider sourceProvider) {
+        ArgumentNullException.ThrowIfNull(sourceProvider, nameof(sourceProvider));
+        
         _provider = sourceProvider;
         Registry = [];
     }

@@ -4,19 +4,22 @@
 /// Represents a weakly-typed handle of the resource importing operation.
 /// </summary>
 public readonly struct ImportingOperation {
+    private readonly ResourceCache.ElementContainer _resourceContainer;
+
     /// <summary>
     /// The Id of the importing resource.
     /// </summary>
-    public readonly ResourceID Rid;
-    
+    public ResourceID Rid => _resourceContainer.ResourceId;
+
     /// <summary>
     /// The importing task.
     /// </summary>
-    public readonly Task<ResourceHandle> Task;
-
-    internal ImportingOperation(ResourceID rid, Task<ResourceHandle> task) {
-        Rid = rid;
-        Task = task;
+    public Task<ResourceHandle> Task => _resourceContainer.FinalizeTask;
+    
+    public ImportingStatus Status => _resourceContainer.Status;
+    
+    internal ImportingOperation(ResourceCache.ElementContainer resourceContainer) {
+        _resourceContainer = resourceContainer;
     }
 
     /// <summary>
@@ -27,26 +30,27 @@ public readonly struct ImportingOperation {
     public TaskAwaiter<ResourceHandle> GetAwaiter() => Task.GetAwaiter();
 }
 
-/// <summary>
-/// Represents a strongly-typed handle of the resource importing operation.
-/// </summary>
-/// <typeparam name="T">Resource type to import. Must be a reference type.</typeparam>
-public readonly struct ImportingOperation<T> where T : class {
-    /// <inheritdoc cref="ImportingOperation.Rid"/>
-    public readonly ResourceID Rid;
-    
-    /// <inheritdoc cref="ImportingOperation.Task"/>
-    public readonly Task<ResourceHandle<T>> Task;
-
-    internal ImportingOperation(ResourceID rid, Task<ResourceHandle<T>> task) {
-        Rid = rid;
-        Task = task;
-    }
-
-    /// <summary>
-    /// Gets an awaiter used to await the underlying importing task.
-    /// </summary>
-    /// <returns>An awaiter instance.</returns>
-    /// <see cref="Task"/>
-    public TaskAwaiter<ResourceHandle<T>> GetAwaiter() => Task.GetAwaiter();
-}
+// /// <summary>
+// /// Represents a strongly-typed handle of the resource importing operation.
+// /// </summary>
+// /// <typeparam name="T">Resource type to import. Must be a reference type.</typeparam>
+// public readonly struct ImportingOperation<T> where T : class {
+//     private readonly ResourceCache.ElementContainer _resourceContainer;
+//
+//     /// <inheritdoc cref="ImportingOperation.Rid"/>
+//     public ResourceID Rid => _resourceContainer.ResourceId;
+//
+//     /// <inheritdoc cref="ImportingOperation.Task"/>
+//     public Task<ResourceHandle<T>> Task => _resourceContainer.FinalizeTask;
+//
+//     internal ImportingOperation(ResourceCache.ElementContainer resourceContainer resourceContainer) {
+//         _resourceContainer = resourceContainer;
+//     }
+//
+//     /// <summary>
+//     /// Gets an awaiter used to await the underlying importing task.
+//     /// </summary>
+//     /// <returns>An awaiter instance.</returns>
+//     /// <see cref="Task"/>
+//     public TaskAwaiter<ResourceHandle<T>> GetAwaiter() => Task.GetAwaiter();
+// }

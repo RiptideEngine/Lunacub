@@ -14,12 +14,15 @@ internal static partial class Log {
     [LoggerMessage(LogLevel.Information, "Begin import resource {rid}.")]
     public static partial void BeginImport(ILogger logger, ResourceID rid);
     
-    [LoggerMessage(LogLevel.Information, "Begin import reference resource {rid}.")]
-    public static partial void BeginImportReference(ILogger logger, ResourceID rid);
-
     [LoggerMessage(LogLevel.Warning, "Trying to import an unregistered resource {rid}.")]
     public static partial void UnregisteredResource(ILogger logger, ResourceID rid);
 
-    [LoggerMessage(LogLevel.Warning, "Trying to import an unregistered dependency resource {rid}.")]
-    public static partial void UnregisteredDependencyResource(ILogger logger, ResourceID rid);
+    [LoggerMessage(LogLevel.Information, "Resource cached {rid} (Reference count: {referenceCount}).")]
+    public static partial void CachedContainer(ILogger logger, ResourceID rid, uint referenceCount);
+
+    [LoggerMessage(LogLevel.Information, "Begin resolving references for resource {rid}.")]
+    public static partial void BeginResolvingReference(ILogger logger, ResourceID rid);
+    
+    [LoggerMessage(LogLevel.Information, "End resolving references for resource {rid}.")]
+    public static partial void EndResolvingReference(ILogger logger, ResourceID rid);
 }

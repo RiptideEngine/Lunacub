@@ -17,7 +17,7 @@ public sealed class Statistics {
         _remainReferenceCount.Increment();
     }
 
-    internal void Release(uint count = 1) {
+    internal void ReleaseReferences(uint count = 1) {
         _remainReferenceCount.Subtract(count);
     }
     

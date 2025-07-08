@@ -69,6 +69,15 @@ namespace Caxivitual.Lunacub.Importing {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Null Stream was returned for resource with Id of {0}..
+        /// </summary>
+        internal static string NullResourceStream {
+            get {
+                return ResourceManager.GetString("NullResourceStream", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cannot find chunk {0} in compiled resource binary..
         /// </summary>
         internal static string ResourceMissingChunk {
@@ -101,6 +110,15 @@ namespace Caxivitual.Lunacub.Importing {
         internal static string UnregisteredDeserializer {
             get {
                 return ResourceManager.GetString("UnregisteredDeserializer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Resource with Id of {0} is unregistered..
+        /// </summary>
+        internal static string UnregisteredResource {
+            get {
+                return ResourceManager.GetString("UnregisteredResource", resourceCulture);
             }
         }
         

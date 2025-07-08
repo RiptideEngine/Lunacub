@@ -1,7 +1,10 @@
-﻿namespace Caxivitual.Lunacub.Tests.Common;
+﻿using Microsoft.Extensions.Logging;
+
+namespace Caxivitual.Lunacub.Tests.Common;
 
 public sealed class ReferencingResource : IDisposable {
     public ReferencingResource? Reference { get; set; }
+
     public int Value { get; set; }
     public bool Disposed { get; private set; }
 
@@ -55,6 +58,13 @@ public sealed class ReferencingResourceDeserializer : Deserializer<ReferencingRe
     }
 
     protected override void ResolveReferences(ReferencingResource instance, DeserializationContext context) {
-        instance.Reference = context.GetReference<ReferencingResource>(0);
+        if (context.GetReference<ReferencingResource>(0) is { } reference) {
+            instance.Reference = reference;
+            context.Logger.LogInformation("Reference assigned: {value}.", reference.Value);
+        } else {
+            context.Logger.LogInformation("Does not contain reference.");
+        }
+        
+        // instance.Reference = context.GetReference<ReferencingResource>(0);
     }
 }

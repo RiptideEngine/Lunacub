@@ -3,8 +3,6 @@
 public abstract class Deserializer {
     public abstract Type OutputType { get; }
     
-    public virtual bool Streaming => false;
-
     public abstract Task<object> DeserializeObjectAsync(
         Stream dataStream,
         Stream optionStream,

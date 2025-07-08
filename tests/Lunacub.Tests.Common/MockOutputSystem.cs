@@ -17,7 +17,7 @@ public sealed class MockOutputSystem : OutputSystem {
 
     public override void FlushIncrementalInfos(IReadOnlyDictionary<ResourceID, IncrementalInfo> reports) {
         foreach ((var rid, var report) in reports) {
-            using Stream reportFile = new MockFileStream(FileSystem, Path.Combine(ReportDirectory, $"{rid}{CompilingConstants.ReportExtension}"), FileMode.OpenOrCreate);
+            using Stream reportFile = new MockFileStream(FileSystem, Path.Combine(ReportDirectory, $"{rid:X}{CompilingConstants.ReportExtension}"), FileMode.OpenOrCreate);
             reportFile.SetLength(0);
 
             JsonSerializer.Serialize(reportFile, report);
@@ -25,13 +25,13 @@ public sealed class MockOutputSystem : OutputSystem {
     }
     
     public override DateTime? GetResourceLastBuildTime(ResourceID rid) {
-        string path = FileSystem.Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}");
+        string path = FileSystem.Path.Combine(ResourceOutputDirectory, $"{rid:X}{CompilingConstants.CompiledResourceExtension}");
         
         return FileSystem.File.Exists(path) ? FileSystem.File.GetLastWriteTime(path) : null;
     }
 
     public override void CopyCompiledResourceOutput(Stream sourceStream, ResourceID rid) {
-        using MockFileStream outputStream = new(FileSystem, FileSystem.Path.Combine(ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"), FileMode.Create);
+        using MockFileStream outputStream = new(FileSystem, FileSystem.Path.Combine(ResourceOutputDirectory, $"{rid:X}{CompilingConstants.CompiledResourceExtension}"), FileMode.Create);
         sourceStream.Position = 0;
         sourceStream.CopyTo(outputStream);
     }

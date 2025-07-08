@@ -56,7 +56,7 @@ public sealed class BuildEnvironment : IDisposable {
     /// <param name="output">The <see cref="OutputSystem"/> object for the instance to use.</param>
     public BuildEnvironment(OutputSystem output) {
         Output = output;
-        Libraries = new();
+        Libraries = [];
         IncrementalInfos = new(output);
         Logger = NullLogger.Instance;
     }
@@ -71,11 +71,11 @@ public sealed class BuildEnvironment : IDisposable {
     }
 
     private void Dispose(bool disposing) {
-        if (_disposed) return;
+        if (Interlocked.Exchange(ref _disposed, true)) return;
 
-        _disposed = true;
-
-        Output.FlushIncrementalInfos(IncrementalInfos);
+        if (disposing) {
+            Output.FlushIncrementalInfos(IncrementalInfos);
+        }
     }
 
     public void Dispose() {

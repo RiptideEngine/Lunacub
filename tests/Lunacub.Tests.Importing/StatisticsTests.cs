@@ -25,7 +25,7 @@ public class StatisticsTests {
         _statistics.SetTotalReferenceCount(20000);
         _statistics.SetRemainReferenceCount(20000);
 
-        Parallel.For(0, times, _ => _statistics.Release());
+        Parallel.For(0, times, _ => _statistics.ReleaseReferences());
         
         _statistics.TotalReferenceCount.Should().Be(20000);
         _statistics.RemainReferenceCount.Should().Be(20000 - times);

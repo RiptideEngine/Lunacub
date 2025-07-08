@@ -20,7 +20,7 @@ public class DeserializationContextTests {
 #pragma warning restore CA2263
 
         _context.RequestingReferences.Should().HaveCount(1);
-        _context.RequestingReferences.Should().ContainKey(key).WhoseValue.Should().Be(new DeserializationContext.RequestingDependency(1, type));
+        _context.RequestingReferences.Should().ContainKey(key).WhoseValue.Should().Be(new DeserializationContext.RequestingReference(1, type));
     }
     
     [Theory]
@@ -64,9 +64,9 @@ public class DeserializationContextTests {
         new Action(() => _context.RequestReference<List<int>>(property3, 3)).Should().NotThrow();
 
         _context.RequestingReferences.Should().HaveCount(3);
-        _context.RequestingReferences.Should().ContainKey(property1).WhoseValue.Should().Be(new DeserializationContext.RequestingDependency(1, typeof(object)));
-        _context.RequestingReferences.Should().ContainKey(property2).WhoseValue.Should().Be(new DeserializationContext.RequestingDependency(2, typeof(IEnumerable<int>)));
-        _context.RequestingReferences.Should().ContainKey(property3).WhoseValue.Should().Be(new DeserializationContext.RequestingDependency(3, typeof(List<int>)));
+        _context.RequestingReferences.Should().ContainKey(property1).WhoseValue.Should().Be(new DeserializationContext.RequestingReference(1, typeof(object)));
+        _context.RequestingReferences.Should().ContainKey(property2).WhoseValue.Should().Be(new DeserializationContext.RequestingReference(2, typeof(IEnumerable<int>)));
+        _context.RequestingReferences.Should().ContainKey(property3).WhoseValue.Should().Be(new DeserializationContext.RequestingReference(3, typeof(List<int>)));
     }
     
     [Fact]

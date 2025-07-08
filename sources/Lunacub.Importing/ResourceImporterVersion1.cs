@@ -4,10 +4,9 @@ using Caxivitual.Lunacub.Importing.Extensions;
 
 namespace Caxivitual.Lunacub.Importing;
 
-internal sealed class ResourceImporterVersion1 {
-    public async Task<ResourceCache.VesselDeserializeResult> ImportVessel(
+internal static class ResourceImporterVersion1 {
+    public static async Task<ResourceImportDispatcher.ResourceImportResult> ImportVessel(
         ImportEnvironment environment,
-        Type resourceType,
         Stream resourceStream,
         BinaryHeader header,
         CancellationToken cancellationToken
@@ -46,10 +45,6 @@ internal sealed class ResourceImporterVersion1 {
                 throw new ArgumentException(message);
             }
 
-            if (!deserializer.OutputType.IsAssignableTo(resourceType)) {
-                return default;
-            }
-
             await using Stream optionsStream = await CopyOptionsStreamAsync(resourceStream, header, cancellationToken);
 
             resourceStream.Seek(dataChunk.ContentOffset, SeekOrigin.Begin);
@@ -60,11 +55,22 @@ internal sealed class ResourceImporterVersion1 {
 
             object deserialized = await deserializer.DeserializeObjectAsync(dataStream, optionsStream, context, cancellationToken);
 
-            if (deserializer.Streaming) {
-                disposeResourceStream = false;
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (deserialized == null) {
+                throw new InvalidOperationException("Deserializer cannot returns null object.");
             }
 
-            return new(deserializer, deserialized, context);
+            if (!deserialized.GetType().IsAssignableTo(deserializer.OutputType)) {
+                if (environment.Disposers.TryDispose(deserialized)) {
+                    environment.Statistics.IncrementDisposedResourceCount();
+                } else {
+                    environment.Statistics.IncrementUndisposedResourceCount();
+                }
+
+                throw new InvalidOperationException("Deserialized object cannot be assigned to Deserializer's output type.");
+            }
+
+            return new(deserialized, context);
         } finally {
             if (disposeResourceStream) await resourceStream.DisposeAsync();
         }

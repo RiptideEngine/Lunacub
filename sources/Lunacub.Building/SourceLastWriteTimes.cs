@@ -3,12 +3,13 @@
 namespace Caxivitual.Lunacub.Building;
 
 public readonly struct SourceLastWriteTimes : IEquatable<SourceLastWriteTimes> {
-    public readonly DateTime Primary;
-    public readonly IReadOnlyDictionary<string, DateTime>? Secondaries;
+    public DateTime Primary { get; }
+    public IReadOnlyDictionary<string, DateTime>? Secondaries { get; }
 
     public SourceLastWriteTimes(DateTime primary) : this(primary, FrozenDictionary<string, DateTime>.Empty) {
     }
 
+    [JsonConstructor]
     public SourceLastWriteTimes(DateTime primary, IReadOnlyDictionary<string, DateTime>? secondaries) {
         Primary = primary;
         Secondaries = secondaries ?? FrozenDictionary<string, DateTime>.Empty;

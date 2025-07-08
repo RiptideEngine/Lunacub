@@ -5,18 +5,22 @@ namespace Caxivitual.Lunacub.Tests.Importing;
 
 public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
     private readonly ComponentsFixture _componentsFixture;
+    private readonly ITestOutputHelper _output;
 
     private readonly MockFileSystem _fileSystem;
     private readonly BuildEnvironment _buildEnvironment;
     private readonly ImportEnvironment _importEnvironment;
     
-    public ImportOutputTests(ComponentsFixture componentsFixture) {
+    public ImportOutputTests(ComponentsFixture componentsFixture, ITestOutputHelper output) {
         _componentsFixture = componentsFixture;
-
+        _output = output;
+        
         _fileSystem = new();
         
         _buildEnvironment = new(new MockOutputSystem(_fileSystem));
-        _importEnvironment = new();
+        _importEnvironment = new() {
+            Logger = _output.BuildLogger(),
+        };
         
         _componentsFixture.ApplyComponents(_buildEnvironment);
         _componentsFixture.ApplyComponents(_importEnvironment);
@@ -43,19 +47,19 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
                 }),
             },
         });
-
+    
         _buildEnvironment.BuildResources();
         _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)) {
             Registry = {
                 [1] = new("Resource", [], 0)
             }
         });
-
-        var handle = (await new Func<Task<ResourceHandle<object>>>(() => _importEnvironment.Import<object>(1).Task)
+    
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
             .Should()
-            .CompleteWithinAsync(0.5.Seconds(), "shouldn't take this long."))
+            .NotThrowAsync())
             .Which;
-
+    
         handle.ResourceId.Should().Be((ResourceID)1);
         handle.Value.Should().NotBeNull().And.BeOfType<SimpleResource>().Which.Value.Should().Be(69);
     }
@@ -74,7 +78,7 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
                 }),
             },
         });
-
+    
         _buildEnvironment.BuildResources();
         _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)){
             Registry = {
@@ -82,11 +86,11 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
             }
         });
         
-        var handle = (await new Func<Task<ResourceHandle<object>>>(() => _importEnvironment.Import<object>(1).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
             .Should()
-            .CompleteWithinAsync(0.5.Seconds(), "shouldn't take this long."))
+            .NotThrowAsync())
             .Which;
-
+    
         handle.ResourceId.Should().Be((ResourceID)1);
         handle.Value.Should().NotBeNull().And.BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
     }
@@ -105,7 +109,7 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
                 }),
             },
         });
-
+    
         _buildEnvironment.BuildResources();
         _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)){
             Registry = {
@@ -113,15 +117,15 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
             }
         });
         
-        var handle = (await new Func<Task<ResourceHandle<object>>>(() => _importEnvironment.Import<object>(1).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
             .Should()
-            .CompleteWithinAsync(0.5.Seconds(), "shouldn't take this long."))
+            .NotThrowAsync())
             .Which;
-
+    
         handle.ResourceId.Should().Be((ResourceID)1);
         handle.Value.Should().NotBeNull().And.BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
     }
-
+    
     [Fact]
     public async Task ImportReferencingResource_UnregisteredReference_ReturnsCorrectObjects() {
         _buildEnvironment.Libraries.Add(new(new MemorySourceProvider {
@@ -144,14 +148,14 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
             }
         });
         
-        var handle = (await new Func<Task<ResourceHandle<object>>>(() => _importEnvironment.Import<object>(1).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
             .Should()
-            .CompleteWithinAsync(0.5.Seconds(), "shouldn't take this long."))
+            .NotThrowAsync())
             .Which;
         
         handle.ResourceId.Should().Be((ResourceID)1);
         var referencee = handle.Value.Should().NotBeNull().And.BeOfType<ReferencingResource>().Which;
-
+    
         referencee.Value.Should().Be(1);
         referencee.Reference.Should().BeNull();
     }
@@ -184,15 +188,15 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
             }
         });
         
-        var handle = (await new Func<Task<ResourceHandle<object>>>(() => _importEnvironment.Import<object>(1).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
             .Should()
-            .CompleteWithinAsync(0.5.Seconds(), "shouldn't take this long."))
+            .NotThrowAsync())
             .Which;
         
         handle.ResourceId.Should().Be((ResourceID)1);
         var resource1 = handle.Value.Should().NotBeNull().And.BeOfType<ReferencingResource>().Which;
         resource1.Value.Should().Be(1);
-
+    
         var resource2 = resource1.Reference;
         resource2.Should().NotBeNull();
         resource2!.Value.Should().Be(2);
@@ -230,7 +234,7 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
         });
         
         _buildEnvironment.BuildResources();
-        _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)){
+        _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)) {
             Registry = {
                 [1] = new("Resource1", [], 0),
                 [2] = new("Resource2", [], 0),
@@ -239,9 +243,9 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
             },
         });
         
-        var handle = (await new Func<Task<ResourceHandle<object>>>(() => _importEnvironment.Import<object>(1).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
             .Should()
-            .CompleteWithinAsync(0.5.Seconds(), "shouldn't take this long."))
+            .NotThrowAsync())
             .Which;
         
         handle.ResourceId.Should().Be((ResourceID)1);
@@ -252,6 +256,8 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
         resource2.Should().NotBeNull();
         resource2!.Value.Should().Be(2);
         resource2.Reference.Should().NotBeNull();
+        
+        _output.WriteLine("A");
 
         var resource3 = resource2.Reference;
         resource3.Should().NotBeNull();

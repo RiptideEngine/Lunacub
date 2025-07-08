@@ -201,7 +201,7 @@ partial class BuildSession {
                             }
                         }
                     }
-                } else if (TryGetProceduralResourceRecursively(dependencyId) is { } proceduralResource) {
+                } else if (RecursivelyTryGetProceduralResource(dependencyId) is { } proceduralResource) {
                     dependencyCollection.Add(dependencyId, proceduralResource);
                 }
             }
@@ -209,10 +209,10 @@ partial class BuildSession {
             collectedDependencies = dependencyCollection;
         }
 
-        private ContentRepresentation? TryGetProceduralResourceRecursively(ResourceID resourceId) {
+        private ContentRepresentation? RecursivelyTryGetProceduralResource(ResourceID resourceId) {
             if (_current.TryGetValue(resourceId, out BuildingProceduralResource resource)) return resource.Object;
             
-            return _previous?.TryGetProceduralResourceRecursively(resourceId);
+            return _previous?.RecursivelyTryGetProceduralResource(resourceId);
         }
     }
 }

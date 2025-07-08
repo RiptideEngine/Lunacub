@@ -1,4 +1,4 @@
-﻿using Xunit.Abstractions;
+﻿using Xunit.v3;
 
 namespace Caxivitual.Lunacub.Tests.Common;
 
