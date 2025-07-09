@@ -257,8 +257,6 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
         resource2!.Value.Should().Be(2);
         resource2.Reference.Should().NotBeNull();
         
-        _output.WriteLine("A");
-
         var resource3 = resource2.Reference;
         resource3.Should().NotBeNull();
         resource3!.Value.Should().Be(3);

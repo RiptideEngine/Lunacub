@@ -52,19 +52,16 @@ public sealed class ReferencingResourceDeserializer : Deserializer<ReferencingRe
     protected override Task<ReferencingResource> DeserializeAsync(Stream dataStream, Stream optionsStream, DeserializationContext context, CancellationToken cancellationToken) {
         using var reader = new BinaryReader(dataStream, Encoding.UTF8, true);
         
-        context.RequestReference<ReferencingResource>(0, reader.ReadResourceID());
+        context.RequestingReferences.Add(1, new(reader.ReadResourceID()));
         
         return Task.FromResult(new ReferencingResource { Value = reader.ReadInt32() });
     }
 
     protected override void ResolveReferences(ReferencingResource instance, DeserializationContext context) {
-        if (context.GetReference<ReferencingResource>(0) is { } reference) {
-            instance.Reference = reference;
-            context.Logger.LogInformation("Reference assigned: {value}.", reference.Value);
-        } else {
-            context.Logger.LogInformation("Does not contain reference.");
+        if (context.RequestingReferences.TryGetReference(1, out var handle)) {
+            if (handle.Value is ReferencingResource reference) {
+                instance.Reference = reference;
+            }
         }
-        
-        // instance.Reference = context.GetReference<ReferencingResource>(0);
     }
 }

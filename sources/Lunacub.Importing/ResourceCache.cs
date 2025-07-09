@@ -22,6 +22,16 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         _resourceMap = [];
     }
 
+    public ElementContainer? Get(ResourceID resourceId) {
+        _lock.Wait();
+
+        try {
+            return _containers.GetValueOrDefault(resourceId);
+        } finally {
+            _lock.Release();
+        }
+    }
+
     public ElementContainer GetOrBeginImporting(
         ResourceID resourceId,
         Action<ElementContainer> action,
@@ -80,8 +90,9 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     /// </summary>
     public sealed class ElementContainer : IDisposable {
         public readonly ResourceID ResourceId;
-        
+
         public uint ReferenceCount;
+        
         public FrozenSet<ResourceID> ReferenceResourceIds;
 
         public ImportingStatus Status;
@@ -90,7 +101,7 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         public CancellationToken CancellationToken => _cancellationTokenSource.Token;
         
         public Task<ResourceImportDispatcher.ResourceImportResult>? ImportTask { get; set; }
-        public Task<ResourceHandle>? ResolvingReferenceTask { get; set; }
+        public Task<ResourceImportDispatcher.ReferenceResolveResult>? ResolvingReferenceTask { get; set; }
         public Task<ResourceHandle> FinalizeTask { get; set; }
 
         public ElementContainer(ResourceID resourceId) {

@@ -70,7 +70,7 @@ internal static class ResourceImporterVersion1 {
                 throw new InvalidOperationException("Deserialized object cannot be assigned to Deserializer's output type.");
             }
 
-            return new(deserialized, context);
+            return new(deserializer, deserialized, context);
         } finally {
             if (disposeResourceStream) await resourceStream.DisposeAsync();
         }

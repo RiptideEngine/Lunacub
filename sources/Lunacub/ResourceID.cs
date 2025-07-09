@@ -8,6 +8,7 @@ namespace Caxivitual.Lunacub;
 /// Represents an identification number of a resource.
 /// </summary>
 [JsonConverter(typeof(ResourceIDConverter))]
+[DebuggerDisplay("{Value}")]
 public readonly struct ResourceID :
     IEquatable<ResourceID>, 
     IEquatable<UInt128>,
@@ -24,7 +25,7 @@ public readonly struct ResourceID :
     /// <summary>
     /// The underlying 128-bit unsigned integer value of <see cref="ResourceID"/>.
     /// </summary>
-    public UInt128 Value { get; }
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)] public UInt128 Value { get; }
     
     /// <summary>
     /// Creates a new instance of <see cref="ResourceID"/> with the specified 128-bit unsigned integer value.
