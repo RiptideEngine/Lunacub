@@ -51,7 +51,7 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
         _buildEnvironment.BuildResources();
         _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)) {
             Registry = {
-                [1] = new("Resource", [], 0)
+                [1] = new("Resource", [])
             }
         });
     
@@ -82,7 +82,7 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
         _buildEnvironment.BuildResources();
         _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)){
             Registry = {
-                [1] = new("Resource", [], 0)
+                [1] = new("Resource", [])
             }
         });
         
@@ -113,7 +113,7 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
         _buildEnvironment.BuildResources();
         _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)){
             Registry = {
-                [1] = new("Resource", [], 0)
+                [1] = new("Resource", [])
             }
         });
         
@@ -144,7 +144,7 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
         _buildEnvironment.BuildResources();
         _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)){
             Registry = {
-                [1] = new("Resource", [], 0)
+                [1] = new("Resource", [])
             }
         });
         
@@ -183,8 +183,8 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
         _buildEnvironment.BuildResources();
         _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)) {
             Registry = {
-                [1] = new("Resource", [], 0),
-                [2] = new("Reference", [], 0),
+                [1] = new("Resource", []),
+                [2] = new("Reference", []),
             }
         });
         
@@ -236,10 +236,10 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
         _buildEnvironment.BuildResources();
         _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)) {
             Registry = {
-                [1] = new("Resource1", [], 0),
-                [2] = new("Resource2", [], 0),
-                [3] = new("Resource3", [], 0),
-                [4] = new("Resource4", [], 0),
+                [1] = new("Resource1", []),
+                [2] = new("Resource2", []),
+                [3] = new("Resource3", []),
+                [4] = new("Resource4", []),
             },
         });
         
@@ -266,6 +266,63 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
         resource4.Should().NotBeNull();
         resource4!.Value.Should().Be(4);
         resource4.Reference.Should().BeNull();
+    }
+    
+    [Fact]
+    public async Task ImportReferencingResource_ChainArbitrary_ReturnsCorrectObjects() {
+        const int count = 50;
+        
+        MemorySourceProvider sourceProvider = new MemorySourceProvider();
+    
+        for (int i = 1; i < count; i++) {
+            sourceProvider.Sources.Add($"Resource{i}", MemorySourceProvider.AsUtf8($$"""{"Reference":{{i + 1}},"Value":{{i}}}""", DateTime.MinValue));
+        }
+        sourceProvider.Sources.Add($"Resource{count}", MemorySourceProvider.AsUtf8($$"""{"Value":{{count}}}""", DateTime.MinValue));
+        
+        BuildResourceLibrary buildLibrary = new(sourceProvider);
+    
+        for (int i = 1; i <= count; i++) {
+            buildLibrary.Registry.Add((uint)i, new($"Resource{i}", [], new() {
+                Addresses = new($"Resource{i}"),
+                Options = new(nameof(ReferencingResourceImporter)),
+            }));
+        }
+    
+        _buildEnvironment.Libraries.Add(buildLibrary);
+        
+        var result = _buildEnvironment.BuildResources();
+
+        result.ResourceResults.Should().HaveCount(count);
+        
+        ImportResourceLibrary importLibrary = new(new MockImportSourceProvider(_fileSystem));
+        for (int i = 1; i <= count; i++) {
+            importLibrary.Registry.Add((uint)i, new($"Resource{i}", []));
+        }
+        
+        _importEnvironment.Libraries.Add(importLibrary);
+        
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
+            .Should()
+            .NotThrowAsync())
+            .Which;
+        
+        handle.ResourceId.Should().Be((ResourceID)1);
+        var resource1 = handle.Value.Should().NotBeNull().And.BeOfType<ReferencingResource>().Which;
+        resource1.Value.Should().Be(1);
+        
+        var resource2 = resource1.Reference;
+        
+        for (int i = 2; i < count; i++) {
+            resource2.Should().NotBeNull();
+            resource2!.Value.Should().Be(i);
+            resource2.Reference.Should().NotBeNull();
+        
+            resource2 = resource2.Reference;
+        }
+        
+        resource2.Should().NotBeNull();
+        resource2!.Value.Should().Be(count);
+        resource2.Reference.Should().BeNull();
     }
 
     [Fact]

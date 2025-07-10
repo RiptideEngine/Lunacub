@@ -6,7 +6,7 @@ namespace Caxivitual.Lunacub.Building;
 public sealed class BuildResourceLibrary {
     private readonly BuildSourceProvider _provider;
 
-    public ResourceRegistry<BuildingResource> Registry { get; }
+    public ResourceRegistry<ResourceRegistry.Element<BuildingResource>> Registry { get; }
     
     public BuildResourceLibrary(BuildSourceProvider sourceProvider) {
         _provider = sourceProvider;
@@ -14,7 +14,7 @@ public sealed class BuildResourceLibrary {
     }
 
     public SourceStreams CreateSourceStreams(ResourceID resourceId) {
-        if (!Registry.TryGetValue(resourceId, out ResourceRegistry<BuildingResource>.Element element)) {
+        if (!Registry.TryGetValue(resourceId, out ResourceRegistry.Element<BuildingResource> element)) {
             return new(null, FrozenDictionary<string, Stream?>.Empty);
         }
 
@@ -51,7 +51,7 @@ public sealed class BuildResourceLibrary {
     }
 
     public SourceLastWriteTimes GetSourceLastWriteTimes(ResourceID resourceId) {
-        if (!Registry.TryGetValue(resourceId, out ResourceRegistry<BuildingResource>.Element element)) {
+        if (!Registry.TryGetValue(resourceId, out ResourceRegistry.Element<BuildingResource> element)) {
             return new(DateTime.MinValue, FrozenDictionary<string, DateTime>.Empty);
         }
         

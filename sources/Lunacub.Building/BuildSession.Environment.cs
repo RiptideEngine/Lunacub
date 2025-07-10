@@ -139,7 +139,7 @@ partial class BuildSession {
         }
 
         try {
-            ResourceRegistry<BuildingResource>.Element registryElement = resourceVertex.RegistryElement;
+            ResourceRegistry.Element<BuildingResource> registryElement = resourceVertex.RegistryElement;
             BuildingOptions options = registryElement.Option.Options;
 
             Importer importer = _environment.Importers[options.ImporterName];

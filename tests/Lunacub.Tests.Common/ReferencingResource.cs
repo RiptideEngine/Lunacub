@@ -53,7 +53,7 @@ public sealed class ReferencingResourceDeserializer : Deserializer<ReferencingRe
         using var reader = new BinaryReader(dataStream, Encoding.UTF8, true);
         
         context.RequestingReferences.Add(1, new(reader.ReadResourceID()));
-        
+
         return Task.FromResult(new ReferencingResource { Value = reader.ReadInt32() });
     }
 

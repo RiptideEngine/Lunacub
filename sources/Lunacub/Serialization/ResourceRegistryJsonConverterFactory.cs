@@ -27,21 +27,21 @@ internal sealed class ResourceRegistryJsonConverterFactory : JsonConverterFactor
         return converter;
     }
 
-    private sealed class InnerConverter<T> : JsonConverter<ResourceRegistry<T>> {
+    private sealed class InnerConverter<TElement> : JsonConverter<ResourceRegistry<TElement>> where TElement : IResourceRegistryElement {
         private readonly JsonConverter<ResourceID> _resourceIdConverter;
-        private readonly JsonConverter<ResourceRegistry<T>.Element> _elementConverter;
+        private readonly JsonConverter<TElement> _elementConverter;
 
         public InnerConverter(JsonSerializerOptions options) {
             _resourceIdConverter = (JsonConverter<ResourceID>)options.GetConverter(typeof(ResourceID));
-            _elementConverter = (JsonConverter<ResourceRegistry<T>.Element>)options.GetConverter(typeof(ResourceRegistry<T>.Element));
+            _elementConverter = (JsonConverter<TElement>)options.GetConverter(typeof(TElement));
         }
         
-        public override ResourceRegistry<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+        public override ResourceRegistry<TElement> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
             if (reader.TokenType != JsonTokenType.StartObject) {
                 throw new JsonException();
             }
 
-            ResourceRegistry<T> registry = [];
+            ResourceRegistry<TElement> registry = [];
 
             while (reader.Read()) {
                 if (reader.TokenType == JsonTokenType.EndObject) {
@@ -56,7 +56,7 @@ internal sealed class ResourceRegistryJsonConverterFactory : JsonConverterFactor
 
                 reader.Read();
 
-                if (_elementConverter.Read(ref reader, typeof(ResourceRegistry<T>.Element), options) is { } element) {
+                if (_elementConverter.Read(ref reader, typeof(TElement), options) is { } element) {
                     registry[resourceID] = element;
                 }
             }
@@ -64,7 +64,7 @@ internal sealed class ResourceRegistryJsonConverterFactory : JsonConverterFactor
             throw new JsonException();
         }
         
-        public override void Write(Utf8JsonWriter writer, ResourceRegistry<T> value, JsonSerializerOptions options) {
+        public override void Write(Utf8JsonWriter writer, ResourceRegistry<TElement> value, JsonSerializerOptions options) {
             writer.WriteStartObject();
             
             foreach ((var resourceId, var element) in value) {

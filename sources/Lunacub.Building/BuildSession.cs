@@ -152,7 +152,7 @@ internal sealed partial class BuildSession {
         /// id, or self-referencing.
         /// </summary>
         public IReadOnlySet<ResourceID> DependencyIds;
-        public readonly ResourceRegistry<BuildingResource>.Element RegistryElement;
+        public readonly ResourceRegistry.Element<BuildingResource> RegistryElement;
         
         public ContentRepresentation? ImportOutput { get; private set; }
         
@@ -161,7 +161,7 @@ internal sealed partial class BuildSession {
         public EnvironmentResourceVertex(
             BuildResourceLibrary library,
             IReadOnlySet<ResourceID> dependencies,
-            ResourceRegistry<BuildingResource>.Element registryElement
+            ResourceRegistry.Element<BuildingResource> registryElement
         ) {
             Library = library;
             DependencyIds = dependencies;

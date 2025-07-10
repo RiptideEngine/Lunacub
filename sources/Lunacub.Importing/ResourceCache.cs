@@ -147,6 +147,12 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
             _cancellationTokenSource?.Dispose();
         }
 
+        public void DisposeCancellationTokenSource() {
+            Debug.Assert(_cancellationTokenSource != null);
+            
+            _cancellationTokenSource.Dispose();
+        }
+
         public void Dispose() {
             
         }

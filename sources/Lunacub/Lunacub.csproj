@@ -17,9 +17,6 @@
         <DependentUpon>ExceptionMessages.resx</DependentUpon>
       </Compile>
     </ItemGroup>
-    <ItemGroup>
-      <Folder Include="Core\" />
-    </ItemGroup>
 
     <Import Project="$(SolutionDir)commons\languagecommon.props"/>
     <Import Project="$(SolutionDir)commons\nugetcommon.props"/>

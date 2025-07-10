@@ -37,7 +37,7 @@
         <value>Resource Id {0} is already registered.</value>
     </data>
     <data name="ResourceNameAlreadyRegistered" xml:space="preserve">
-        <value>Resource name '0}' is already registered to resource with id {1}.</value>
+        <value>Resource name '{0}' is already registered to resource with id {1}.</value>
     </data>
     <data name="InvalidTagCharacter" xml:space="preserve">
         <value>Tag '{0}' contains invalid character at position {1}.</value>

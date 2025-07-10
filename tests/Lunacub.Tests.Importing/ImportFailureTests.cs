@@ -60,7 +60,7 @@ public class ImportFailureTests : IClassFixture<ComponentsFixture>, IDisposable 
         _buildEnvironment.BuildResources();
         _importEnvironment.Libraries.Add(new(new NullStreamSourceProvider()) {
             Registry = {
-                [1] = new("Resource", [], 0)
+                [1] = new("Resource", [])
             },
         });
 

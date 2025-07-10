@@ -141,7 +141,7 @@ namespace Caxivitual.Lunacub {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Resource name &apos;0}&apos; is already registered to resource with id {1}..
+        ///   Looks up a localized string similar to Resource name &apos;{0}&apos; is already registered to resource with id {1}..
         /// </summary>
         internal static string ResourceNameAlreadyRegistered {
             get {

@@ -30,7 +30,7 @@ internal sealed class ResourceIDConverter : JsonConverter<ResourceID> {
         return ReadCore(ref reader);
     }
 
-    private ResourceID ReadCore(ref Utf8JsonReader reader) {
+    private static ResourceID ReadCore(ref Utf8JsonReader reader) {
         byte[]? rentedArray = null;
 
         try {

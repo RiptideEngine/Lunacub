@@ -8,7 +8,7 @@ public sealed class MockImportSourceProvider : ImportSourceProvider {
     }
 
     protected override Stream? CreateStreamCore(ResourceID resourceId) {
-        string path = FileSystem.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{resourceId}{CompilingConstants.CompiledResourceExtension}");
+        string path = FileSystem.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{resourceId:X}{CompilingConstants.CompiledResourceExtension}");
         
         return FileSystem.File.Exists(path) ? FileSystem.File.OpenRead(path) : null;
     }

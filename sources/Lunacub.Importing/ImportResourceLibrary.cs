@@ -3,7 +3,7 @@
 public sealed class ImportResourceLibrary {
     private ImportSourceProvider _provider;
     
-    public ResourceRegistry<byte> Registry { get; }
+    public ResourceRegistry<ResourceRegistry.Element> Registry { get; }
     
     public ImportResourceLibrary(ImportSourceProvider sourceProvider) {
         ArgumentNullException.ThrowIfNull(sourceProvider, nameof(sourceProvider));
