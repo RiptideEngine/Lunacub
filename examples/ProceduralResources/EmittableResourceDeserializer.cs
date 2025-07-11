@@ -9,15 +9,22 @@ public sealed class EmittableResourceDeserializer : Deserializer<EmittableResour
         int value = reader.ReadInt32();
         ResourceID generatedId = reader.ReadResourceID();
         
-        context.RequestReference<SimpleResource>(0, generatedId);
+        context.RequestReference(1, new(generatedId));
         
-        return Task.FromResult(new EmittableResource() {
+        return Task.FromResult(new EmittableResource {
             Value = value,
             Generated = null,
         });
     }
 
     protected override void ResolveReferences(EmittableResource instance, DeserializationContext context) {
-        instance.Generated = context.GetReference<SimpleResource>(0);
+        // if (context.GetReference(1))
+        var referenceHandle = context.GetReference(1);
+
+        if (referenceHandle.Value is SimpleResource reference) {
+            instance.Generated = reference;
+        } else {
+            // TODO: Release.
+        }
     }
 }

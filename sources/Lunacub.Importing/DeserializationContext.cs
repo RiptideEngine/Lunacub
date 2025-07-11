@@ -12,4 +12,18 @@ public sealed class DeserializationContext {
         RequestingReferences = new();
         ValueContainer = [];
     }
+
+    public void RequestReference(ReferencePropertyKey key, RequestingReferences.RequestingReference requesting) {
+        RequestingReferences.Add(key, requesting);
+    }
+
+    public bool RemoveRequestingReference(ReferencePropertyKey key) {
+        return RequestingReferences.Remove(key);
+    }
+
+    public ResourceHandle GetReference(ReferencePropertyKey key) => RequestingReferences.GetReference(key);
+    
+    public bool TryGetReference(ReferencePropertyKey key, out ResourceHandle handle) {
+        return RequestingReferences.TryGetReference(key, out handle);
+    }
 }

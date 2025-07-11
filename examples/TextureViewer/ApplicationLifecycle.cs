@@ -202,11 +202,11 @@ internal static unsafe class ApplicationLifecycle {
             });
         }
 
-        ImportingOperation<Texture2D> importOperation = Resources.Import<Texture2D>(1);
+        ImportingOperation importOperation = Resources.Import(1);
 
         importOperation.Task.Wait();
         
-        var textureHandle = importOperation.Task.Result;
+        var textureHandle = importOperation.Task.Result.Convert<Texture2D>();
         
         // Drawing
         BindGroupEntry* bindGroupEntries = stackalloc BindGroupEntry[] {

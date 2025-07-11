@@ -90,13 +90,13 @@ internal static class Program {
             Libraries = {
                 new(new FileSourceProvider(resourceDirectory)) {
                     Registry = {
-                        [4] = new("Resource", [], 0),
-                    }
+                        [4] = new("Resource", []),
+                    },
                 },
             },
         };
 
-        ResourceHandle<MergingResource> handle = await importEnvironment.Import<MergingResource>(4).Task;
+        ResourceHandle<MergingResource> handle = (await importEnvironment.Import(4)).Convert<MergingResource>();
         
         _logger.LogInformation("Values: {values}", string.Join(", ", handle.Value!.Values));
 

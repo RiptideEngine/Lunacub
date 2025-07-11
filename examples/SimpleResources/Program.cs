@@ -67,11 +67,11 @@ internal static class Program {
         importEnvironment.Logger = _logger;
         importEnvironment.Libraries.Add(new(new FileSourceProvider(resourceDirectory)) {
             Registry = {
-                [1] = new("Resource", [], 0),
+                [1] = new("Resource", []),
             },
         });
 
-        ResourceHandle<SimpleResource> handle = await importEnvironment.Import<SimpleResource>(1).Task;
+        ResourceHandle<SimpleResource> handle = (await importEnvironment.Import(1).Task).Convert<SimpleResource>();
         
         _logger.LogInformation("Imported: {value}.", handle.Value);
     }

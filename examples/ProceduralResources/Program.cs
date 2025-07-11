@@ -77,13 +77,13 @@ internal static class Program {
             Libraries = {
                 new(new FileSourceProvider(resourceDirectory)) {
                     Registry = {
-                        [1] = new("Resource", [], 0),
+                        [1] = new("Resource", []),
                     },
                 },
             },
         };
         
-        ResourceHandle<EmittableResource> handle = await importEnvironment.Import<EmittableResource>(1).Task;
+        ResourceHandle<EmittableResource> handle = (await importEnvironment.Import(1)).Convert<EmittableResource>();
         
         _logger.LogInformation("resource.Value: {value}", handle.Value!.Value);
         _logger.LogInformation("resource.Value.Generated.Value: {value}", handle.Value!.Generated!.Value);

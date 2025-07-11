@@ -119,7 +119,7 @@ public static class Resources {
         ImportResourceLibrary library = new(new FileSourceProvider(compiledResourceDirectory));
 
         using (FileStream registryStream = File.OpenRead(Path.Combine(compiledResourceDirectory, "__registry"))) {
-            foreach ((var resourceId, var element) in JsonSerializer.Deserialize<ResourceRegistry<byte>>(registryStream)!) {
+            foreach ((var resourceId, var element) in JsonSerializer.Deserialize<ResourceRegistry<ResourceRegistry.Element>>(registryStream)!) {
                 library.Registry.Add(resourceId, element);
             }
         }
@@ -127,7 +127,7 @@ public static class Resources {
         _importEnv.Libraries.Add(library);
     }
 
-    public static ImportingOperation<T> Import<T>(ResourceID rid) where T : class => _importEnv.Import<T>(rid);
+    public static ImportingOperation Import(ResourceID rid) => _importEnv.Import(rid);
 
     public static ReleaseStatus Release(ResourceID rid) => _importEnv.Release(rid);
     public static ReleaseStatus Release<T>(ResourceHandle<T> handle) where T : class => _importEnv.Release(handle);

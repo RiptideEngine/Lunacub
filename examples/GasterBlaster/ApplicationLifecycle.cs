@@ -192,17 +192,17 @@ internal static unsafe class ApplicationLifecycle {
             });
         }
 
-        ImportingOperation<Texture2D> blasterTextureImport = Resources.Import<Texture2D>(1);
-        ImportingOperation<Sprite> blasterSpriteImport = Resources.Import<Sprite>(2);
-        ImportingOperation<Texture2D> blasterRayTextureImport = Resources.Import<Texture2D>(3);
-        ImportingOperation<Sprite> blasterRaySpriteImport = Resources.Import<Sprite>(4);
+        ImportingOperation blasterTextureImport = Resources.Import(1);
+        ImportingOperation blasterSpriteImport = Resources.Import(2);
+        ImportingOperation blasterRayTextureImport = Resources.Import(3);
+        ImportingOperation blasterRaySpriteImport = Resources.Import(4);
 
         Task.WaitAll(blasterTextureImport.Task, blasterSpriteImport.Task, blasterRayTextureImport.Task, blasterRaySpriteImport.Task);
         
-        _blasterTexture = blasterTextureImport.Task.Result;
-        _blasterSprite = blasterSpriteImport.Task.Result;
-        _blasterRayTexture = blasterRayTextureImport.Task.Result;
-        _blasterRaySprite = blasterRaySpriteImport.Task.Result;
+        _blasterTexture = blasterTextureImport.Task.Result.Convert<Texture2D>();
+        _blasterSprite = blasterSpriteImport.Task.Result.Convert<Sprite>();
+        _blasterRayTexture = blasterRayTextureImport.Task.Result.Convert<Texture2D>();
+        _blasterRaySprite = blasterRaySpriteImport.Task.Result.Convert<Sprite>();
         
         // Drawing
         _globalBindGroup = CreateBindGroup([

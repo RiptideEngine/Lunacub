@@ -116,10 +116,10 @@ public static class Resources {
             Libraries = {
                 new(new FileSourceProvider(compiledResourceDirectory)) {
                     Registry = {
-                        [1] = new("Blaster Texture", [], 0),
-                        [2] = new("Blaster Sprite", [], 0),
-                        [3] = new("Blaster Ray Texture", [], 0),
-                        [4] = new("Blaster Ray Sprite", [], 0),
+                        [1] = new("Blaster Texture", []),
+                        [2] = new("Blaster Sprite", []),
+                        [3] = new("Blaster Ray Texture", []),
+                        [4] = new("Blaster Ray Sprite", []),
                     }
                 },
             },
@@ -127,7 +127,7 @@ public static class Resources {
         };
     }
 
-    public static ImportingOperation<T> Import<T>(ResourceID rid) where T : class => _importEnv.Import<T>(rid);
+    public static ImportingOperation Import(ResourceID rid) => _importEnv.Import(rid);
 
     public static ReleaseStatus Release(ResourceID rid) => _importEnv.Release(rid);
     public static ReleaseStatus Release<T>(ResourceHandle<T> handle) where T : class => _importEnv.Release(handle);

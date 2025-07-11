@@ -25,12 +25,20 @@ public sealed class SpriteDeserializer : Deserializer<Sprite> {
         };
         sprite.Subsprites.AddRange(subsprites);
         
-        context.RequestReference<Texture2D>(1, textureId);
+        context.RequestReference(1, new(textureId));
 
         return Task.FromResult(sprite);
     }
 
     protected override void ResolveReferences(Sprite instance, DeserializationContext context) {
-        instance.Texture = context.GetReference<Texture2D>(1) ?? throw new ArgumentException("Null texture.");
+        ResourceHandle textureHandle = context.GetReference(1);
+
+        if (textureHandle.Value is Texture2D texture) {
+            instance.Texture = texture;
+        } else {
+            // TODO: Release.
+        }
+
+        // instance.Texture = context.GetReference<Texture2D>(1) ?? throw new ArgumentException("Null texture.");
     }
 }

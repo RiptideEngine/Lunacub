@@ -39,7 +39,13 @@ public readonly struct ResourceID :
     /// Creates a random <see cref="ResourceID"/> instance.
     /// </summary>
     /// <returns>A new <see cref="ResourceID"/> instance with random <see cref="Value"/>.</returns>
-    public static ResourceID Create() => Unsafe.BitCast<Guid, ResourceID>(Guid.NewGuid());
+    [ExcludeFromCodeCoverage] public static ResourceID Create() => Unsafe.BitCast<Guid, ResourceID>(Guid.NewGuid());
+
+    /// <summary>
+    /// Create a time-based <see cref="ResourceID"/> instance via <see cref="Guid.CreateVersion7()"/>.
+    /// </summary>
+    /// <returns></returns>
+    [ExcludeFromCodeCoverage] public static ResourceID CreateTimebased() => Unsafe.BitCast<Guid, ResourceID>(Guid.CreateVersion7());
     
     /// <summary>
     /// Parses a string into a <see cref="ResourceID"/> with formatting information object.

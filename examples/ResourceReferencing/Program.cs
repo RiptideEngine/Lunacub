@@ -78,14 +78,14 @@ internal static class Program {
             Libraries = {
                 new(new FileSourceProvider(resourceDirectory)) {
                     Registry = {
-                        [1] = new("Resource", [], 0),
-                        [2] = new("Reference", [], 0),
+                        [1] = new("Resource", []),
+                        [2] = new("Reference", []),
                     },
                 },
             },
         };
         
-        ResourceHandle<ReferencingResource> handle = await importEnvironment.Import<ReferencingResource>(1).Task;
+        ResourceHandle<ReferencingResource> handle = (await importEnvironment.Import(1)).Convert<ReferencingResource>();
         
         _logger.LogInformation("Reference value: {value}.", handle.Value!.Reference!.Value);
     }

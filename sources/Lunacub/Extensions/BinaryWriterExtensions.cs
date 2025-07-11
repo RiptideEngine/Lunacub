@@ -20,8 +20,6 @@ public static class BinaryWriterExtensions {
     }
 
     public static void WriteReinterpret<T>(this BinaryWriter writer, ReadOnlySpan<T> span) where T : unmanaged {
-        unsafe {
-            writer.Write(MemoryMarshal.AsBytes(span));
-        }
+        writer.Write(MemoryMarshal.AsBytes(span));
     }
 }

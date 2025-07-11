@@ -9,12 +9,18 @@ public class ReferencingResourceDeserializer : Deserializer<ReferencingResource>
 
         ResourceID referenceId = reader.ReadResourceID();
         
-        context.RequestReference<SimpleResource>(0, referenceId);
+        context.RequestReference(1, new(referenceId));
         
         return Task.FromResult(new ReferencingResource());
     }
 
     protected override void ResolveReferences(ReferencingResource instance, DeserializationContext context) {
-        instance.Reference = context.GetReference<SimpleResource>(0);
+        ResourceHandle reference = context.GetReference(1);
+
+        if (reference.Value is SimpleResource typedReference) {
+            instance.Reference = typedReference;
+        } else {
+            // TODO: Releasing.
+        }
     }
 }
