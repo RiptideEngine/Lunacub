@@ -42,4 +42,7 @@
     <data name="NullResourceStream" xml:space="preserve">
         <value>Null Stream was returned for resource with Id of {0}.</value>
     </data>
+    <data name="UnexpectedTaskStatus" xml:space="preserve">
+        <value>Unexpected task status '{0}' for resource id {1}.</value>
+    </data>
 </root>

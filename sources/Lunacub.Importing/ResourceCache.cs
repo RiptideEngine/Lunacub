@@ -10,25 +10,86 @@ namespace Caxivitual.Lunacub.Importing;
 internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     private bool _disposed;
 
-    private readonly SemaphoreSlim _lock;
+    // private readonly SemaphoreSlim _lock;
+    private readonly Lock _lock;
     
     private readonly Dictionary<ResourceID, ElementContainer> _containers;
     private readonly Dictionary<object, ResourceID> _resourceMap;
     
     // ReSharper disable once ConvertConstructorToMemberInitializers
     public ResourceCache() {
-        _lock = new(1, 1);
+        // _lock = new(1, 1);
+        _lock = new();
         _containers = [];
         _resourceMap = [];
     }
 
     public ElementContainer? Get(ResourceID resourceId) {
-        _lock.Wait();
+        // _lock.Wait();
+        // try {
+        //     return _containers.GetValueOrDefault(resourceId);
+        // } finally {
+        //     _lock.Release();
+        // }
 
-        try {
+        using (_lock.EnterScope()) {
             return _containers.GetValueOrDefault(resourceId);
-        } finally {
-            _lock.Release();
+        }
+    }
+
+    public ElementContainer? Get(object resource) {
+        // _lock.Wait();
+        // try {
+        //     return _resourceMap.TryGetValue(resource, out var id) ? _containers[id] : null;
+        // } finally {
+        //     _lock.Release();
+        // }
+        
+        using (_lock.EnterScope()) {
+            return _resourceMap.TryGetValue(resource, out var id) ? _containers[id] : null;
+        }
+    }
+
+    public void Access(ResourceID resourceId, Action<ElementContainer> accessor) {
+        // _lock.Wait();
+        // try {
+        //     if (_containers.TryGetValue(resourceId, out var container)) {
+        //         accessor(container);
+        //     }
+        // } finally {
+        //     _lock.Release();
+        // }
+
+        using (_lock.EnterScope()) {
+            if (_containers.TryGetValue(resourceId, out var container)) {
+                accessor(container);
+            }
+        }
+    }
+
+    public bool Remove(ResourceID resourceId) {
+        // _lock.Wait();
+        // try {
+        //     return _containers.Remove(resourceId);
+        // } finally {
+        //     _lock.Release();
+        // }
+
+        using (_lock.EnterScope()) {
+            return _containers.Remove(resourceId);
+        }
+    }
+
+    public bool Contains(ResourceID resourceId) {
+        // _lock.Wait();
+        // try {
+        //     return _containers.ContainsKey(resourceId);
+        // } finally {
+        //     _lock.Release();
+        // }
+
+        using (_lock.EnterScope()) {
+            return _containers.ContainsKey(resourceId);
         }
     }
 
@@ -37,31 +98,61 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         Action<ElementContainer> action,
         Func<ResourceID, ElementContainer> factory
     ) {
-        _lock.Wait();
-        try {
+        // _lock.Wait();
+        // try {
+        //     ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, resourceId, out bool exists);
+        //
+        //     if (!exists) {
+        //         reference = factory(resourceId);
+        //     } else {
+        //         action(reference!);
+        //     }
+        //
+        //     return reference!;
+        // } finally {
+        //     _lock.Release();
+        // }
+
+        using (_lock.EnterScope()) {
             ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, resourceId, out bool exists);
 
             if (!exists) {
                 reference = factory(resourceId);
             } else {
-                // reference!.IncrementReference();
                 action(reference!);
             }
 
             return reference!;
-        } finally {
-            _lock.Release();
         }
     }
 
     public void RegisterResourceMap(object resource, ResourceID resourceId) {
-        _lock.Wait();
-        try {
+        // _lock.Wait();
+        // try {
+        //     _resourceMap.Add(resource, resourceId);
+        // } finally {
+        //     _lock.Release();
+        // }
+
+        using (_lock.EnterScope()) {
             _resourceMap.Add(resource, resourceId);
-        } finally {
-            _lock.Release();
         }
     }
+
+    public bool RemoveResourceMap(object resource) {
+        // _lock.Wait();
+        // try {
+        //     return _resourceMap.Remove(resource);
+        // } finally {
+        //     _lock.Release();
+        // }
+
+        using (_lock.EnterScope()) {
+            return _resourceMap.Remove(resource);
+        }
+    }
+
+    // internal int LockCount => _lock.CurrentCount;
 
     private void Dispose(bool disposing) {
         if (Interlocked.Exchange(ref _disposed, true)) return;
@@ -97,8 +188,8 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
 
         public ImportingStatus Status;
         
-        private CancellationTokenSource _cancellationTokenSource;
-        public CancellationToken CancellationToken => _cancellationTokenSource.Token;
+        public CancellationTokenSource? CancellationTokenSource { get; private set; }
+        public CancellationToken CancellationToken => CancellationTokenSource!.Token;
         
         public Task<ResourceImportDispatcher.ResourceImportResult>? ImportTask { get; set; }
         public Task<ResourceImportDispatcher.ReferenceResolveResult>? ResolvingReferenceTask { get; set; }
@@ -108,15 +199,15 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
             ResourceId = resourceId;
             ReferenceResourceIds = FrozenSet<ResourceID>.Empty;
             Status = ImportingStatus.Importing;
-            _cancellationTokenSource = null!;
+            CancellationTokenSource = null!;
             FinalizeTask = null!;
             ReferenceCount = 1;
         }
 
         public void CreateCancellationTokenSource() {
-            Debug.Assert(_cancellationTokenSource == null);
+            Debug.Assert(CancellationTokenSource == null);
 
-            _cancellationTokenSource = new();
+            CancellationTokenSource = new();
         }
 
         public uint IncrementReference() {
@@ -139,18 +230,13 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
             return computedValue;
         }
 
-        [StackTraceHidden]
-        public void TriggerFailure() {
-            Debug.Assert(Status == ImportingStatus.Importing);
-            
-            Status = ImportingStatus.Failed;
-            _cancellationTokenSource?.Dispose();
+        public uint ResetReferenceCounter() {
+            return Interlocked.Exchange(ref ReferenceCount, 0);
         }
 
         public void DisposeCancellationTokenSource() {
-            Debug.Assert(_cancellationTokenSource != null);
-            
-            _cancellationTokenSource.Dispose();
+            CancellationTokenSource?.Dispose();
+            CancellationTokenSource = null;
         }
 
         public void Dispose() {

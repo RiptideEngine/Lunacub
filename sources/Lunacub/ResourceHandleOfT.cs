@@ -60,6 +60,11 @@ public readonly struct ResourceHandle<T> : IEquatable<ResourceHandle<T>> where T
         return new(ResourceId, Value as TOther);
     }
     
+    public void Deconstruct(out ResourceID resourceId, out T? value) {
+        resourceId = ResourceId;
+        value = Value;
+    }
+    
     /// <summary>
     /// Determines whether this instance and other <see cref="ResourceHandle{T}"/> are equal.
     /// </summary>

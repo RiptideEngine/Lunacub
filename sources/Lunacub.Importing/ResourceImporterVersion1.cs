@@ -11,8 +11,6 @@ internal static class ResourceImporterVersion1 {
         BinaryHeader header,
         CancellationToken cancellationToken
     ) {
-        bool disposeResourceStream = true;
-
         try {
             if (header.MinorVersion != 0) {
                 throw new NotSupportedException($"Compiled resource version 1.{header.MinorVersion} is not supported.");
@@ -72,7 +70,7 @@ internal static class ResourceImporterVersion1 {
 
             return new(deserializer, deserialized, context);
         } finally {
-            if (disposeResourceStream) await resourceStream.DisposeAsync();
+            await resourceStream.DisposeAsync();
         }
     }
     

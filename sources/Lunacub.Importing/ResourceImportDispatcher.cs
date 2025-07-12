@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 
 namespace Caxivitual.Lunacub.Importing;
 
-internal sealed class ResourceImportDispatcher : IDisposable {
+internal sealed partial class ResourceImportDispatcher : IDisposable {
     private readonly ImportEnvironment _environment;
     private readonly ResourceCache _cache;
     private bool _disposed;
@@ -18,22 +18,23 @@ internal sealed class ResourceImportDispatcher : IDisposable {
 
     public ImportingOperation Import(ResourceID resourceId) {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        
+        if (!_environment.Libraries.ContainsResource(resourceId)) {
+            string message = string.Format(ExceptionMessages.UnregisteredResource, resourceId);
 
+            ResourceCache.ElementContainer container = new(resourceId);
+            container.FinalizeTask = Task.FromException<ResourceHandle>(new ArgumentException(message, nameof(resourceId)));
+            container.ReferenceCount = 0;
+            container.Status = ImportingStatus.Failed;
+                
+            return new(container);
+        }
+        
         return new(_cache.GetOrBeginImporting(resourceId, IncrementContainerReference, BeginImport));
         
         // ReSharper disable once VariableHidesOuterVariable
         ResourceCache.ElementContainer BeginImport(ResourceID resourceId) {
             ResourceCache.ElementContainer container = new(resourceId);
-
-            if (!_environment.Libraries.ContainsResource(resourceId)) {
-                string message = string.Format(ExceptionMessages.UnregisteredResource, resourceId);
-
-                container.FinalizeTask = Task.FromException<ResourceHandle>(new ArgumentException(message, nameof(resourceId)));
-                container.ReferenceCount = 0;
-                container.TriggerFailure();
-                
-                return container;
-            }
             
             _environment.Statistics.AddReference();
             
@@ -44,6 +45,8 @@ internal sealed class ResourceImportDispatcher : IDisposable {
             container.ResolvingReferenceTask = ResolveReference(container);
             container.FinalizeTask = FinalizeTask(container);
             
+            _environment.Logger.LogDebug("Return container id {id}.", container.ResourceId);
+            
             return container;
         }
     }
@@ -53,6 +56,8 @@ internal sealed class ResourceImportDispatcher : IDisposable {
 
         try {
             if (_environment.Libraries.CreateResourceStream(container.ResourceId) is not { } stream) {
+                // _environment.Logger.LogDebug("Missing Resource Stream.");
+                
                 string message = string.Format(ExceptionMessages.NullResourceStream, container.ResourceId);
                 throw new InvalidOperationException(message);
             }
@@ -78,8 +83,13 @@ internal sealed class ResourceImportDispatcher : IDisposable {
                     );
                     throw new ArgumentException(message);
             }
-        } catch {
-            container.TriggerFailure();
+        } catch (Exception e) {
+            _environment.Logger.LogError("ImportTask: Exception occured. Stacktrace: {ex}", e);
+            
+            ReleaseContainerReferenceCounter(container);
+
+            container.Status = ImportingStatus.Failed;
+            container.DisposeCancellationTokenSource();
             throw;
         }
     }
@@ -91,32 +101,43 @@ internal sealed class ResourceImportDispatcher : IDisposable {
         object resource;
         DeserializationContext context;
 
+        #if DEBUG
         try {
             (deserializer, resource, context) = await container.ImportTask!;
         } catch {
-            _environment.Statistics.ReleaseReferences(container.ReferenceCount);
+            _environment.Logger.LogError("ResolveReference: Exception occured while waiting ImportTask.");
             
             Debug.Assert(container.Status == ImportingStatus.Failed);
+            Debug.Assert(container.ReferenceCount == 0);
+            Debug.Assert(container.CancellationTokenSource == null);
             throw;
         }
-        
-        _environment.Statistics.IncrementUniqueResourceCount();
-        _cache.RegisterResourceMap(resource, container.ResourceId);
+        #else
+        (deserializer, resource, context) = await container.ImportTask!;
+        #endif
+
+        if (container.CancellationToken.IsCancellationRequested) {
+            ReleaseContainerReferenceCounter(container);
+            DisposeResource(resource);
+            
+            container.CancellationToken.ThrowIfCancellationRequested();
+            // Not return.
+        }
 
         if (context.RequestingReferences.Count == 0) {
             return new(new(container.ResourceId, resource), ReadOnlyCollection<ResourceCache.ElementContainer>.Empty);
         }
 
         context.RequestingReferences.DisableRequest();
-        
+
         Log.BeginResolvingReference(_environment.Logger, container.ResourceId);
 
         // Retrieving reference resources.
-        (var references, var waitContainers) = 
+        (var references, var waitContainers) =
             await CollectReferences(resource, container, context.RequestingReferences.Requesting);
 
         container.ReferenceResourceIds = references.Select(x => x.Value.Container.ResourceId).ToFrozenSet();
-        
+
         // Resolving references.
         try {
             context.RequestingReferences.SetReferences(references.ToDictionary(x => x.Key, x => x.Value.Handle));
@@ -124,7 +145,7 @@ internal sealed class ResourceImportDispatcher : IDisposable {
         } catch {
             // Ignored.
         }
-        
+
         Log.EndResolvingReference(_environment.Logger, container.ResourceId);
         return new(new(container.ResourceId, resource), waitContainers);
     }
@@ -135,18 +156,13 @@ internal sealed class ResourceImportDispatcher : IDisposable {
         ResourceCache.ElementContainer currentContainer,
         IReadOnlyDictionary<ReferencePropertyKey, RequestingReferences.RequestingReference> requestingReferences
     ) {
-        _environment.Logger.LogDebug(
-            "{rid}: Collect reference: {ids}",
-            currentContainer.ResourceId,
-            string.Join(", ", requestingReferences.Select(x => x.Value.ResourceId))
-        );
-        
         Dictionary<ReferencePropertyKey, ReferenceImportResult> references = [];
         HashSet<ResourceCache.ElementContainer> waitContainers = new(ReferenceContainerEqualityComparer.Instance);
 
         // Depth first traversing the importing graph, collect the reference containers.
         foreach ((var propertyKey, var requesting) in requestingReferences) {
-            // await RecursivelyVisit(propertyKey, requesting, currentContainer);
+            // TODO: Make it parallel and support cancellation token.
+            
             if (requesting.ResourceId == currentContainer.ResourceId) {
                 currentContainer.IncrementReference();
                 _environment.Statistics.AddReference();
@@ -169,6 +185,7 @@ internal sealed class ResourceImportDispatcher : IDisposable {
                 references.Add(propertyKey, new(new(requesting.ResourceId, vessel), referenceContainer));
             } catch {
                 Debug.Assert(referenceContainer.Status == ImportingStatus.Failed);
+                Debug.Assert(referenceContainer.ReferenceCount == 0);
             }
         }
 
@@ -192,45 +209,72 @@ internal sealed class ResourceImportDispatcher : IDisposable {
     }
     
     private async Task<ResourceHandle> FinalizeTask(ResourceCache.ElementContainer container) {
-        try {
-            (var handle, var waitContainers) = await container.ResolvingReferenceTask!;
+        ResourceHandle handle;
+        IReadOnlyCollection<ResourceCache.ElementContainer> waitContainers;
 
-            _environment.Logger.LogDebug(
-                "{rid}: Wait containers: {waitContainers}",
-                container.ResourceId,
-                string.Join(", ", waitContainers.Select(x => x.ResourceId))
-            );
+        try {
+            (handle, waitContainers) = await container.ResolvingReferenceTask!;
+        } catch {
+            _environment.Logger.LogDebug("FinalizeTask: Exception occured while awaiting ResolvingReferenceTask.");
             
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-            Debug.Assert(waitContainers.All(x => x.FinalizeTask != null), "Unexpected null FinalizeTask.");
-            
-            await Task.WhenAll(waitContainers.Select(x => x.FinalizeTask));
+            Debug.Assert(container.Status == ImportingStatus.Failed);
+            Debug.Assert(container.CancellationTokenSource == null);
 
             container.DisposeCancellationTokenSource();
             
-            return handle;
-        } catch {
-            Debug.Assert(container.Status == ImportingStatus.Failed);
+            bool removedSuccessfully = _cache.Remove(container.ResourceId);
+            Debug.Assert(removedSuccessfully);
+
             throw;
         }
-    }
-
-    public ReleaseStatus Release(ResourceID resourceId) {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        throw new NotImplementedException();
-    }
-
-    public ReleaseStatus Release(object resource) {
-        ObjectDisposedException.ThrowIf(_disposed, this);
         
-        throw new NotImplementedException();
+        try {
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            Debug.Assert(waitContainers.All(x => x.FinalizeTask != null), "Unexpected null FinalizeTask.");
+
+            await Task.WhenAll(waitContainers.Select(x => x.FinalizeTask));
+
+            _environment.Statistics.IncrementUniqueResourceCount();
+
+            _cache.RegisterResourceMap(handle.Value!, container.ResourceId);
+            container.Status = ImportingStatus.Success;
+
+            return handle;
+        } catch {
+            _environment.Logger.LogDebug("FinalizeTask: Exception occured while waiting for reference containers.");
+            
+            DisposeResource(handle.Value!);
+            
+            Debug.Assert(container.Status == ImportingStatus.Failed);
+            Debug.Assert(container.CancellationTokenSource == null);
+
+            bool removedSuccessfully = _cache.Remove(container.ResourceId);
+            Debug.Assert(removedSuccessfully);
+
+            throw;
+        } finally {
+            container.DisposeCancellationTokenSource();
+        }
     }
     
     private void IncrementContainerReference(ResourceCache.ElementContainer container) {
         if (container.IncrementReference() != 0) {
             _environment.Statistics.AddReference();
         }
+    }
+
+    private void ReleaseContainerReferenceCounter(ResourceCache.ElementContainer container) {
+        _environment.Statistics.ReleaseReferences(container.ResetReferenceCounter());
+    }
+
+    private bool DisposeResource(object resource) {
+        if (_environment.Disposers.TryDispose(resource)) {
+            _environment.Statistics.IncrementDisposedResourceCount();
+            return true;
+        }
+
+        _environment.Statistics.IncrementUndisposedResourceCount();
+        return false;
     }
 
     private void Dispose(bool disposing) {

@@ -59,6 +59,11 @@ public readonly struct ResourceHandle : IEquatable<ResourceHandle> {
     public ResourceHandle<T> Convert<T>() where T : class {
         return new(ResourceId, Value as T);
     }
+
+    public void Deconstruct(out ResourceID resourceId, out object? value) {
+        resourceId = ResourceId;
+        value = Value;
+    }
     
     /// <summary>
     /// Determines whether this instance and other <see cref="ResourceHandle"/> are equal.

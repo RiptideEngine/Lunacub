@@ -105,6 +105,15 @@ namespace Caxivitual.Lunacub.Importing {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Unexpected task status &apos;{0}&apos; for resource id {1}..
+        /// </summary>
+        internal static string UnexpectedTaskStatus {
+            get {
+                return ResourceManager.GetString("UnexpectedTaskStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Failed to find Deserializer with key &apos;{0}&apos;..
         /// </summary>
         internal static string UnregisteredDeserializer {

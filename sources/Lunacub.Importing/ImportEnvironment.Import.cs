@@ -42,8 +42,6 @@ partial class ImportEnvironment {
     /// <seealso cref="ResourceHandle"/>
     /// <seealso cref="ResourceHandle{T}"/>
     public ReleaseStatus Release(ResourceHandle handle) {
-        if (handle.ResourceId == ResourceID.Null || handle.Value == null) return ReleaseStatus.Null;
-
         return _importDispatcher.Release(handle);
     }
 
