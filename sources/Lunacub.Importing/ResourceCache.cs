@@ -18,48 +18,24 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     
     // ReSharper disable once ConvertConstructorToMemberInitializers
     public ResourceCache() {
-        // _lock = new(1, 1);
         _lock = new();
         _containers = [];
         _resourceMap = [];
     }
 
     public ElementContainer? Get(ResourceID resourceId) {
-        // _lock.Wait();
-        // try {
-        //     return _containers.GetValueOrDefault(resourceId);
-        // } finally {
-        //     _lock.Release();
-        // }
-
         using (_lock.EnterScope()) {
             return _containers.GetValueOrDefault(resourceId);
         }
     }
 
     public ElementContainer? Get(object resource) {
-        // _lock.Wait();
-        // try {
-        //     return _resourceMap.TryGetValue(resource, out var id) ? _containers[id] : null;
-        // } finally {
-        //     _lock.Release();
-        // }
-        
         using (_lock.EnterScope()) {
             return _resourceMap.TryGetValue(resource, out var id) ? _containers[id] : null;
         }
     }
 
     public void Access(ResourceID resourceId, Action<ElementContainer> accessor) {
-        // _lock.Wait();
-        // try {
-        //     if (_containers.TryGetValue(resourceId, out var container)) {
-        //         accessor(container);
-        //     }
-        // } finally {
-        //     _lock.Release();
-        // }
-
         using (_lock.EnterScope()) {
             if (_containers.TryGetValue(resourceId, out var container)) {
                 accessor(container);
@@ -68,26 +44,12 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     }
 
     public bool Remove(ResourceID resourceId) {
-        // _lock.Wait();
-        // try {
-        //     return _containers.Remove(resourceId);
-        // } finally {
-        //     _lock.Release();
-        // }
-
         using (_lock.EnterScope()) {
             return _containers.Remove(resourceId);
         }
     }
 
     public bool Contains(ResourceID resourceId) {
-        // _lock.Wait();
-        // try {
-        //     return _containers.ContainsKey(resourceId);
-        // } finally {
-        //     _lock.Release();
-        // }
-
         using (_lock.EnterScope()) {
             return _containers.ContainsKey(resourceId);
         }
@@ -98,21 +60,6 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         Action<ElementContainer> action,
         Func<ResourceID, ElementContainer> factory
     ) {
-        // _lock.Wait();
-        // try {
-        //     ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, resourceId, out bool exists);
-        //
-        //     if (!exists) {
-        //         reference = factory(resourceId);
-        //     } else {
-        //         action(reference!);
-        //     }
-        //
-        //     return reference!;
-        // } finally {
-        //     _lock.Release();
-        // }
-
         using (_lock.EnterScope()) {
             ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, resourceId, out bool exists);
 
@@ -127,32 +74,16 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     }
 
     public void RegisterResourceMap(object resource, ResourceID resourceId) {
-        // _lock.Wait();
-        // try {
-        //     _resourceMap.Add(resource, resourceId);
-        // } finally {
-        //     _lock.Release();
-        // }
-
         using (_lock.EnterScope()) {
             _resourceMap.Add(resource, resourceId);
         }
     }
 
     public bool RemoveResourceMap(object resource) {
-        // _lock.Wait();
-        // try {
-        //     return _resourceMap.Remove(resource);
-        // } finally {
-        //     _lock.Release();
-        // }
-
         using (_lock.EnterScope()) {
             return _resourceMap.Remove(resource);
         }
     }
-
-    // internal int LockCount => _lock.CurrentCount;
 
     private void Dispose(bool disposing) {
         if (Interlocked.Exchange(ref _disposed, true)) return;
