@@ -130,5 +130,5 @@ public static class Resources {
     public static ImportingOperation Import(ResourceID rid) => _importEnv.Import(rid);
 
     public static ReleaseStatus Release(ResourceID rid) => _importEnv.Release(rid);
-    public static ReleaseStatus Release<T>(ResourceHandle<T> handle) where T : class => _importEnv.Release(handle);
+    public static ReleaseStatus Release(ResourceHandle handle) => _importEnv.Release(handle);
 }
