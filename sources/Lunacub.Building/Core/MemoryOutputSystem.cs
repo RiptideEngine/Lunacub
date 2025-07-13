@@ -4,26 +4,16 @@ using ResourceOutput = (System.Collections.Immutable.ImmutableArray<byte>, Syste
 namespace Caxivitual.Lunacub.Building.Core;
 
 public sealed class MemoryOutputSystem : OutputSystem {
-    public IReadOnlyDictionary<ResourceID, OutputRegistryElement> OutputRegistry { get; private set; }
+    private readonly ResourceRegistry<ResourceRegistry.Element> _registry = [];
+    public IReadOnlyDictionary<ResourceID, ResourceRegistry.Element> OutputRegistry => _registry;
 
-    private readonly Dictionary<ResourceID, ResourceOutput> _outputs;
+    private readonly Dictionary<ResourceID, ResourceOutput> _outputResources = [];
     
-    public IReadOnlyDictionary<ResourceID, ResourceOutput> Outputs => _outputs;
+    public IReadOnlyDictionary<ResourceID, ResourceOutput> OutputResources => _outputResources;
     
-    private readonly Dictionary<ResourceID, IncrementalInfo> _incrementalInfos;
+    private readonly Dictionary<ResourceID, IncrementalInfo> _incrementalInfos = [];
     public IReadOnlyDictionary<ResourceID, IncrementalInfo> IncrementalInfos => _incrementalInfos;
 
-    public MemoryOutputSystem() : this([], []) { }
-
-    public MemoryOutputSystem(
-        IEnumerable<KeyValuePair<ResourceID, ResourceOutput>> outputs,
-        IEnumerable<KeyValuePair<ResourceID, IncrementalInfo>> incrementalInfos
-    ) {
-        _outputs = new(outputs);
-        _incrementalInfos = new(incrementalInfos);
-        OutputRegistry = FrozenDictionary<ResourceID, OutputRegistryElement>.Empty;
-    }
-    
     public override void CollectIncrementalInfos(IDictionary<ResourceID, IncrementalInfo> receiver) {
         foreach ((var rid, var info) in _incrementalInfos) {
             receiver.Add(rid, info);
@@ -37,17 +27,21 @@ public sealed class MemoryOutputSystem : OutputSystem {
     }
 
     public override DateTime? GetResourceLastBuildTime(ResourceID rid) {
-        return _outputs.TryGetValue(rid, out var output) ? output.Item2 : null;
+        return _outputResources.TryGetValue(rid, out var output) ? output.Item2 : null;
     }
     
     public override void CopyCompiledResourceOutput(Stream sourceStream, ResourceID rid) {
         byte[] buffer = new byte[sourceStream.Length];
         sourceStream.ReadExactly(buffer);
         
-        _outputs[rid] = (ImmutableCollectionsMarshal.AsImmutableArray(buffer), DateTime.Now);
+        _outputResources[rid] = (ImmutableCollectionsMarshal.AsImmutableArray(buffer), DateTime.Now);
     }
 
-    public override void OutputResourceRegistry(IReadOnlyDictionary<ResourceID, OutputRegistryElement> registry) {
-        OutputRegistry = registry;
+    public override void OutputResourceRegistry(ResourceRegistry<ResourceRegistry.Element> registry) {
+        _registry.Clear();
+
+        foreach ((var id, var element) in registry) {
+            _registry.Add(id, element);
+        }
     }
 }

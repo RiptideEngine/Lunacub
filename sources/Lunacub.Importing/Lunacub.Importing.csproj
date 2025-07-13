@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
         <RootNamespace>Caxivitual.Lunacub.Importing</RootNamespace>
         <AssemblyName>Caxivitual.Lunacub.Importing</AssemblyName>
         <Description>Resource importing module for Lunacub.</Description>
@@ -29,10 +30,10 @@
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.5" />
     </ItemGroup>
 
-    <Import Project="$(SolutionDir)commons\languagecommon.props"/>
-    <Import Project="$(SolutionDir)commons\nugetcommon.props"/>
+    <Import Project="..\..\commons\languagecommon.props"/>
+    <Import Project="..\..\commons\nugetcommon.props"/>
 
-    <PropertyGroup>
-        <PreBuildEvent>dotnet run --project $(SolutionDir)tools\Lunacub.SourceValidator\Lunacub.SourceValidator.csproj $(MSBuildThisFileDirectory)</PreBuildEvent>
-    </PropertyGroup>
+<!--    <PropertyGroup>-->
+<!--        <PreBuildEvent Condition="!$(AssemblyName.StartsWith('Benchmarks'))">dotnet run &#45;&#45;project $(SolutionDir)tools\SourceValidator\SourceValidator.csproj $(MSBuildThisFileDirectory)</PreBuildEvent>-->
+<!--    </PropertyGroup>-->
 </Project>

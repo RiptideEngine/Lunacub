@@ -40,6 +40,12 @@ public class ImportFailureTests : IClassFixture<ComponentsFixture>, IDisposable 
         await new Func<Task<ResourceHandle>>(() => operation.Task).Should().ThrowAsync<ArgumentException>().WithMessage("*unregistered*");
 
         operation.Status.Should().Be(ImportingStatus.Failed);
+
+        _importEnvironment.Statistics.RemainReferenceCount.Should().Be(0);
+        _importEnvironment.Statistics.TotalReferenceCount.Should().Be(0);
+        _importEnvironment.Statistics.DisposedResourceCount.Should().Be(0);
+        _importEnvironment.Statistics.UndisposedResourceCount.Should().Be(0);
+        _importEnvironment.Statistics.UniqueResourceCount.Should().Be(0);
     }
     
     [Fact]

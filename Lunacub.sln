@@ -42,9 +42,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sources", "sources", "{EEFB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MergeDependency", "examples\MergeDependency\MergeDependency.csproj", "{854F2BFB-2CEE-485D-B424-E1B904336348}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunacub.SourceValidator", "tools\Lunacub.SourceValidator\Lunacub.SourceValidator.csproj", "{4B3B47ED-F00D-478A-8CE3-47232717B64E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SourceValidator", "tools\SourceValidator\SourceValidator.csproj", "{4B3B47ED-F00D-478A-8CE3-47232717B64E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiLayerProceduralResources", "examples\MultiLayerProceduralResources\MultiLayerProceduralResources.csproj", "{6E11FDE8-9C6F-4A0E-B225-A93837A5D356}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "tools\Benchmarks\Benchmarks.csproj", "{3B91A787-9E3A-4BDF-9BF2-A00D616A5D85}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -116,6 +118,10 @@ Global
 		{6E11FDE8-9C6F-4A0E-B225-A93837A5D356}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E11FDE8-9C6F-4A0E-B225-A93837A5D356}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E11FDE8-9C6F-4A0E-B225-A93837A5D356}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B91A787-9E3A-4BDF-9BF2-A00D616A5D85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B91A787-9E3A-4BDF-9BF2-A00D616A5D85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B91A787-9E3A-4BDF-9BF2-A00D616A5D85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B91A787-9E3A-4BDF-9BF2-A00D616A5D85}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B532E27C-F78F-417A-9247-AF5B5D0E409C} = {BD303699-F202-42F4-B61F-8D17F82567F4}
@@ -136,5 +142,6 @@ Global
 		{854F2BFB-2CEE-485D-B424-E1B904336348} = {B532E27C-F78F-417A-9247-AF5B5D0E409C}
 		{4B3B47ED-F00D-478A-8CE3-47232717B64E} = {F73BC318-9977-4C14-BD71-AD77C32E8048}
 		{6E11FDE8-9C6F-4A0E-B225-A93837A5D356} = {B532E27C-F78F-417A-9247-AF5B5D0E409C}
+		{3B91A787-9E3A-4BDF-9BF2-A00D616A5D85} = {F73BC318-9977-4C14-BD71-AD77C32E8048}
 	EndGlobalSection
 EndGlobal

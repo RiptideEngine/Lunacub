@@ -1,9 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
         <RootNamespace>Caxivitual.Lunacub</RootNamespace>
         <AssemblyName>Caxivitual.Lunacub</AssemblyName>
         <Description>Common library for Lunacub.</Description>
     </PropertyGroup>
+    
     <ItemGroup>
       <EmbeddedResource Update="ExceptionMessages.resx">
         <Generator>ResXFileCodeGenerator</Generator>
@@ -18,10 +20,10 @@
       </Compile>
     </ItemGroup>
 
-    <Import Project="$(SolutionDir)commons\languagecommon.props"/>
-    <Import Project="$(SolutionDir)commons\nugetcommon.props"/>
+    <Import Project="..\..\commons\languagecommon.props"/>
+    <Import Project="..\..\commons\nugetcommon.props"/>
 
-    <PropertyGroup>
-        <PreBuildEvent>dotnet run --project $(SolutionDir)tools\Lunacub.SourceValidator\Lunacub.SourceValidator.csproj $(MSBuildThisFileDirectory)</PreBuildEvent>
-    </PropertyGroup>
+<!--    <PropertyGroup>-->
+<!--        <PreBuildEvent Condition="!$(AssemblyTitle.StartsWith('Benchmarks'))">dotnet run &#45;&#45;project $(SolutionDir)tools\SourceValidator\SourceValidator.csproj $(MSBuildThisFileDirectory)</PreBuildEvent>-->
+<!--    </PropertyGroup>-->
 </Project>

@@ -11,13 +11,15 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     private bool _disposed;
 
     // private readonly SemaphoreSlim _lock;
+    private readonly ImportEnvironment _environment;
     private readonly Lock _lock;
     
     private readonly Dictionary<ResourceID, ElementContainer> _containers;
     private readonly Dictionary<object, ResourceID> _resourceMap;
     
     // ReSharper disable once ConvertConstructorToMemberInitializers
-    public ResourceCache() {
+    public ResourceCache(ImportEnvironment environment) {
+        _environment = environment;
         _lock = new();
         _containers = [];
         _resourceMap = [];
@@ -32,14 +34,6 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     public ElementContainer? Get(object resource) {
         using (_lock.EnterScope()) {
             return _resourceMap.TryGetValue(resource, out var id) ? _containers[id] : null;
-        }
-    }
-
-    public void Access(ResourceID resourceId, Action<ElementContainer> accessor) {
-        using (_lock.EnterScope()) {
-            if (_containers.TryGetValue(resourceId, out var container)) {
-                accessor(container);
-            }
         }
     }
 
@@ -89,6 +83,31 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         if (Interlocked.Exchange(ref _disposed, true)) return;
         
         // TODO: Implementation
+        using (_lock.EnterScope()) {
+            Task.WaitAll(_containers.Values.Select(async container => {
+                ResourceHandle handle;
+
+                try {
+                    handle = await container.FinalizeTask;
+                } catch {
+                    // Ignored.
+                    return;
+                }
+
+                if (_environment.Disposers.TryDispose(handle.Value!)) {
+                    _environment.Statistics.IncrementDisposedResourceCount();
+                } else {
+                    _environment.Statistics.IncrementUndisposedResourceCount();
+                }
+
+                container.ReferenceCount = 0;
+                container.Status = ImportingStatus.Disposed;
+            }));
+
+            _containers.Clear();
+            _environment.Statistics.ResetReferenceCounts();
+            _environment.Statistics.ResetUniqueResourceCount();
+        }
     }
     
     public void Dispose() {
@@ -110,7 +129,7 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     /// <summary>
     /// Represents an outer shell resource container, containing reference count, reference ids, status, etc...
     /// </summary>
-    public sealed class ElementContainer : IDisposable {
+    public sealed class ElementContainer {
         public readonly ResourceID ResourceId;
 
         public uint ReferenceCount;
@@ -119,7 +138,7 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
 
         public ImportingStatus Status;
         
-        public CancellationTokenSource? CancellationTokenSource { get; private set; }
+        public CancellationTokenSource CancellationTokenSource { get; private set; }
         public CancellationToken CancellationToken => CancellationTokenSource!.Token;
         
         public Task<ResourceImportDispatcher.ResourceImportResult>? ImportTask { get; set; }
@@ -130,15 +149,34 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
             ResourceId = resourceId;
             ReferenceResourceIds = FrozenSet<ResourceID>.Empty;
             Status = ImportingStatus.Importing;
-            CancellationTokenSource = null!;
             FinalizeTask = null!;
             ReferenceCount = 1;
+            CancellationTokenSource = null!;
         }
 
-        public void CreateCancellationTokenSource() {
-            Debug.Assert(CancellationTokenSource == null);
-
-            CancellationTokenSource = new();
+        public void InitializeImport() {
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (CancellationTokenSource == null) {
+                CancellationTokenSource = new();
+            } else {
+                switch (Status) {
+                    case ImportingStatus.Cancelled:
+                        bool resetSuccessfully = CancellationTokenSource.TryReset();
+                        Debug.Assert(resetSuccessfully);
+                        break;
+                    
+                    case ImportingStatus.Disposed:
+                        CancellationTokenSource = new();
+                        break;
+                    
+                    case ImportingStatus.Importing or ImportingStatus.Success:
+                        throw new InvalidOperationException();
+                    
+                    case ImportingStatus.Failed:
+                        // Too busy to think about this case. Will handle later.
+                        throw new NotImplementedException();
+                }
+            }
         }
 
         public uint IncrementReference() {
@@ -164,232 +202,5 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         public uint ResetReferenceCounter() {
             return Interlocked.Exchange(ref ReferenceCount, 0);
         }
-
-        public void DisposeCancellationTokenSource() {
-            CancellationTokenSource?.Dispose();
-            CancellationTokenSource = null;
-        }
-
-        public void Dispose() {
-            
-        }
     }
 }
-
-// using System.Collections.Concurrent;
-//
-// namespace Caxivitual.Lunacub.Importing;
-//
-// public sealed partial class ResourceCache : IDisposable, IAsyncDisposable {
-//     private readonly SemaphoreSlim _containerLock;
-//     private readonly Dictionary<ResourceID, ResourceContainer> _resourceContainers;
-//     private readonly ConcurrentDictionary<object, ResourceContainer> _importedObjectMap;
-//     private readonly ImportEnvironment _environment;
-//     
-//     private bool _disposed;
-//
-//     internal ResourceCache(ImportEnvironment environment) {
-//         _containerLock =  new(1, 1);
-//         _resourceContainers = [];
-//         _importedObjectMap = [];
-//         _environment = environment;
-//     }
-//
-//     public ImportingOperation ImportAsync(ResourceID resourceId) {
-//         return new(resourceId, ImportSingleResource(resourceId));
-//     }
-//
-//     public ImportingOperation<T> ImportAsync<T>(ResourceID resourceId) where T : class {
-//         return new(resourceId, ImportSingleResource<T>(resourceId));
-//     }
-//
-//     public ReleaseStatus Release(object resource) {
-//         _containerLock.Wait();
-//         try {
-//             if (!_importedObjectMap.TryGetValue(resource, out ResourceContainer? container)) return ReleaseStatus.InvalidResource;
-//             
-//             if (container.ReferenceWaitTask == null) return ReleaseStatus.NotImported;
-//             
-//             Debug.Assert(container.ReferenceWaitTask.Status == TaskStatus.RanToCompletion);
-//             Debug.Assert(ReferenceEquals(container.ReferenceWaitTask.Result, resource));
-//
-//             if (DecrementResourceContainerReference(ref container.ReferenceCount) != 0) {
-//                 return ReleaseStatus.Success;
-//             }
-//
-//             _environment.Statistics.DecrementUniqueResourceCount();
-//
-//             bool removal = _importedObjectMap.TryRemove(resource, out _);
-//             Debug.Assert(removal);
-//
-//             removal = _resourceContainers.Remove(container.ResourceId);
-//             Debug.Assert(removal);
-//
-//             try {
-//                 if (_environment.Disposers.TryDispose(resource)) {
-//                     _environment.Statistics.IncrementDisposedResourceCount();
-//                     return ReleaseStatus.Success;
-//                 }
-//
-//                 _environment.Statistics.IncrementUndisposedResourceCount();
-//                 return ReleaseStatus.NotDisposed;
-//             } finally {
-//                 ReleaseReferenceContainers(container.ReferenceContainers);
-//             }
-//         } finally {
-//             _containerLock.Release();
-//         }
-//     }
-//     
-//     public ReleaseStatus Release(ResourceHandle resourceId) {
-//         _containerLock.Wait();
-//         try {
-//             if (!_importedObjectMap.TryGetValue(resourceId.Value!, out var container)) return ReleaseStatus.InvalidResource;
-//             if (container.ResourceId != resourceId.Rid) return ReleaseStatus.IdIncompatible;
-//             
-//             Debug.Assert(container.ReferenceWaitTask!.Status == TaskStatus.RanToCompletion);
-//             Debug.Assert(ReferenceEquals(container.ReferenceWaitTask.Result, resourceId.Value));
-//             
-//             if (DecrementResourceContainerReference(ref container.ReferenceCount) != 0) return ReleaseStatus.Success;
-//             
-//             object releasedResource = container.ReferenceWaitTask.Result;
-//             
-//             _environment.Statistics.DecrementUniqueResourceCount();
-//             
-//             bool removal = _importedObjectMap.TryRemove(releasedResource, out _);
-//             Debug.Assert(removal);
-//             
-//             removal = _resourceContainers.Remove(container.ResourceId);
-//             Debug.Assert(removal);
-//
-//             try {
-//                 if (_environment.Disposers.TryDispose(releasedResource)) {
-//                     _environment.Statistics.IncrementDisposedResourceCount();
-//                     return ReleaseStatus.Success;
-//                 }
-//
-//                 _environment.Statistics.IncrementUndisposedResourceCount();
-//                 return ReleaseStatus.NotDisposed;
-//             } finally {
-//                 ReleaseReferenceContainers(container.ReferenceContainers);
-//             }
-//         } finally {
-//             _containerLock.Release();
-//         }
-//     }
-//
-//     public ReleaseStatus Release(ResourceID rid) {
-//         _containerLock.Wait();
-//         try {
-//             if (!_resourceContainers.TryGetValue(rid, out var container)) return ReleaseStatus.NotImported;
-//             
-//             if (DecrementResourceContainerReference(ref container.ReferenceCount) != 0) return ReleaseStatus.Success;
-//
-//             // TODO: Handle reference releasing.
-//             
-//             Debug.Assert(_containerLock.CurrentCount == 0);
-//             Debug.Assert(container.ReferenceCount == 0);
-//         
-//             container.CancellationTokenSource.Cancel();
-//
-//             try {
-//                 container.ReferenceWaitTask!.Wait();
-//             } catch (AggregateException ae) {
-//                 foreach (var e in ae.InnerExceptions) {
-//                     if (e is TaskCanceledException or OperationCanceledException) continue;
-//                 
-//                     // TODO: Report
-//                 }
-//             }
-//
-//             container.CancellationTokenSource.Dispose();
-//
-//             switch (container.ReferenceWaitTask!.Status) {
-//                 case TaskStatus.RanToCompletion:
-//                     object releasedResource = container.ReferenceWaitTask.Result!;
-//         
-//                     _environment.Statistics.DecrementUniqueResourceCount();
-//
-//                     bool removal = _importedObjectMap.TryRemove(releasedResource, out _);
-//                     Debug.Assert(removal);
-//         
-//                     removal = _resourceContainers.Remove(container.ResourceId);
-//                     Debug.Assert(removal);
-//
-//                     if (_environment.Disposers.TryDispose(releasedResource)) {
-//                         _environment.Statistics.IncrementDisposedResourceCount();
-//                         return ReleaseStatus.Success;
-//                     }
-//
-//                     _environment.Statistics.IncrementUndisposedResourceCount();
-//                     return ReleaseStatus.NotDisposed;
-//             
-//                 case TaskStatus.Canceled or TaskStatus.Faulted:
-//                     Debug.Assert(!_resourceContainers.ContainsKey(container.ResourceId));
-//                     return ReleaseStatus.Canceled;
-//             
-//                 default: throw new UnreachableException($"Unexpected task status '{container.ReferenceWaitTask.Status}'.");
-//             }
-//         } finally {
-//             _containerLock.Release();
-//         }
-//     }
-//
-//     private void ReleaseReferenceContainers(IEnumerable<ResourceContainer> containers) {
-//         Debug.Assert(_containerLock.CurrentCount == 0, "Lock must be holding.");
-//         
-//         // TODO: Implementation.
-//     }
-//
-//     private uint DecrementResourceContainerReference(ref uint referenceCount) {
-//         _environment.Statistics.Release();
-//
-//         return --referenceCount;
-//     }
-//
-//     private void DisposeResources() {
-//         // TODO: Implement this.
-//     }
-//
-//     private void Dispose(bool disposing) {
-//         if (Interlocked.Exchange(ref _disposed, true)) return;
-//
-//         if (disposing) {
-//             _containerLock.Wait();
-//
-//             try {
-//                 DisposeResources();
-//             } finally {
-//                 _containerLock.Release();
-//             }
-//
-//             _containerLock.Dispose();
-//         }
-//     }
-//     
-//     public async ValueTask DisposeAsync() {
-//         if (Interlocked.Exchange(ref _disposed, true)) return;
-//         
-//         await _containerLock.WaitAsync();
-//
-//         try {
-//             DisposeResources();
-//         } finally {
-//             _containerLock.Release();
-//         }
-//
-//         _containerLock.Dispose();
-//         
-//         GC.SuppressFinalize(this);
-//     }
-//
-//     public void Dispose() {
-//         Dispose(true);
-//         GC.SuppressFinalize(this);
-//     }
-//
-//     [ExcludeFromCodeCoverage]
-//     ~ResourceCache() {
-//         Dispose(false);
-//     }
-// }

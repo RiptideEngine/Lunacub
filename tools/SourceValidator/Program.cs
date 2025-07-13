@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Lunacub.SourceValidator;
+namespace SourceValidator;
 
 internal static class Program {
     private static async Task<int> Main(string[] args) {

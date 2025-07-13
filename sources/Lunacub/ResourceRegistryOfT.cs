@@ -5,7 +5,10 @@ using System.Text.Json.Serialization;
 namespace Caxivitual.Lunacub;
 
 [JsonConverter(typeof(ResourceRegistryJsonConverterFactory))]
-public class ResourceRegistry<TElement> : IDictionary<ResourceID, TElement> where TElement : IResourceRegistryElement {
+public class ResourceRegistry<TElement> 
+    : IDictionary<ResourceID, TElement>, 
+      IReadOnlyDictionary<ResourceID, TElement> where TElement : IResourceRegistryElement 
+{
     private readonly Dictionary<ResourceID, TElement> _resources = [];
     private readonly Dictionary<string, ResourceID> _nameMap = [];
     
@@ -18,6 +21,9 @@ public class ResourceRegistry<TElement> : IDictionary<ResourceID, TElement> wher
     
     ICollection<ResourceID> IDictionary<ResourceID, TElement>.Keys => _resources.Keys;
     ICollection<TElement> IDictionary<ResourceID, TElement>.Values => _resources.Values;
+    
+    IEnumerable<ResourceID> IReadOnlyDictionary<ResourceID, TElement>.Keys => _resources.Keys;
+    IEnumerable<TElement> IReadOnlyDictionary<ResourceID, TElement>.Values => _resources.Values;
     
     // TODO: Probably adding Notifications.
 

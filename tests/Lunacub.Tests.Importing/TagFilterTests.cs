@@ -1,10 +1,6 @@
 ﻿namespace Caxivitual.Lunacub.Tests.Importing;
 
 public class TagFilterTests {
-    public TagFilterTests(ITestOutputHelper output) {
-        DebugHelpers.RedirectConsoleOutput(output);
-    }
-
     [Fact]
     public void Parse_SingleTag_HaveExpectedExpressionTree() {
         TagFilter filter = new("A");

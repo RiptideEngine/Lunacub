@@ -37,6 +37,6 @@ public abstract class OutputSystem {
     /// <summary>
     /// Flushes the successfully built resources.
     /// </summary>
-    /// <param name="registry"></param>
-    public abstract void OutputResourceRegistry(IReadOnlyDictionary<ResourceID, OutputRegistryElement> registry);
+    /// <param name="registry">The registry contains the identifiers of successfully built resources.</param>
+    public abstract void OutputResourceRegistry(ResourceRegistry<ResourceRegistry.Element> registry);
 }

@@ -9,10 +9,10 @@ internal sealed partial class BuildSession {
     private readonly BuildEnvironment _environment;
 
     public Dictionary<ResourceID, ResourceBuildingResult> Results { get; }
-    private Dictionary<ResourceID, OutputRegistryElement> _outputRegistry;
+    private readonly ResourceRegistry<ResourceRegistry.Element> _outputRegistry;
     
     private readonly Dictionary<ResourceID, EnvironmentResourceVertex> _graph;
-    private Dictionary<ResourceID, BuildingProceduralResource> _proceduralResources;
+    private readonly Dictionary<ResourceID, BuildingProceduralResource> _proceduralResources;
     
     public BuildSession(BuildEnvironment environment) {
         _environment = environment;

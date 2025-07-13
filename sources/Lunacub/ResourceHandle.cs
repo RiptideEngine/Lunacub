@@ -60,6 +60,11 @@ public readonly struct ResourceHandle : IEquatable<ResourceHandle> {
         return new(ResourceId, Value as T);
     }
 
+    /// <summary>
+    /// Deconstruct the <see cref="ResourceHandle"/> into separated variables.
+    /// </summary>
+    /// <param name="resourceId">When this method returns, contains the <see cref="ResourceId"/> of this handle.</param>
+    /// <param name="value">When this method returns, contains the resource object of this handle.</param>
     public void Deconstruct(out ResourceID resourceId, out object? value) {
         resourceId = ResourceId;
         value = Value;

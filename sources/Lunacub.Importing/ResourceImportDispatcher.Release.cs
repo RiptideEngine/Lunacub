@@ -40,7 +40,8 @@ partial class ResourceImportDispatcher {
                 Debug.Assert(removedSuccessfully);
 
                 ReleaseReferences(container.ReferenceResourceIds);
-                
+
+                container.Status = ImportingStatus.Disposed;
                 return DisposeResource(handle.Value!) ? ReleaseStatus.Success : ReleaseStatus.NotDisposed;
             
             case TaskStatus.Canceled or TaskStatus.Faulted:
@@ -80,7 +81,8 @@ partial class ResourceImportDispatcher {
         Debug.Assert(removedSuccessfully);
 
         ReleaseReferences(container.ReferenceResourceIds);
-                
+        
+        container.Status = ImportingStatus.Disposed;
         return DisposeResource(resource) ? ReleaseStatus.Success : ReleaseStatus.NotDisposed;
     }
 
@@ -113,7 +115,8 @@ partial class ResourceImportDispatcher {
         Debug.Assert(removedSuccessfully);
 
         ReleaseReferences(container.ReferenceResourceIds);
-                
+        
+        container.Status = ImportingStatus.Disposed;
         return DisposeResource(resource) ? ReleaseStatus.Success : ReleaseStatus.NotDisposed;
     }
 

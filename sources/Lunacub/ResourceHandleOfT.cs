@@ -60,6 +60,7 @@ public readonly struct ResourceHandle<T> : IEquatable<ResourceHandle<T>> where T
         return new(ResourceId, Value as TOther);
     }
     
+    /// <inheritdoc cref="ResourceHandle.Deconstruct"/>
     public void Deconstruct(out ResourceID resourceId, out T? value) {
         resourceId = ResourceId;
         value = Value;

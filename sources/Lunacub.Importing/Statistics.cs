@@ -45,6 +45,15 @@ public sealed class Statistics {
         _undisposedResourceCount.Decrement();
     }
 
+    internal void ResetReferenceCounts() {
+        _remainReferenceCount = 0;
+        _remainReferenceCount = 0;
+    }
+
+    internal void ResetUniqueResourceCount() {
+        _uniqueResourceCount = 0;
+    }
+
     internal void SetTotalReferenceCount(uint value) => _totalReferenceCount = value;
     internal void SetRemainReferenceCount(uint value) => _remainReferenceCount = value;
     internal void SetUniqueResourceCount(uint value) => _uniqueResourceCount = value;

@@ -36,7 +36,7 @@ public sealed class MockOutputSystem : OutputSystem {
         sourceStream.CopyTo(outputStream);
     }
 
-    public override void OutputResourceRegistry(IReadOnlyDictionary<ResourceID, OutputRegistryElement> registry) {
+    public override void OutputResourceRegistry(ResourceRegistry<ResourceRegistry.Element> registry) {
         using MockFileStream stream = new(FileSystem, FileSystem.Path.Combine(ResourceOutputDirectory, "__registry"), FileMode.Create);
 
         JsonSerializer.Serialize(stream, registry);

@@ -31,5 +31,5 @@
       <ProjectReference Include="..\..\sources\Lunacub\Lunacub.csproj" />
     </ItemGroup>
 
-    <Import Project="$(SolutionDir)commons\languagecommon.props"/>
+    <Import Project="..\..\commons\languagecommon.props"/>
 </Project>

@@ -63,7 +63,7 @@ public class FileOutputSystem : OutputSystem {
         sourceStream.CopyTo(fs);
     }
 
-    public override void OutputResourceRegistry(IReadOnlyDictionary<ResourceID, OutputRegistryElement> registry) {
+    public override void OutputResourceRegistry(ResourceRegistry<ResourceRegistry.Element> registry) {
         using FileStream fs = File.OpenWrite(Path.Combine(ResourceOutputDirectory, "__registry"));
         fs.SetLength(0);
         fs.Flush();
