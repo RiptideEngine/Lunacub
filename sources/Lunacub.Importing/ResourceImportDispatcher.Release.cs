@@ -10,7 +10,7 @@ partial class ResourceImportDispatcher {
 
         if (container.DecrementReference() != 0) return ReleaseStatus.Success;
         
-        container.CancellationTokenSource?.Cancel();
+        container.CancellationTokenSource.Cancel();
 
         try {
             container.FinalizeTask.Wait();
@@ -22,11 +22,10 @@ partial class ResourceImportDispatcher {
             }
         }
         
-        Debug.Assert(container.CancellationTokenSource == null);
-
         switch (container.FinalizeTask.Status) {
             case TaskStatus.RanToCompletion:
                 Debug.Assert(container.Status == ImportingStatus.Success);
+                container.EnsureCancellationTokenSourceIsDisposed();
                 
                 _environment.Statistics.DecrementUniqueResourceCount();
 
@@ -45,7 +44,8 @@ partial class ResourceImportDispatcher {
                 return DisposeResource(handle.Value!) ? ReleaseStatus.Success : ReleaseStatus.NotDisposed;
             
             case TaskStatus.Canceled or TaskStatus.Faulted:
-                Debug.Assert(container.Status == ImportingStatus.Failed);
+                container.EnsureCancellationTokenSourceIsDisposed();
+                Debug.Assert(container.Status is ImportingStatus.Cancelled or ImportingStatus.Failed);
                 Debug.Assert(_cache.Contains(resourceId));
                 return ReleaseStatus.Canceled;
             
@@ -59,12 +59,12 @@ partial class ResourceImportDispatcher {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
         if (resource == null!) return ReleaseStatus.Null;
-        
         if (_cache.Get(resource) is not { } container) return ReleaseStatus.InvalidResource;
+        
+        container.EnsureCancellationTokenSourceIsDisposed();
         
         Debug.Assert(container.FinalizeTask.Status == TaskStatus.RanToCompletion);
         Debug.Assert(container.Status == ImportingStatus.Success);
-        Debug.Assert(container.CancellationTokenSource == null);
         
         Debug.Assert(ReferenceEquals(container.FinalizeTask.Result.Value, resource));
         
@@ -94,12 +94,13 @@ partial class ResourceImportDispatcher {
         if (resourceId == ResourceID.Null || resource == null) return ReleaseStatus.Null;
         
         if (_cache.Get(resource) is not { } container) return ReleaseStatus.InvalidResource;
+        
+        container.EnsureCancellationTokenSourceIsDisposed();
+        
         if (container.ResourceId != resourceId) return ReleaseStatus.IdIncompatible;
+        if (container.Status != ImportingStatus.Success) return ReleaseStatus.InvalidResource;
         
         Debug.Assert(container.FinalizeTask.Status == TaskStatus.RanToCompletion);
-        Debug.Assert(container.Status == ImportingStatus.Success);
-        Debug.Assert(container.CancellationTokenSource == null);
-        
         Debug.Assert(container.FinalizeTask.Result == handle);
         
         _environment.Statistics.ReleaseReferences();

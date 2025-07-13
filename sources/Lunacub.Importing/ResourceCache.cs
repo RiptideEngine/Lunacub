@@ -202,5 +202,13 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         public uint ResetReferenceCounter() {
             return Interlocked.Exchange(ref ReferenceCount, 0);
         }
+
+        [Conditional("DEBUG")]
+        public void EnsureCancellationTokenSourceIsDisposed() {
+            Debug.Assert(CancellationTokenSource != null! && IsDisposed(CancellationTokenSource));
+
+            [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_disposed")]
+            static extern ref bool IsDisposed(CancellationTokenSource cts);
+        }
     }
 }
