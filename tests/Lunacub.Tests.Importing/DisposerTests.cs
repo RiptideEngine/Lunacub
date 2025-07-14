@@ -2,7 +2,7 @@
 
 public class DisposerTests {
     [Fact]
-    public void DelegateDisposerTryDispose_RecognizeObjectCorrectly_DoesNotThrow() {
+    public void TryDispose_DelegateDisposer_ShouldDisposeCorrectObjectAndReturnsCorrectResult() {
         DisposableResource resource = new();
         
         Disposer.Create(obj => {

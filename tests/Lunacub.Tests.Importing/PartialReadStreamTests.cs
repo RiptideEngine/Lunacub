@@ -1,11 +1,9 @@
-﻿namespace Caxivitual.Lunacub.Tests.Importing;
+﻿// ReSharper disable AccessToDisposedClosure
+
+namespace Caxivitual.Lunacub.Tests.Importing;
 
 public class PartialReadStreamTests : IDisposable {
-    private readonly MemoryStream _stream;
-
-    public PartialReadStreamTests() {
-        _stream = new(Enumerable.Range(0, 256).Select(Convert.ToByte).ToArray());
-    }
+    private readonly MemoryStream _stream = new(Enumerable.Range(0, 256).Select(Convert.ToByte).ToArray());
 
     public void Dispose() {
         _stream.Dispose();

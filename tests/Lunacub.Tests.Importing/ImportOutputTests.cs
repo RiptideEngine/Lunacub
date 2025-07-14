@@ -1,18 +1,11 @@
-﻿using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
-
-namespace Caxivitual.Lunacub.Tests.Importing;
+﻿namespace Caxivitual.Lunacub.Tests.Importing;
 
 public class ImportOutputTests : IClassFixture<PrebuildResourcesFixture>, IDisposable {
     private readonly ImportEnvironment _importEnvironment;
     
     public ImportOutputTests(PrebuildResourcesFixture fixture, ITestOutputHelper output) {
-        _importEnvironment = new() {
-            Logger = output.BuildLogger(),
-        };
-
         _importEnvironment = fixture.CreateImportEnvironment();
-        
-        output.WriteLine(string.Join(Environment.NewLine, _importEnvironment.Libraries.SelectMany(x => x.Registry).Select(kvp => $"{kvp.Key}: {kvp.Value.Name}")));
+        _importEnvironment.Logger = output.BuildLogger();
     }
     
     public void Dispose() {
@@ -29,7 +22,7 @@ public class ImportOutputTests : IClassFixture<PrebuildResourcesFixture>, IDispo
             .Which;
     
         handle.ResourceId.Should().Be(PrebuildResourcesFixture.SimpleResourceStart);
-        handle.Value.Should().NotBeNull().And.BeOfType<SimpleResource>().Which.Value.Should().Be(1);
+        handle.Value.Should().BeOfType<SimpleResource>().Which.Value.Should().Be(1);
     }
     
     [Fact]
@@ -40,7 +33,7 @@ public class ImportOutputTests : IClassFixture<PrebuildResourcesFixture>, IDispo
             .Which;
     
         handle.ResourceId.Should().Be(PrebuildResourcesFixture.ConfigurableResourceBinary);
-        handle.Value.Should().NotBeNull().And.BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
+        handle.Value.Should().BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
     }
     
     [Fact]
@@ -51,7 +44,7 @@ public class ImportOutputTests : IClassFixture<PrebuildResourcesFixture>, IDispo
             .Which;
     
         handle.ResourceId.Should().Be(PrebuildResourcesFixture.ConfigurableResourceJson);
-        handle.Value.Should().NotBeNull().And.BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
+        handle.Value.Should().BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
     }
     
     [Fact]
@@ -76,7 +69,7 @@ public class ImportOutputTests : IClassFixture<PrebuildResourcesFixture>, IDispo
             .Which;
         
         handle.ResourceId.Should().Be(PrebuildResourcesFixture.ReferencingResource2ObjectsChainA);
-        var resource1 = handle.Value.Should().NotBeNull().And.BeOfType<ReferencingResource>().Which;
+        var resource1 = handle.Value.Should().BeOfType<ReferencingResource>().Which;
         resource1.Value.Should().Be(1);
     
         var resource2 = resource1.Reference;
@@ -93,7 +86,7 @@ public class ImportOutputTests : IClassFixture<PrebuildResourcesFixture>, IDispo
             .Which;
         
         handle.ResourceId.Should().Be(PrebuildResourcesFixture.ReferencingResource4ObjectsChainA);
-        var resource1 = handle.Value.Should().NotBeNull().And.BeOfType<ReferencingResource>().Which;
+        var resource1 = handle.Value.Should().BeOfType<ReferencingResource>().Which;
         resource1.Value.Should().Be(1);
         
         var resource2 = resource1.Reference;
