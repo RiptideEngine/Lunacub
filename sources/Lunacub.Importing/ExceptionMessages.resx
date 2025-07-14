@@ -36,8 +36,11 @@
     <data name="UnsupportedCompiledResourceVersion" xml:space="preserve">
         <value>Compiled resource version {0}.{1} is not supported.</value>
     </data>
-    <data name="UnregisteredResource" xml:space="preserve">
+    <data name="UnregisteredResourceId" xml:space="preserve">
         <value>Resource with Id of {0} is unregistered.</value>
+    </data>
+    <data name="UnregisteredResourceName" xml:space="preserve">
+        <value>Resource with name '{0}' is unregistered.</value>
     </data>
     <data name="NullResourceStream" xml:space="preserve">
         <value>Null Stream was returned for resource with Id of {0}.</value>

@@ -9,8 +9,13 @@ public readonly struct ImportingOperation {
     /// <summary>
     /// The Id of the importing resource.
     /// </summary>
-    public ResourceID Rid => _resourceContainer.ResourceId;
+    public ResourceID ResourceId => _resourceContainer.ResourceId;
 
+    /// <summary>
+    /// The name of the importing resource.
+    /// </summary>
+    public string ResourceName => _resourceContainer.ResourceName;
+    
     /// <summary>
     /// The importing task.
     /// </summary>

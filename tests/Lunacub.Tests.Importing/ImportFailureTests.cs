@@ -3,26 +3,19 @@
 namespace Caxivitual.Lunacub.Tests.Importing;
 
 public class ImportFailureTests : IClassFixture<ComponentsFixture>, IDisposable {
-    private readonly ComponentsFixture _componentsFixture;
-    private readonly ITestOutputHelper _output;
-
-    private readonly MockFileSystem _fileSystem;
     private readonly BuildEnvironment _buildEnvironment;
     private readonly ImportEnvironment _importEnvironment;
     
     public ImportFailureTests(ComponentsFixture componentsFixture, ITestOutputHelper output) {
-        _componentsFixture = componentsFixture;
-        _output = output;
+        MockFileSystem fileSystem = new();
         
-        _fileSystem = new();
-        
-        _buildEnvironment = new(new MockOutputSystem(_fileSystem));
+        _buildEnvironment = new(new MockOutputSystem(fileSystem));
         _importEnvironment = new() {
-            Logger = _output.BuildLogger(),
+            Logger = output.BuildLogger(),
         };
         
-        _componentsFixture.ApplyComponents(_buildEnvironment);
-        _componentsFixture.ApplyComponents(_importEnvironment);
+        componentsFixture.ApplyComponents(_buildEnvironment);
+        componentsFixture.ApplyComponents(_importEnvironment);
     }
     
     public void Dispose() {

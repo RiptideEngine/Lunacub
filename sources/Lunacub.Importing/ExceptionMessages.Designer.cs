@@ -125,9 +125,18 @@ namespace Caxivitual.Lunacub.Importing {
         /// <summary>
         ///   Looks up a localized string similar to Resource with Id of {0} is unregistered..
         /// </summary>
-        internal static string UnregisteredResource {
+        internal static string UnregisteredResourceId {
             get {
-                return ResourceManager.GetString("UnregisteredResource", resourceCulture);
+                return ResourceManager.GetString("UnregisteredResourceId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Resource with name &apos;{0}&apos; is unregistered..
+        /// </summary>
+        internal static string UnregisteredResourceName {
+            get {
+                return ResourceManager.GetString("UnregisteredResourceName", resourceCulture);
             }
         }
         

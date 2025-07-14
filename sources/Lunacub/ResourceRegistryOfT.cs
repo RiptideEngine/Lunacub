@@ -10,7 +10,7 @@ public class ResourceRegistry<TElement>
       IReadOnlyDictionary<ResourceID, TElement> where TElement : IResourceRegistryElement 
 {
     private readonly Dictionary<ResourceID, TElement> _resources = [];
-    private readonly Dictionary<string, ResourceID> _nameMap = [];
+    private readonly Dictionary<string, ResourceID> _nameMap = new(StringComparer.Ordinal);
     
     public int Count => _resources.Count;
 
@@ -99,6 +99,8 @@ public class ResourceRegistry<TElement>
     
     public bool ContainsKey(ResourceID resourceId) => _resources.ContainsKey(resourceId);
 
+    public bool ContainsName(ReadOnlySpan<char> name) => _resources.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(name);
+
     public bool ContainsKey(string name) => _nameMap.ContainsKey(name);
 
     bool ICollection<KeyValuePair<ResourceID, TElement>>.Contains(KeyValuePair<ResourceID, TElement> item) {
@@ -108,9 +110,19 @@ public class ResourceRegistry<TElement>
     public bool TryGetValue(ResourceID resourceId, [NotNullWhen(true)] out TElement? output) {
         return _resources.TryGetValue(resourceId, out output);
     }
+    
+    public bool TryGetValue(ReadOnlySpan<char> name, out ResourceID output) {
+        if (_nameMap.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(name, out var id)) {
+            output = id;
+            return true;
+        }
 
-    public bool TryGetValue(string name, [NotNullWhen(true)] out TElement? output) {
-        if (_nameMap.TryGetValue(name, out var id)) {
+        output = ResourceID.Null;
+        return false;
+    }
+
+    public bool TryGetValue(ReadOnlySpan<char> name, [NotNullWhen(true)] out TElement? output) {
+        if (_nameMap.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(name, out var id)) {
             output = _resources[id];
             return true;
         }

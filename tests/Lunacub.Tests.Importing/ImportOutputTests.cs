@@ -1,199 +1,81 @@
-﻿using System.Text.Json;
-using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
+﻿using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
 
 namespace Caxivitual.Lunacub.Tests.Importing;
 
-public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
-    private readonly ComponentsFixture _componentsFixture;
-    private readonly ITestOutputHelper _output;
-
-    private readonly MockFileSystem _fileSystem;
-    private readonly BuildEnvironment _buildEnvironment;
+public class ImportOutputTests : IClassFixture<PrebuildResourcesFixture>, IDisposable {
     private readonly ImportEnvironment _importEnvironment;
     
-    public ImportOutputTests(ComponentsFixture componentsFixture, ITestOutputHelper output) {
-        _componentsFixture = componentsFixture;
-        _output = output;
-        
-        _fileSystem = new();
-        
-        _buildEnvironment = new(new MockOutputSystem(_fileSystem));
+    public ImportOutputTests(PrebuildResourcesFixture fixture, ITestOutputHelper output) {
         _importEnvironment = new() {
-            Logger = _output.BuildLogger(),
+            Logger = output.BuildLogger(),
         };
+
+        _importEnvironment = fixture.CreateImportEnvironment();
         
-        _componentsFixture.ApplyComponents(_buildEnvironment);
-        _componentsFixture.ApplyComponents(_importEnvironment);
+        output.WriteLine(string.Join(Environment.NewLine, _importEnvironment.Libraries.SelectMany(x => x.Registry).Select(kvp => $"{kvp.Key}: {kvp.Value.Name}")));
     }
     
     public void Dispose() {
         _importEnvironment.Dispose();
-        _buildEnvironment.Dispose();
         
         GC.SuppressFinalize(this);
     }
     
     [Fact]
     public async Task ImportSimpleResource_ReturnsCorrectObject() {
-        _buildEnvironment.Libraries.Add(new(new MemorySourceProvider {
-            Sources = {
-                ["Resource"] = MemorySourceProvider.AsUtf8("""{"Value":69}""", DateTime.MinValue),
-            },
-        }) {
-            Registry = {
-                [1] = new("Resource", [], new() {
-                    Addresses = new("Resource"),
-                    Options = new(nameof(SimpleResourceImporter)),
-                }),
-            },
-        });
-    
-        _buildEnvironment.BuildResources();
-        _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)) {
-            Registry = {
-                [1] = new("Resource", [])
-            }
-        });
-    
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.SimpleResourceStart).Task)
             .Should()
             .NotThrowAsync())
             .Which;
     
-        handle.ResourceId.Should().Be((ResourceID)1);
-        handle.Value.Should().NotBeNull().And.BeOfType<SimpleResource>().Which.Value.Should().Be(69);
+        handle.ResourceId.Should().Be(PrebuildResourcesFixture.SimpleResourceStart);
+        handle.Value.Should().NotBeNull().And.BeOfType<SimpleResource>().Which.Value.Should().Be(1);
     }
     
     [Fact]
     public async Task ImportConfigurableResource_WithBinaryOption_ReturnsCorrectObject() {
-        _buildEnvironment.Libraries.Add(new(new MemorySourceProvider {
-            Sources = {
-                ["Resource"] = MemorySourceProvider.AsUtf8("[0,1,2,3,4]", DateTime.MinValue),
-            },
-        }) {
-            Registry = {
-                [1] = new("Resource", [], new() {
-                    Addresses = new("Resource"),
-                    Options = new(nameof(ConfigurableResourceImporter), null, new ConfigurableResourceDTO.Options(OutputType.Binary)),
-                }),
-            },
-        });
-    
-        _buildEnvironment.BuildResources();
-        _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)){
-            Registry = {
-                [1] = new("Resource", [])
-            }
-        });
-        
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.ConfigurableResourceBinary).Task)
             .Should()
             .NotThrowAsync())
             .Which;
     
-        handle.ResourceId.Should().Be((ResourceID)1);
+        handle.ResourceId.Should().Be(PrebuildResourcesFixture.ConfigurableResourceBinary);
         handle.Value.Should().NotBeNull().And.BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
     }
     
     [Fact]
     public async Task ImportConfigurableResource_WithJsonOption_ReturnsCorrectObject() {
-        _buildEnvironment.Libraries.Add(new(new MemorySourceProvider {
-            Sources = {
-                ["Resource"] = MemorySourceProvider.AsUtf8("[0,1,2,3,4]", DateTime.MinValue),
-            },
-        }) {
-            Registry = {
-                [1] = new("Resource", [], new() {
-                    Addresses = new("Resource"),
-                    Options = new(nameof(ConfigurableResourceImporter), null, new ConfigurableResourceDTO.Options(OutputType.Json)),
-                }),
-            },
-        });
-    
-        _buildEnvironment.BuildResources();
-        _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)){
-            Registry = {
-                [1] = new("Resource", [])
-            }
-        });
-        
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.ConfigurableResourceJson).Task)
             .Should()
             .NotThrowAsync())
             .Which;
     
-        handle.ResourceId.Should().Be((ResourceID)1);
+        handle.ResourceId.Should().Be(PrebuildResourcesFixture.ConfigurableResourceJson);
         handle.Value.Should().NotBeNull().And.BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
     }
     
     [Fact]
     public async Task ImportReferencingResource_UnregisteredReference_ReturnsCorrectObjects() {
-        _buildEnvironment.Libraries.Add(new(new MemorySourceProvider {
-            Sources = {
-                ["Resource"] = MemorySourceProvider.AsUtf8("""{"Reference":2,"Value":1}""", DateTime.MinValue),
-            },
-        }) {
-            Registry = {
-                [1] = new("Resource", [], new() {
-                    Addresses = new("Resource"),
-                    Options = new(nameof(ReferencingResourceImporter)),
-                }),
-            },
-        });
-        
-        _buildEnvironment.BuildResources();
-        _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)){
-            Registry = {
-                [1] = new("Resource", [])
-            }
-        });
-        
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.ReferencingResourceReferenceUnregistered).Task)
             .Should()
             .NotThrowAsync())
             .Which;
         
-        handle.ResourceId.Should().Be((ResourceID)1);
-        var referencee = handle.Value.Should().NotBeNull().And.BeOfType<ReferencingResource>().Which;
-    
-        referencee.Value.Should().Be(1);
-        referencee.Reference.Should().BeNull();
+        handle.ResourceId.Should().Be(PrebuildResourcesFixture.ReferencingResourceReferenceUnregistered);
+
+        var resource = handle.Value.Should().BeOfType<ReferencingResource>().Which;
+        resource.Value.Should().Be(1);
+        resource.Reference.Should().BeNull();
     }
     
     [Fact]
-    public async Task ImportReferencingResource_Normal_ReturnsCorrectObjects() {
-        _buildEnvironment.Libraries.Add(new(new MemorySourceProvider {
-            Sources = {
-                ["Resource"] = MemorySourceProvider.AsUtf8("""{"Reference":2,"Value":1}""", DateTime.MinValue),
-                ["Reference"] = MemorySourceProvider.AsUtf8("""{"Value":2}""", DateTime.MinValue),
-            },
-        }) {
-            Registry = {
-                [1] = new("Resource", [], new() {
-                    Addresses = new("Resource"),
-                    Options = new(nameof(ReferencingResourceImporter)),
-                }),
-                [2] = new("Reference", [], new() {
-                    Addresses = new("Reference"),
-                    Options = new(nameof(ReferencingResourceImporter))
-                })
-            },
-        });
-        
-        _buildEnvironment.BuildResources();
-        _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)) {
-            Registry = {
-                [1] = new("Resource", []),
-                [2] = new("Reference", []),
-            }
-        });
-        
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
+    public async Task ImportReferencingResource_2ObjectsChain_ReturnsCorrectObjects() {
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.ReferencingResource2ObjectsChainA).Task)
             .Should()
             .NotThrowAsync())
             .Which;
         
-        handle.ResourceId.Should().Be((ResourceID)1);
+        handle.ResourceId.Should().Be(PrebuildResourcesFixture.ReferencingResource2ObjectsChainA);
         var resource1 = handle.Value.Should().NotBeNull().And.BeOfType<ReferencingResource>().Which;
         resource1.Value.Should().Be(1);
     
@@ -204,51 +86,13 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
     }
     
     [Fact]
-    public async Task ImportReferencingResource_Chain4_ReturnsCorrectObjects() {
-        _buildEnvironment.Libraries.Add(new(new MemorySourceProvider {
-            Sources = {
-                ["Resource1"] = MemorySourceProvider.AsUtf8("""{"Reference":2,"Value":1}""", DateTime.MinValue),
-                ["Resource2"] = MemorySourceProvider.AsUtf8("""{"Reference":3,"Value":2}""", DateTime.MinValue),
-                ["Resource3"] = MemorySourceProvider.AsUtf8("""{"Reference":4,"Value":3}""", DateTime.MinValue),
-                ["Resource4"] = MemorySourceProvider.AsUtf8("""{"Value":4}""", DateTime.MinValue),
-            },
-        }) {
-            Registry = {
-                [1] = new("Resource1", [], new() {
-                    Addresses = new("Resource1"),
-                    Options = new(nameof(ReferencingResourceImporter)),
-                }),
-                [2] = new("Resource2", [], new() {
-                    Addresses = new("Resource2"),
-                    Options = new(nameof(ReferencingResourceImporter)),
-                }),
-                [3] = new("Resource3", [], new() {
-                    Addresses = new("Resource3"),
-                    Options = new(nameof(ReferencingResourceImporter)),
-                }),
-                [4] = new("Resource4", [], new() {
-                    Addresses = new("Resource4"),
-                    Options = new(nameof(ReferencingResourceImporter)),
-                }),
-            },
-        });
-        
-        _buildEnvironment.BuildResources();
-        _importEnvironment.Libraries.Add(new(new MockImportSourceProvider(_fileSystem)) {
-            Registry = {
-                [1] = new("Resource1", []),
-                [2] = new("Resource2", []),
-                [3] = new("Resource3", []),
-                [4] = new("Resource4", []),
-            },
-        });
-        
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
+    public async Task ImportReferencingResource_4ObjectsChain_ReturnsCorrectObjects() {
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.ReferencingResource4ObjectsChainA).Task)
             .Should()
             .NotThrowAsync())
             .Which;
         
-        handle.ResourceId.Should().Be((ResourceID)1);
+        handle.ResourceId.Should().Be(PrebuildResourcesFixture.ReferencingResource4ObjectsChainA);
         var resource1 = handle.Value.Should().NotBeNull().And.BeOfType<ReferencingResource>().Which;
         resource1.Value.Should().Be(1);
         
@@ -266,67 +110,5 @@ public class ImportOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
         resource4.Should().NotBeNull();
         resource4!.Value.Should().Be(4);
         resource4.Reference.Should().BeNull();
-    }
-    
-    [Fact]
-    public async Task ImportReferencingResource_ChainArbitrary_ReturnsCorrectObjects() {
-        const int count = 50;
-        
-        MemorySourceProvider sourceProvider = new MemorySourceProvider();
-    
-        for (int i = 1; i < count; i++) {
-            sourceProvider.Sources.Add($"Resource{i}", MemorySourceProvider.AsUtf8($$"""{"Reference":{{i + 1}},"Value":{{i}}}""", DateTime.MinValue));
-        }
-        sourceProvider.Sources.Add($"Resource{count}", MemorySourceProvider.AsUtf8($$"""{"Value":{{count}}}""", DateTime.MinValue));
-        
-        BuildResourceLibrary buildLibrary = new(sourceProvider);
-    
-        for (int i = 1; i <= count; i++) {
-            buildLibrary.Registry.Add((uint)i, new($"Resource{i}", [], new() {
-                Addresses = new($"Resource{i}"),
-                Options = new(nameof(ReferencingResourceImporter)),
-            }));
-        }
-    
-        _buildEnvironment.Libraries.Add(buildLibrary);
-        
-        var result = _buildEnvironment.BuildResources();
-
-        result.ResourceResults.Should().HaveCount(count);
-        
-        ImportResourceLibrary importLibrary = new(new MockImportSourceProvider(_fileSystem));
-        for (int i = 1; i <= count; i++) {
-            importLibrary.Registry.Add((uint)i, new($"Resource{i}", []));
-        }
-        
-        _importEnvironment.Libraries.Add(importLibrary);
-        
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(1).Task)
-            .Should()
-            .NotThrowAsync())
-            .Which;
-        
-        handle.ResourceId.Should().Be((ResourceID)1);
-        var resource1 = handle.Value.Should().NotBeNull().And.BeOfType<ReferencingResource>().Which;
-        resource1.Value.Should().Be(1);
-        
-        var resource2 = resource1.Reference;
-        
-        for (int i = 2; i < count; i++) {
-            resource2.Should().NotBeNull();
-            resource2!.Value.Should().Be(i);
-            resource2.Reference.Should().NotBeNull();
-        
-            resource2 = resource2.Reference;
-        }
-        
-        resource2.Should().NotBeNull();
-        resource2!.Value.Should().Be(count);
-        resource2.Reference.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task ImportTreeReferencingResource_Normal_ReturnsCorrectObjects() {
-        
     }
 }

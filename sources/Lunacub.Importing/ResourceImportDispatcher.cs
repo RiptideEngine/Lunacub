@@ -1,4 +1,6 @@
-﻿using Caxivitual.Lunacub.Compilation;
+﻿// ReSharper disable VariableHidesOuterVariable
+
+using Caxivitual.Lunacub.Compilation;
 using Microsoft.Extensions.Logging;
 using System.Collections.Frozen;
 using System.Collections.ObjectModel;
@@ -18,10 +20,10 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
     public ImportingOperation Import(ResourceID resourceId) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        if (!_environment.Libraries.ContainsResource(resourceId)) {
-            string message = string.Format(ExceptionMessages.UnregisteredResource, resourceId);
+        if (!_environment.Libraries.ContainsResource(resourceId, out ResourceRegistry.Element element)) {
+            string message = string.Format(ExceptionMessages.UnregisteredResourceId, resourceId);
 
-            ResourceCache.ElementContainer container = new(resourceId) {
+            ResourceCache.ElementContainer container = new(resourceId, string.Empty) {
                 FinalizeTask = Task.FromException<ResourceHandle>(new ArgumentException(message, nameof(resourceId))),
                 ReferenceCount = 0,
                 Status = ImportingStatus.Failed,
@@ -30,21 +32,53 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             return new(container);
         }
         
-        return new(_cache.GetOrBeginImporting(resourceId, IncrementContainerReference, BeginImport));
+        return new(_cache.GetOrBeginImporting(resourceId, IncrementContainerReference, BeginImport, element));
         
-        // ReSharper disable once VariableHidesOuterVariable
-        ResourceCache.ElementContainer BeginImport(ResourceID resourceId) {
-            ResourceCache.ElementContainer container = new(resourceId);
-            
+        ResourceCache.ElementContainer BeginImport(ResourceID resourceId, ResourceRegistry.Element element) {
+            ResourceCache.ElementContainer container = new(resourceId, element.Name);
+        
             _environment.Statistics.AddReference();
-            
+        
             Log.BeginImport(_environment.Logger, container.ResourceId);
-            
+        
             container.InitializeImport();
             container.ImportTask = ImportTask(container);
             container.ResolvingReferenceTask = ResolveReference(container);
             container.FinalizeTask = FinalizeTask(container);
-            
+        
+            return container;
+        }
+    }
+
+    public ImportingOperation Import(ReadOnlySpan<char> name) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (!_environment.Libraries.ContainsResource(name, out ResourceID id)) {
+            string message = string.Format(ExceptionMessages.UnregisteredResourceName, name.ToString());
+
+            ResourceCache.ElementContainer container = new(ResourceID.Null, name.ToString()) {
+                FinalizeTask = Task.FromException<ResourceHandle>(new ArgumentException(message, nameof(name))),
+                ReferenceCount = 0,
+                Status = ImportingStatus.Failed,
+            };
+
+            return new(container);
+        }
+
+        return new(_cache.GetOrBeginImporting(id, IncrementContainerReference, BeginImport, name));
+        
+        ResourceCache.ElementContainer BeginImport(ResourceID resourceId, ReadOnlySpan<char> name) {
+            ResourceCache.ElementContainer container = new(resourceId, name.ToString());
+        
+            _environment.Statistics.AddReference();
+        
+            Log.BeginImport(_environment.Logger, container.ResourceId);
+        
+            container.InitializeImport();
+            container.ImportTask = ImportTask(container);
+            container.ResolvingReferenceTask = ResolveReference(container);
+            container.FinalizeTask = FinalizeTask(container);
+        
             return container;
         }
     }
@@ -183,10 +217,10 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
                 continue;
             }
 
-            if (!_environment.Libraries.ContainsResource(requesting.ResourceId)) continue;
+            if (!_environment.Libraries.ContainsResource(requesting.ResourceId, out ResourceRegistry.Element element)) continue;
 
             ResourceCache.ElementContainer referenceContainer =
-                _cache.GetOrBeginImporting(requesting.ResourceId, IncrementContainerReference, BeginReferenceImport);
+                _cache.GetOrBeginImporting(requesting.ResourceId, IncrementContainerReference, BeginReferenceImport, element.Name);
 
             if (referenceContainer.Status == ImportingStatus.Failed) continue;
             
@@ -202,10 +236,10 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
         return new(references, waitContainers);
         
-        ResourceCache.ElementContainer BeginReferenceImport(ResourceID resourceId) {
+        ResourceCache.ElementContainer BeginReferenceImport(ResourceID resourceId, string resourceName) {
             Debug.Assert(_environment.Libraries.ContainsResource(resourceId));
             
-            ResourceCache.ElementContainer container = new(resourceId);
+            ResourceCache.ElementContainer container = new(resourceId, resourceName);
             _environment.Statistics.AddReference();
             
             container.InitializeImport();
@@ -279,7 +313,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         }
     }
     
-    private void IncrementContainerReference(ResourceCache.ElementContainer container) {
+    private void IncrementContainerReference<T>(ResourceCache.ElementContainer container, T unusedArg) where T : allows ref struct {
         switch (container.Status) {
             case ImportingStatus.Success or ImportingStatus.Importing:
                 uint incremented = container.IncrementReference();

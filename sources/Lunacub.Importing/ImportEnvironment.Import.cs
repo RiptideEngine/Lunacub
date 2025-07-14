@@ -4,12 +4,21 @@ partial class ImportEnvironment {
     private readonly ResourceImportDispatcher _importDispatcher;
 
     /// <summary>
-    /// Imports the weakly-typed resource associates with <paramref name="rid"/> along with its dependencies.
+    /// Imports the weakly-typed resource associates with <paramref name="rid"/> along with its references.
     /// </summary>
     /// <param name="rid">Id of the resource to import.</param>
-    /// <returns>The <see cref="ImportingOperation"/> handle of the operation.</returns>
+    /// <returns>The <see cref="ImportingOperation"/> instance that encapsulates the importing operation.</returns>
     public ImportingOperation Import(ResourceID rid) {
         return _importDispatcher.Import(rid);
+    }
+
+    /// <summary>
+    /// Imports the weakly-typed resource associates with <see cref="name"/> along with its references.
+    /// </summary>
+    /// <param name="name">Name of the resource to import.</param>
+    /// <returns>The <see cref="ImportingOperation"/> instance that encapsulates the importing operation.</returns>
+    public ImportingOperation Import(ReadOnlySpan<char> name) {
+        return _importDispatcher.Import(name);
     }
 
     // TODO: Generic overload.

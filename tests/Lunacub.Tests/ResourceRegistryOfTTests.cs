@@ -238,7 +238,7 @@ public class ResourceRegistryOfTTests {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
-        _registry.TryGetValue("B", out var element).Should().BeTrue();
+        _registry.TryGetValue("B", out ResourceRegistry.Element element).Should().BeTrue();
         element.Should().Be(new ResourceRegistry.Element("B", []));
     }
     
@@ -247,7 +247,7 @@ public class ResourceRegistryOfTTests {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
-        _registry.TryGetValue("E", out _).Should().BeFalse();
+        _registry.TryGetValue("E", out ResourceRegistry.Element _).Should().BeFalse();
     }
 
     [Fact]

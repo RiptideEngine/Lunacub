@@ -11,6 +11,47 @@ public sealed class ResourceLibraryCollection : Collection<ImportResourceLibrary
         return false;
     }
     
+    public bool ContainsResource(ResourceID resourceId, out ResourceRegistry.Element output) {
+        foreach (var library in this) {
+            if (library.Registry.TryGetValue(resourceId, out output)) {
+                return true;
+            }
+        }
+
+        output = default;
+        return false;
+    }
+    
+    public bool ContainsResource(ReadOnlySpan<char> name) {
+        foreach (var library in this) {
+            if (library.Registry.ContainsName(name)) return true;
+        }
+
+        return false;
+    }
+    
+    public bool ContainsResource(ReadOnlySpan<char> name, out ResourceID output) {
+        foreach (var library in this) {
+            if (library.Registry.TryGetValue(name, out output)) {
+                return true;
+            }
+        }
+
+        output = default;
+        return false;
+    }
+    
+    public bool ContainsResource(ReadOnlySpan<char> name, out ResourceRegistry.Element output) {
+        foreach (var library in this) {
+            if (library.Registry.TryGetValue(name, out output)) {
+                return true;
+            }
+        }
+
+        output = default;
+        return false;
+    }
+    
     public Stream? CreateResourceStream(ResourceID resourceId) {
         foreach (var library in this) {
             if (library.CreateResourceStream(resourceId) is { } stream) return stream;

@@ -66,6 +66,25 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
             return reference!;
         }
     }
+    
+    public ElementContainer GetOrBeginImporting<TArg>(
+        ResourceID resourceId,
+        Action<ElementContainer, TArg> action,
+        Func<ResourceID, TArg, ElementContainer> factory,
+        TArg arg
+    ) where TArg : allows ref struct {
+        using (_lock.EnterScope()) {
+            ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, resourceId, out bool exists);
+
+            if (!exists) {
+                reference = factory(resourceId, arg);
+            } else {
+                action(reference!, arg);
+            }
+
+            return reference!;
+        }
+    }
 
     public void RegisterResourceMap(object resource, ResourceID resourceId) {
         using (_lock.EnterScope()) {
@@ -131,6 +150,7 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     /// </summary>
     public sealed class ElementContainer {
         public readonly ResourceID ResourceId;
+        public readonly string ResourceName;
 
         public uint ReferenceCount;
         
@@ -145,8 +165,9 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         public Task<ResourceImportDispatcher.ReferenceResolveResult>? ResolvingReferenceTask { get; set; }
         public Task<ResourceHandle> FinalizeTask { get; set; }
 
-        public ElementContainer(ResourceID resourceId) {
+        public ElementContainer(ResourceID resourceId, string resourceName) {
             ResourceId = resourceId;
+            ResourceName = resourceName;
             ReferenceResourceIds = FrozenSet<ResourceID>.Empty;
             Status = ImportingStatus.Importing;
             FinalizeTask = null!;
