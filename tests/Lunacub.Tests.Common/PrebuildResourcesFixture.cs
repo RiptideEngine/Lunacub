@@ -24,6 +24,8 @@ public sealed class PrebuildResourcesFixture {
     public static readonly ResourceID ConfigurableResourceBinary = 201;
     public static readonly ResourceID ConfigurableResourceJson = 202;
 
+    public static readonly ResourceID DeferrableResource = 301;
+
     private readonly Caxivitual.Lunacub.Building.Core.MemoryOutputSystem _buildOutput;
     private readonly IReadOnlyDictionary<Type, ImmutableArray<Type>> _componentTypes;
     
@@ -82,6 +84,7 @@ public sealed class PrebuildResourcesFixture {
         AppendSimpleResources(sourceProvider, library);
         AppendReferencingResources(sourceProvider, library);
         AppendConfigurableResources(sourceProvider, library);
+        AppendDeferrableResource(sourceProvider, library);
         return;
 
         static void AppendSimpleResources(BuildMemorySourceProvider sourceProvider, BuildResourceLibrary library) {
@@ -151,6 +154,16 @@ public sealed class PrebuildResourcesFixture {
             library.Registry.Add(ConfigurableResourceJson, new($"{nameof(ConfigurableResource)}_Json", [], new() {
                 Addresses = new($"{nameof(ConfigurableResource)}_Json"),
                 Options = new(nameof(ConfigurableResourceImporter), null, new ConfigurableResourceDTO.Options(OutputType.Json)),
+            }));
+        }
+
+        static void AppendDeferrableResource(BuildMemorySourceProvider sourceProvider, BuildResourceLibrary library) {
+            sourceProvider.Sources
+                .Add("DeferrableResource", BuildMemorySourceProvider.AsUtf8(string.Empty, DateTime.MinValue));
+
+            library.Registry.Add(DeferrableResource, new("DeferrableResource", [], new() {
+                Addresses = new("DeferrableResource"),
+                Options = new(nameof(DeferrableResourceImporter)),
             }));
         }
     }

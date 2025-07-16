@@ -100,32 +100,33 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
 
     private void Dispose(bool disposing) {
         if (Interlocked.Exchange(ref _disposed, true)) return;
-        
-        // TODO: Implementation
-        using (_lock.EnterScope()) {
-            Task.WaitAll(_containers.Values.Select(async container => {
-                ResourceHandle handle;
 
-                try {
-                    handle = await container.FinalizeTask;
-                } catch {
-                    // Ignored.
-                    return;
-                }
+        if (disposing) {
+            using (_lock.EnterScope()) {
+                Task.WaitAll(_containers.Values.Select(async container => {
+                    ResourceHandle handle;
 
-                if (_environment.Disposers.TryDispose(handle.Value!)) {
-                    _environment.Statistics.IncrementDisposedResourceCount();
-                } else {
-                    _environment.Statistics.IncrementUndisposedResourceCount();
-                }
+                    try {
+                        handle = await container.FinalizeTask;
+                    } catch {
+                        // Ignored.
+                        return;
+                    }
 
-                container.ReferenceCount = 0;
-                container.Status = ImportingStatus.Disposed;
-            }));
+                    if (_environment.Disposers.TryDispose(handle.Value!)) {
+                        _environment.Statistics.IncrementDisposedResourceCount();
+                    } else {
+                        _environment.Statistics.IncrementUndisposedResourceCount();
+                    }
 
-            _containers.Clear();
-            _environment.Statistics.ResetReferenceCounts();
-            _environment.Statistics.ResetUniqueResourceCount();
+                    container.ReferenceCount = 0;
+                    container.Status = ImportingStatus.Disposed;
+                }));
+
+                _containers.Clear();
+                _environment.Statistics.ResetReferenceCounts();
+                _environment.Statistics.ResetUniqueResourceCount();
+            }
         }
     }
     
@@ -158,7 +159,7 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
 
         public ImportingStatus Status;
         
-        public CancellationTokenSource CancellationTokenSource { get; private set; }
+        public CancellationTokenSource? CancellationTokenSource { get; private set; }
         public CancellationToken CancellationToken => CancellationTokenSource!.Token;
         
         public Task<ResourceImportDispatcher.ResourceImportResult>? ImportTask { get; set; }
@@ -181,7 +182,7 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
                 CancellationTokenSource = new();
             } else {
                 switch (Status) {
-                    case ImportingStatus.Cancelled:
+                    case ImportingStatus.Canceled:
                         bool resetSuccessfully = CancellationTokenSource.TryReset();
                         Debug.Assert(resetSuccessfully);
                         break;
@@ -222,6 +223,10 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
 
         public uint ResetReferenceCounter() {
             return Interlocked.Exchange(ref ReferenceCount, 0);
+        }
+
+        public void NullifyCancellationTokenSource() {
+            CancellationTokenSource = null;
         }
 
         [Conditional("DEBUG")]

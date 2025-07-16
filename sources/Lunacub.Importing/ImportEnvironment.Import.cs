@@ -38,8 +38,6 @@ partial class ImportEnvironment {
     /// <param name="resource">The resource object to release.</param>
     /// <returns>The status of releasing operation.</returns>
     public ReleaseStatus Release(object? resource) {
-        if (resource is null) return ReleaseStatus.Null;
-        
         return _importDispatcher.Release(resource);
     }
     
@@ -57,12 +55,19 @@ partial class ImportEnvironment {
     /// <summary>
     /// Releases the resource using the specified resource Id.
     /// </summary>
-    /// <param name="rid">The Id of the resource to release.</param>
+    /// <param name="resourceId">The Id of the resource to release.</param>
     /// <returns>The status of releasing operation.</returns>
     /// <seealso cref="ResourceID"/>
-    public ReleaseStatus Release(ResourceID rid) {
-        if (rid == ResourceID.Null) return ReleaseStatus.Null;
-        
-        return _importDispatcher.Release(rid);
+    public ReleaseStatus Release(ResourceID resourceId) {
+        return _importDispatcher.Release(resourceId);
+    }
+
+    /// <summary>
+    /// Releases the importing resource using the provided <see cref="ImportingOperation"/> instance.
+    /// </summary>
+    /// <param name="operation">The instance of <see cref="ImportingOperation"/> to release.</param>
+    /// <returns>The status of releasing operation.</returns>
+    public ReleaseStatus Release(ImportingOperation operation) {
+        return _importDispatcher.Release(operation);
     }
 }

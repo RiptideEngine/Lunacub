@@ -85,6 +85,8 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
     
     private async Task<ResourceImportResult> ImportTask(ResourceCache.ElementContainer container) {
         await Task.Yield();
+        
+        Debug.Assert(container.CancellationTokenSource != null);
 
         try {
             if (_environment.Libraries.CreateResourceStream(container.ResourceId) is not { } stream) {
@@ -120,7 +122,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
             ReleaseContainerReferenceCounter(container);
 
-            container.Status = ImportingStatus.Cancelled;
+            container.Status = ImportingStatus.Canceled;
             
             Debug.Assert(container.CancellationTokenSource.IsCancellationRequested);
             container.CancellationTokenSource.Dispose();
@@ -147,7 +149,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         try {
             (deserializer, resource, context) = await container.ImportTask!;
         } catch (OperationCanceledException) {
-            Debug.Assert(container.Status == ImportingStatus.Cancelled);
+            Debug.Assert(container.Status == ImportingStatus.Canceled);
             Debug.Assert(container.ReferenceCount == 0);
 
             throw;
@@ -254,13 +256,15 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
     }
     
     private async Task<ResourceHandle> FinalizeTask(ResourceCache.ElementContainer container) {
+        Debug.Assert(container.CancellationTokenSource != null);
+        
         ResourceHandle handle;
         IReadOnlyCollection<ResourceCache.ElementContainer> waitContainers;
 
         try {
             (handle, waitContainers) = await container.ResolvingReferenceTask!;
         } catch (OperationCanceledException) {
-            Debug.Assert(container.Status == ImportingStatus.Failed);
+            Debug.Assert(container.Status == ImportingStatus.Canceled);
             Debug.Assert(container.CancellationTokenSource.IsCancellationRequested);
             
             // Not remove from the cache to allow reimport later in the future.
@@ -310,6 +314,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             throw;
         } finally {
             container.CancellationTokenSource.Dispose();
+            container.NullifyCancellationTokenSource();
         }
     }
     
@@ -318,11 +323,13 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             case ImportingStatus.Success or ImportingStatus.Importing:
                 uint incremented = container.IncrementReference();
                 Debug.Assert(incremented != 0);
+                
+                _environment.Logger.LogDebug("{id}: Incremented reference count to {c}", container.ResourceId, incremented);
 
                 _environment.Statistics.AddReference();
                 break;
             
-            case ImportingStatus.Cancelled or ImportingStatus.Disposed:
+            case ImportingStatus.Canceled or ImportingStatus.Disposed:
                 Debug.Assert(container.ReferenceCount == 0);
 
                 container.ReferenceCount = 1;

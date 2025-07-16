@@ -17,11 +17,19 @@ public readonly struct ImportingOperation {
     public string ResourceName => _resourceContainer.ResourceName;
     
     /// <summary>
-    /// The importing task.
+    /// Gets the importing task.
     /// </summary>
     public Task<ResourceHandle> Task => _resourceContainer.FinalizeTask;
     
+    /// <summary>
+    /// Gets the importing status.
+    /// </summary>
     public ImportingStatus Status => _resourceContainer.Status;
+
+    /// <summary>
+    /// Gets the underlying resource container.
+    /// </summary>
+    internal ResourceCache.ElementContainer UnderlyingContainer => _resourceContainer;
     
     internal ImportingOperation(ResourceCache.ElementContainer resourceContainer) {
         _resourceContainer = resourceContainer;

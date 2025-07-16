@@ -9,6 +9,7 @@ namespace Caxivitual.Lunacub.Building;
 /// <see cref="BuildEnvironment"/> to determine whether or not a resource need to be rebuilt.
 /// </summary>
 [JsonConverter(typeof(IncrementalInfoConverter))]
+[ExcludeFromCodeCoverage]
 public readonly struct IncrementalInfo {
     // TODO: Add addresses.
     

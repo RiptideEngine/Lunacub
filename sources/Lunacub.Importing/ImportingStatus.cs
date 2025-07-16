@@ -4,6 +4,6 @@ public enum ImportingStatus : byte {
     Importing,
     Success,
     Failed,
-    Cancelled,
+    Canceled,
     Disposed,
 }

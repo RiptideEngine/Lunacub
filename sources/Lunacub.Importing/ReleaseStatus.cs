@@ -10,7 +10,7 @@ public enum ReleaseStatus {
     Success = 0,
     
     /// <summary>
-    /// Resource object unregistered from cache but not disposed, indicates a leak.
+    /// Resource object unregistered from cache but not disposed, indicates a resource leak.
     /// </summary>
     NotDisposed,
     
@@ -20,12 +20,12 @@ public enum ReleaseStatus {
     Canceled,
     
     /// <summary>
-    /// The specified resource object or resource handle to release is or represents null.
+    /// The specified resource object or resource handle to release is <see langword="null"/>.
     /// </summary>
     Null = -1,
     
     /// <summary>
-    /// The specified resource object is not a resource object of the <see cref="ImportEnvironment"/> instance.
+    /// The provided resource object is not a resource object of the <see cref="ImportEnvironment"/> instance.
     /// </summary>
     InvalidResource = -2,
     
@@ -38,6 +38,16 @@ public enum ReleaseStatus {
     /// The resource with the associated Id hasn't been imported yet.
     /// </summary>
     NotImported = -4,
+    
+    /// <summary>
+    /// The provided <see cref="ImportingOperation"/> has invalid ID.
+    /// </summary>
+    InvalidOperationId = -5,
+    
+    /// <summary>
+    /// The provided <see cref="ImportingOperation"/> represents an invalid resource container.
+    /// </summary>
+    InvalidOperationContainer = -6,
     
     /// <summary>
     /// Unspecified error happened.
