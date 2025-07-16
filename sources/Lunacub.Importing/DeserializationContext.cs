@@ -2,7 +2,7 @@
 
 namespace Caxivitual.Lunacub.Importing;
 
-public sealed class DeserializationContext {
+public readonly struct DeserializationContext {
     public RequestingReferences RequestingReferences { get; }
     public ILogger Logger { get; }
     public Dictionary<object, object> ValueContainer { get; }

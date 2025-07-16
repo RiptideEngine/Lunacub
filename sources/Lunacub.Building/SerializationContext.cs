@@ -6,7 +6,7 @@ namespace Caxivitual.Lunacub.Building;
 /// <summary>
 /// Represents the context used during the importing process, providing access to import options.
 /// </summary>
-public sealed class SerializationContext {
+public readonly struct SerializationContext {
     /// <summary>
     /// User-provided options that can be used during the processing process.
     /// </summary>
