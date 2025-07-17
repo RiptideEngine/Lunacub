@@ -271,8 +271,8 @@ public readonly struct ResourceID :
     ///     <see langword="true"/> if the specified <see cref="ResourceID"/> is equal to the current instance;
     ///     otherwise, <see langword="false"/>.
     /// </returns>
-    public bool Equals(ResourceID other) => Value == other.Value;
-    
+    public bool Equals(ResourceID other) => this == other;
+
     /// <summary>
     /// Determines whether the <see cref="Value"/> of the current instance is equal to the specified 128-bit unsigned
     /// integer.
@@ -282,7 +282,7 @@ public readonly struct ResourceID :
     ///     <see langword="true"/> if the <see cref="Value"/> of the current instance is equal to the provided 128-bit
     ///     unsigned integer; otherwise, <see langword="false"/>
     /// </returns>
-    public bool Equals(UInt128 other) => Value == other;
+    public bool Equals(UInt128 other) => this == other;
 
     /// <summary>
     /// Determines whether this instance and a specified object, which can be either an instance of <see cref="ResourceID"/>
@@ -304,10 +304,12 @@ public readonly struct ResourceID :
         };
     }
     
-    public override int GetHashCode() => Value.GetHashCode();
-    
-    public static bool operator ==(ResourceID left, ResourceID right) => left.Equals(right);
-    public static bool operator !=(ResourceID left, ResourceID right) => !left.Equals(right);
+    [ExcludeFromCodeCoverage] public override int GetHashCode() => Value.GetHashCode();
+
+    public static bool operator ==(ResourceID left, ResourceID right) => left.Value == right.Value;
+    public static bool operator !=(ResourceID left, ResourceID right) => left.Value != right.Value;
+    public static bool operator ==(ResourceID left, UInt128 right) => left.Value == right;
+    public static bool operator !=(ResourceID left, UInt128 right) => left.Value != right;
     
     public static implicit operator ResourceID(uint value) => new(value);
     public static implicit operator ResourceID(ulong value) => new(value);

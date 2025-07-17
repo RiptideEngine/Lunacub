@@ -267,12 +267,22 @@ public class ResourceIDTests {
     }
     
     [Fact]
-    public void EqualityChecks_ReturnsCorrectTruthy() {
-        ResourceID.Parse("255").Equals(ResourceID.Parse("255")).Should().BeTrue();
-        (ResourceID.Parse("100") == ResourceID.Parse("100")).Should().BeTrue();
-        (ResourceID.Parse("325") != ResourceID.Parse("655")).Should().BeTrue();
+    public void Equality_ShouldReturnsCorrectly() {
+        ((ResourceID)255).Should().Be((ResourceID)255);
+        ((ResourceID)255 == (ResourceID)255).Should().BeTrue();
+        ((ResourceID)255 != (ResourceID)255).Should().BeFalse();
         
-        // ReSharper disable once SuspiciousTypeConversion.Global
-        ResourceID.Parse("255").Equals(255D).Should().BeFalse();
+        ((ResourceID)255).Should().Be((UInt128)255);
+        ((ResourceID)255 == (UInt128)255).Should().BeTrue();
+        ((ResourceID)255 != (UInt128)255).Should().BeFalse();
+    }
+    
+    [Fact]
+    public void Inequality_ShouldReturnsCorrectly() {
+        ResourceID.Parse("255").Should().NotBe(255D);
+        ResourceID.Parse("255").Should().NotBe((UInt128)256U);
+        
+        ((ResourceID)255 != (ResourceID)257).Should().BeTrue();
+        ((ResourceID)255 != (UInt128)255).Should().BeFalse();
     }
 }

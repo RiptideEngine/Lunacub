@@ -4,6 +4,7 @@ using Caxivitual.Lunacub.Importing.Extensions;
 
 namespace Caxivitual.Lunacub.Importing;
 
+[ExcludeFromCodeCoverage]
 internal static class ResourceImporterVersion1 {
     public static async Task<ResourceImportDispatcher.ResourceImportResult> ImportVessel(
         ImportEnvironment environment,

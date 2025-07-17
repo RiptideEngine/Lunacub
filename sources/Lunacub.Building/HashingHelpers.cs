@@ -3,6 +3,7 @@
 namespace Caxivitual.Lunacub.Building;
 
 public static class HashingHelpers {
+    [ExcludeFromCodeCoverage]
     public static ResourceID Combine(this ResourceID resourceId, ProceduralResourceID proceduralResourceID) {
         unsafe {
             Span<byte> buffer = stackalloc byte[sizeof(ResourceID) + sizeof(ProceduralResourceID)];

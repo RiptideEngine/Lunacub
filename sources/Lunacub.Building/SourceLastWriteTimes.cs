@@ -33,7 +33,7 @@ public readonly struct SourceLastWriteTimes : IEquatable<SourceLastWriteTimes> {
 
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is SourceLastWriteTimes other && Equals(other);
     
-    public override int GetHashCode() => HashCode.Combine(Primary, Secondaries);
+    [ExcludeFromCodeCoverage] public override int GetHashCode() => HashCode.Combine(Primary, Secondaries);
     
     public static bool operator ==(SourceLastWriteTimes left, SourceLastWriteTimes right) => left.Equals(right);
     public static bool operator !=(SourceLastWriteTimes left, SourceLastWriteTimes right) => !left.Equals(right);

@@ -26,7 +26,7 @@ public readonly struct ReferencePropertyKey : IEquatable<ReferencePropertyKey>, 
         };
     }
     
-    public override int GetHashCode() => Value.GetHashCode();
+    [ExcludeFromCodeCoverage] public override int GetHashCode() => Value.GetHashCode();
 
     public string ToString(string? format) => Value.ToString(format);
     public string ToString(IFormatProvider? formatProvider) => Value.ToString(formatProvider);

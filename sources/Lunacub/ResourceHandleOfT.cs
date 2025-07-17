@@ -94,7 +94,7 @@ public readonly struct ResourceHandle<T> : IEquatable<ResourceHandle<T>> where T
     /// <seealso cref="Equals(ResourceHandle{T})"/>
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is ResourceHandle<T> other && Equals(other);
     
-    public override int GetHashCode() => HashCode.Combine(ResourceId, Value);
+    [ExcludeFromCodeCoverage] public override int GetHashCode() => HashCode.Combine(ResourceId, Value);
     
     public static bool operator ==(ResourceHandle<T> left, ResourceHandle<T> right) => left.Equals(right);
     public static bool operator !=(ResourceHandle<T> left, ResourceHandle<T> right) => !left.Equals(right);

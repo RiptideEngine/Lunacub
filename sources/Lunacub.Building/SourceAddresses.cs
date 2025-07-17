@@ -23,12 +23,12 @@ public readonly struct SourceAddresses : IEquatable<SourceAddresses> {
             if (value != value2) return false;
         }
 
-        return false;
+        return true;
     }
 
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is SourceAddresses other && Equals(other);
     
-    public override int GetHashCode() => HashCode.Combine(Primary, Secondaries);
+    [ExcludeFromCodeCoverage] public override int GetHashCode() => HashCode.Combine(Primary, Secondaries);
     
     public static bool operator ==(SourceAddresses left, SourceAddresses right) => left.Equals(right);
     public static bool operator !=(SourceAddresses left, SourceAddresses right) => !left.Equals(right);

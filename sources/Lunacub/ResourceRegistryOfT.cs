@@ -1,12 +1,13 @@
 ﻿using Caxivitual.Lunacub.Serialization;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
 namespace Caxivitual.Lunacub;
 
 [JsonConverter(typeof(ResourceRegistryJsonConverterFactory))]
 public class ResourceRegistry<TElement> 
-    : IDictionary<ResourceID, TElement>, 
+    : IDictionary<ResourceID, TElement>,
       IReadOnlyDictionary<ResourceID, TElement> where TElement : IResourceRegistryElement 
 {
     private readonly Dictionary<ResourceID, TElement> _resources = [];
@@ -14,7 +15,7 @@ public class ResourceRegistry<TElement>
     
     public int Count => _resources.Count;
 
-    bool ICollection<KeyValuePair<ResourceID, TElement>>.IsReadOnly => false;
+    [ExcludeFromCodeCoverage] bool ICollection<KeyValuePair<ResourceID, TElement>>.IsReadOnly => false;
     
     public Dictionary<ResourceID, TElement>.KeyCollection Keys => _resources.Keys;
     public Dictionary<ResourceID, TElement>.ValueCollection Values => _resources.Values;
@@ -24,6 +25,8 @@ public class ResourceRegistry<TElement>
     
     IEnumerable<ResourceID> IReadOnlyDictionary<ResourceID, TElement>.Keys => _resources.Keys;
     IEnumerable<TElement> IReadOnlyDictionary<ResourceID, TElement>.Values => _resources.Values;
+
+    internal IReadOnlyDictionary<string, ResourceID> NameMap => _nameMap;
     
     // TODO: Probably adding Notifications.
 
@@ -48,8 +51,21 @@ public class ResourceRegistry<TElement>
     void ICollection<KeyValuePair<ResourceID, TElement>>.Add(KeyValuePair<ResourceID, TElement> item) {
         ValidateResourceId(item.Key);
         ValidateElement(item.Value);
+
+        (ResourceID resourceId, TElement element) = item;
         
-        Add(item.Key, item.Value);
+        if (_resources.ContainsKey(resourceId)) {
+            string message = string.Format(ExceptionMessages.ResourceIdAlreadyRegistered, resourceId.ToString());
+            throw new ArgumentException(message, nameof(resourceId));
+        }
+        
+        if (_nameMap.TryGetValue(element.Name, out ResourceID nameId)) {
+            string message = string.Format(ExceptionMessages.ResourceNameAlreadyRegistered, element.Name, nameId.ToString());
+            throw new ArgumentException(message, nameof(element));
+        }
+        
+        _resources.Add(resourceId, element);
+        _nameMap.Add(element.Name, resourceId);
     }
 
     public bool Remove(ResourceID resourceId) => Remove(resourceId, out _);
@@ -99,9 +115,7 @@ public class ResourceRegistry<TElement>
     
     public bool ContainsKey(ResourceID resourceId) => _resources.ContainsKey(resourceId);
 
-    public bool ContainsName(ReadOnlySpan<char> name) => _resources.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(name);
-
-    public bool ContainsKey(string name) => _nameMap.ContainsKey(name);
+    public bool ContainsName(ReadOnlySpan<char> name) => _nameMap.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(name);
 
     bool ICollection<KeyValuePair<ResourceID, TElement>>.Contains(KeyValuePair<ResourceID, TElement> item) {
         return _resources.Contains(item);
@@ -136,16 +150,16 @@ public class ResourceRegistry<TElement>
         set {
             ValidateResourceId(resourceId);
             ValidateElement(value);
-
+            
             if (_nameMap.TryGetValue(value.Name, out ResourceID nameId)) {
                 string message = string.Format(ExceptionMessages.ResourceNameAlreadyRegistered, value.Name, nameId.ToString());
                 throw new ArgumentException(message, nameof(value));
             }
-
+            
             ref var elementReference = ref CollectionsMarshal.GetValueRefOrAddDefault(_resources, resourceId, out bool exists);
             
             if (exists) {
-                bool removal = _nameMap.Remove(value.Name);
+                bool removal = _nameMap.Remove(elementReference!.Name);
                 Debug.Assert(removal);
             }
             

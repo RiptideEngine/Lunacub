@@ -2,6 +2,7 @@
 
 namespace Caxivitual.Lunacub.Building;
 
+[DebuggerDisplay("{ToString(),nq}")]
 public readonly struct BuildingProceduralResource : IEquatable<BuildingProceduralResource> {
     /// <summary>
     /// Gets the building resource as an instance of <see cref="ContentRepresentation"/>.
@@ -61,7 +62,6 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
                (Options?.Equals(other.Options) ?? other.Options == null);
     }
 
-    [ExcludeFromCodeCoverage]
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is BuildingProceduralResource other && Equals(other);
     
     [ExcludeFromCodeCoverage]
@@ -94,12 +94,10 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
         return sb.ToString();
     }
 
-    [ExcludeFromCodeCoverage]
     public static bool operator ==(BuildingProceduralResource left, BuildingProceduralResource right) {
         return left.Equals(right);
     }
 
-    [ExcludeFromCodeCoverage]
     public static bool operator !=(BuildingProceduralResource left, BuildingProceduralResource right) {
         return !(left == right);
     }

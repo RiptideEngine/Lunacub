@@ -4,6 +4,7 @@
         <OutputType>Exe</OutputType>
         <IsPackable>false</IsPackable>
         <RootNamespace>Caxivitual.Lunacub.Tests</RootNamespace>
+        <AssemblyName>Caxivitual.Lunacub.Tests</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>

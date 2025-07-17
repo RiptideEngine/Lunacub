@@ -283,7 +283,7 @@ public readonly struct ProceduralResourceID :
         };
     }
     
-    public override int GetHashCode() => Value.GetHashCode();
+    [ExcludeFromCodeCoverage] public override int GetHashCode() => Value.GetHashCode();
     
     public static bool operator ==(ProceduralResourceID left, ProceduralResourceID right) => left.Equals(right);
     public static bool operator !=(ProceduralResourceID left, ProceduralResourceID right) => !left.Equals(right);

@@ -31,7 +31,7 @@ public readonly struct BuildingResource : IEquatable<BuildingResource> {
 
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is BuildingResource other && Equals(other);
 
-    public override int GetHashCode() => HashCode.Combine(Addresses, Options);
+    [ExcludeFromCodeCoverage] public override int GetHashCode() => HashCode.Combine(Addresses, Options);
 
     public static bool operator ==(BuildingResource left, BuildingResource right) => left.Equals(right);
     public static bool operator !=(BuildingResource left, BuildingResource right) => !(left == right);
