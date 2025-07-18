@@ -1,6 +1,7 @@
 ﻿namespace Caxivitual.Lunacub.Tests.Importing;
 
-public class ImportOutputTests : IClassFixture<PrebuildResourcesFixture>, IDisposable {
+[Collection<PrebuildResourcesCollectionFixture>]
+public class ImportOutputTests : IDisposable {
     private readonly ImportEnvironment _importEnvironment;
     
     public ImportOutputTests(PrebuildResourcesFixture fixture, ITestOutputHelper output) {

@@ -79,28 +79,19 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         TArg arg
     ) where TArg : allows ref struct {
         using (_lock.EnterScope()) {
-            if (_containers.TryGetValue(resourceId, out var container)) {
-                action(container, arg);
+            ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, resourceId, out bool exists);
+            
+            if (!exists) {
+                reference = factory(resourceId, arg);
+                
+                if (reference == null) {
+                    throw new InvalidOperationException("Factory must return non-null instance.");
+                }
             } else {
-                container = factory(resourceId, arg);
-                _containers.Add(resourceId, container);
+                action(reference!, arg);
             }
-
-            return container;
-
-            // ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, resourceId, out bool exists);
-            //
-            // if (!exists) {
-            //     reference = factory(resourceId, arg);
-            //     
-            //     if (reference == null) {
-            //         throw new InvalidOperationException("Factory must return non-null instance.");
-            //     }
-            // } else {
-            //     action(reference!, arg);
-            // }
-            //
-            // return reference!;
+            
+            return reference!;
         }
     }
 

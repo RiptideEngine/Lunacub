@@ -2,7 +2,8 @@
 
 namespace Caxivitual.Lunacub.Tests.Importing;
 
-public class ImportingOperationLifecycleTests : IDisposable, IClassFixture<PrebuildResourcesFixture> {
+[Collection<PrebuildResourcesCollectionFixture>]
+public class ImportingOperationLifecycleTests : IDisposable {
     private readonly ImportEnvironment _importEnvironment;
     
     public ImportingOperationLifecycleTests(PrebuildResourcesFixture fixture, ITestOutputHelper output) {
@@ -16,7 +17,7 @@ public class ImportingOperationLifecycleTests : IDisposable, IClassFixture<Prebu
     }
 
     [Fact]
-    public async Task Import_SingleTime_InitializesImportOperation() {
+    public async Task ImportFromID_SingleTime_InitializesImportOperation() {
         var operation = _importEnvironment.Import(PrebuildResourcesFixture.DeferrableResource);
 
         operation.Status.Should().Be(ImportingStatus.Importing);
@@ -27,7 +28,7 @@ public class ImportingOperationLifecycleTests : IDisposable, IClassFixture<Prebu
     }
 
     [Fact]
-    public async Task Import_MultipleTime_ReturnsSameContainer() {
+    public async Task ImportFromID_MultipleTime_ReturnsSameContainer() {
         var operation = _importEnvironment.Import(PrebuildResourcesFixture.DeferrableResource);
         operation.Status.Should().Be(ImportingStatus.Importing);
         
@@ -40,7 +41,7 @@ public class ImportingOperationLifecycleTests : IDisposable, IClassFixture<Prebu
     }
     
     [Fact]
-    public async Task Import_MultipleTimeParallel_ShouldReturnSameContainerAndIncrementReferenceCountWithoutRaceCondition() {
+    public async Task ImportFromID_MultipleTimeParallel_IncrementsReferenceCountCorrectly() {
         const int count = 10000;
         
         var operation = _importEnvironment.Import(PrebuildResourcesFixture.DeferrableResource);
@@ -53,6 +54,74 @@ public class ImportingOperationLifecycleTests : IDisposable, IClassFixture<Prebu
         });
         
         operation.UnderlyingContainer.ReferenceCount.Should().Be(count + 1);
+        
+        ((DeferrableResourceDeserializer)_importEnvironment.Deserializers[nameof(DeferrableResourceDeserializer)]).Signal();
+        await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
+    }
+    
+    [Fact]
+    public async Task ImportFromName_SingleTime_InitializesImportOperation() {
+        var operation = _importEnvironment.Import(nameof(DeferrableResource));
+
+        operation.Status.Should().Be(ImportingStatus.Importing);
+        operation.UnderlyingContainer.ReferenceCount.Should().Be(1);
+        
+        ((DeferrableResourceDeserializer)_importEnvironment.Deserializers[nameof(DeferrableResourceDeserializer)]).Signal();
+        await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task ImportFromName_MultipleTime_ReturnsSameContainer() {
+        var operation = _importEnvironment.Import(nameof(DeferrableResource));
+        operation.Status.Should().Be(ImportingStatus.Importing);
+        
+        var operation2 = _importEnvironment.Import(nameof(DeferrableResource));
+        operation2.UnderlyingContainer.Should().BeSameAs(operation.UnderlyingContainer);
+        
+        ((DeferrableResourceDeserializer)_importEnvironment.Deserializers[nameof(DeferrableResourceDeserializer)]).Signal();
+        await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
+    }
+    
+    [Fact]
+    public async Task ImportFromName_MultipleTimeParallel_IncrementsReferenceCountCorrectly() {
+        const int count = 10000;
+        
+        var operation = _importEnvironment.Import(nameof(DeferrableResource));
+        operation.Status.Should().Be(ImportingStatus.Importing);
+
+        Parallel.ForEach(Partitioner.Create(0, count, count / 10), (range, state) => {
+            for (int i = range.Item1; i < range.Item2; i++) {
+                _importEnvironment.Import(nameof(DeferrableResource));
+            }
+        });
+        
+        operation.UnderlyingContainer.ReferenceCount.Should().Be(count + 1);
+        
+        ((DeferrableResourceDeserializer)_importEnvironment.Deserializers[nameof(DeferrableResourceDeserializer)]).Signal();
+        await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task ImportFromNameAndID_SameElement_ReturnsSameContainer() {
+        var operation = _importEnvironment.Import(PrebuildResourcesFixture.DeferrableResource);
+        operation.Status.Should().Be(ImportingStatus.Importing);
+        
+        var operation2 = _importEnvironment.Import(nameof(DeferrableResource));
+        operation2.UnderlyingContainer.Should().BeSameAs(operation.UnderlyingContainer);
+        
+        ((DeferrableResourceDeserializer)_importEnvironment.Deserializers[nameof(DeferrableResourceDeserializer)]).Signal();
+        await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
+    }
+    
+    [Fact]
+    public async Task ImportFromNameAndID_SameElement_IncrementsReferenceCount() {
+        var operation = _importEnvironment.Import(PrebuildResourcesFixture.DeferrableResource);
+        operation.Status.Should().Be(ImportingStatus.Importing);
+        
+        var operation2 = _importEnvironment.Import(nameof(DeferrableResource));
+        operation2.UnderlyingContainer.Should().BeSameAs(operation.UnderlyingContainer);
+
+        operation.UnderlyingContainer.ReferenceCount.Should().Be(2);
         
         ((DeferrableResourceDeserializer)_importEnvironment.Deserializers[nameof(DeferrableResourceDeserializer)]).Signal();
         await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();

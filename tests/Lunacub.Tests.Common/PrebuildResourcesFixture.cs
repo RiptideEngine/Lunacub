@@ -159,10 +159,10 @@ public sealed class PrebuildResourcesFixture {
 
         static void AppendDeferrableResource(BuildMemorySourceProvider sourceProvider, BuildResourceLibrary library) {
             sourceProvider.Sources
-                .Add("DeferrableResource", BuildMemorySourceProvider.AsUtf8(string.Empty, DateTime.MinValue));
+                .Add(nameof(DeferrableResource), BuildMemorySourceProvider.AsUtf8(string.Empty, DateTime.MinValue));
 
-            library.Registry.Add(DeferrableResource, new("DeferrableResource", [], new() {
-                Addresses = new("DeferrableResource"),
+            library.Registry.Add(DeferrableResource, new(nameof(DeferrableResource), [], new() {
+                Addresses = new(nameof(DeferrableResource)),
                 Options = new(nameof(DeferrableResourceImporter)),
             }));
         }

@@ -1,8 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+﻿namespace Caxivitual.Lunacub.Tests.Importing;
 
-namespace Caxivitual.Lunacub.Tests.Importing;
-
-public class ResourceLifecycleTests : IDisposable, IClassFixture<PrebuildResourcesFixture> {
+[Collection<PrebuildResourcesCollectionFixture>]
+public class ResourceLifecycleTests : IDisposable {
     private readonly ImportEnvironment _importEnvironment;
     
     public ResourceLifecycleTests(PrebuildResourcesFixture fixture, ITestOutputHelper output) {
