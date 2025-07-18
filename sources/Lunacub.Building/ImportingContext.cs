@@ -7,6 +7,7 @@ namespace Caxivitual.Lunacub.Building;
 /// Represents the context used during the importing process, providing access to import options and mechanisms to
 /// request building references.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public readonly struct ImportingContext {
     /// <summary>
     /// User-provided options that can be used during the importing process.

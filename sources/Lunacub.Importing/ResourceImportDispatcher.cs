@@ -42,9 +42,9 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             Log.BeginImport(_environment.Logger, container.ResourceId);
         
             container.InitializeImport();
-            container.ImportTask = ImportTask(container);
-            container.ResolvingReferenceTask = ResolveReference(container);
-            container.FinalizeTask = FinalizeTask(container);
+            // container.ImportTask = ImportVesselTask(container);
+            // container.ResolvingReferenceTask = ResolveReference(container);
+            container.FinalizeTask = ImportingTask(container);
         
             return container;
         }
@@ -75,23 +75,17 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             Log.BeginImport(_environment.Logger, container.ResourceId);
         
             container.InitializeImport();
-            container.ImportTask = ImportTask(container);
-            container.ResolvingReferenceTask = ResolveReference(container);
-            container.FinalizeTask = FinalizeTask(container);
+            container.FinalizeTask = ImportingTask(container);
         
             return container;
         }
     }
     
-    private async Task<ResourceImportResult> ImportTask(ResourceCache.ElementContainer container) {
+    private async Task<ResourceImportResult> ImportVesselTask(ResourceCache.ElementContainer container) {
         await Task.Yield();
-        
-        Debug.Assert(container.CancellationTokenSource != null);
 
         try {
             if (_environment.Libraries.CreateResourceStream(container.ResourceId) is not { } stream) {
-                // _environment.Logger.LogDebug("Missing Resource Stream.");
-
                 string message = string.Format(ExceptionMessages.NullResourceStream, container.ResourceId);
                 throw new InvalidOperationException(message);
             }
@@ -120,21 +114,22 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         } catch (OperationCanceledException) {
             Log.CancelImport(_environment.Logger, container.ResourceId);
 
-            ReleaseContainerReferenceCounter(container);
+            using (container.EnterLockScope()) {
+                ReleaseContainerReferenceCounter(container);
+                container.Status = ImportingStatus.Canceled;
+            }
 
-            container.Status = ImportingStatus.Canceled;
-            
-            Debug.Assert(container.CancellationTokenSource.IsCancellationRequested);
-            container.CancellationTokenSource.Dispose();
-            
             throw;
         } catch (Exception e) {
-            _environment.Logger.LogError("ImportTask: Exception occured. Stacktrace: {ex}", e);
+            Log.ReportImportException(_environment.Logger, container.ResourceId, e);
             
             ReleaseContainerReferenceCounter(container);
 
-            container.Status = ImportingStatus.Failed;
-            container.CancellationTokenSource.Dispose();
+            using (container.EnterLockScope()) {
+                container.DisposeCancellationToken();
+                container.Status = ImportingStatus.Failed;
+            }
+
             throw;
         }
     }
@@ -145,9 +140,9 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         Deserializer deserializer;
         object resource;
         DeserializationContext context;
-
+        
         try {
-            (deserializer, resource, context) = await container.ImportTask!;
+            (deserializer, resource, context) = await (container.ImportTask = ImportVesselTask(container));
         } catch (OperationCanceledException) {
             Debug.Assert(container.Status == ImportingStatus.Canceled);
             Debug.Assert(container.ReferenceCount == 0);
@@ -221,6 +216,8 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
             if (!_environment.Libraries.ContainsResource(requesting.ResourceId, out ResourceRegistry.Element element)) continue;
 
+            // TODO: Fix bug: we somehow got to
+            
             ResourceCache.ElementContainer referenceContainer =
                 _cache.GetOrBeginImporting(requesting.ResourceId, IncrementContainerReference, BeginReferenceImport, element.Name);
 
@@ -245,9 +242,9 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             _environment.Statistics.AddReference();
             
             container.InitializeImport();
-            container.ImportTask = ImportTask(container);
+            container.ImportTask = ImportVesselTask(container);
             container.ResolvingReferenceTask = ResolveReference(container);
-            container.FinalizeTask = FinalizeTask(container);
+            container.FinalizeTask = ImportingTask(container);
 
             waitContainers.Add(container);
             
@@ -255,20 +252,16 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         }
     }
     
-    private async Task<ResourceHandle> FinalizeTask(ResourceCache.ElementContainer container) {
-        Debug.Assert(container.CancellationTokenSource != null);
-        
+    private async Task<ResourceHandle> ImportingTask(ResourceCache.ElementContainer container) {
         ResourceHandle handle;
         IReadOnlyCollection<ResourceCache.ElementContainer> waitContainers;
 
         try {
-            (handle, waitContainers) = await container.ResolvingReferenceTask!;
+            (handle, waitContainers) = await (container.ResolvingReferenceTask = ResolveReference(container));
         } catch (OperationCanceledException) {
             Debug.Assert(container.Status == ImportingStatus.Canceled);
-            Debug.Assert(container.CancellationTokenSource.IsCancellationRequested);
             
             // Not remove from the cache to allow reimport later in the future.
-
             throw;
         } catch {
             Debug.Assert(container.Status == ImportingStatus.Failed);
@@ -313,8 +306,10 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
             throw;
         } finally {
-            container.CancellationTokenSource.Dispose();
-            container.NullifyCancellationTokenSource();
+            using (container.EnterLockScope()) {
+                container.DisposeCancellationToken();
+                container.EnsureCancellationTokenSourceIsDisposed();
+            }
         }
     }
     
@@ -324,23 +319,25 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
                 uint incremented = container.IncrementReference();
                 Debug.Assert(incremented != 0);
                 
-                _environment.Logger.LogDebug("{id}: Incremented reference count to {c}", container.ResourceId, incremented);
-
                 _environment.Statistics.AddReference();
                 break;
             
             case ImportingStatus.Canceled or ImportingStatus.Disposed:
-                Debug.Assert(container.ReferenceCount == 0);
+                using (container.EnterLockScope()) {
+                    Debug.Assert(container.ReferenceCount == 0);
 
-                container.ReferenceCount = 1;
-                _environment.Statistics.AddReference();
-            
-                Log.BeginImport(_environment.Logger, container.ResourceId);
-            
-                container.InitializeImport();
-                container.ImportTask = ImportTask(container);
-                container.ResolvingReferenceTask = ResolveReference(container);
-                container.FinalizeTask = FinalizeTask(container);
+                    container.IncrementReference();
+
+                    _environment.Statistics.AddReference();
+
+                    Log.BeginImport(_environment.Logger, container.ResourceId);
+
+                    container.InitializeImport();
+                    container.ImportTask = ImportVesselTask(container);
+                    container.ResolvingReferenceTask = ResolveReference(container);
+                    container.FinalizeTask = ImportingTask(container);
+                }
+
                 break;
             
             case ImportingStatus.Failed: throw new UnreachableException();

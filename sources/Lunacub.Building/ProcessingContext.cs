@@ -7,6 +7,7 @@ namespace Caxivitual.Lunacub.Building;
 /// <summary>
 /// Represents the context used during the processing process, providing access to import options.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public readonly struct ProcessingContext {
     /// <summary>
     /// Gets the <see cref="BuildEnvironment"/> instance responsible for the processing process.

@@ -1,4 +1,5 @@
-﻿using System.Collections.Frozen;
+﻿using Microsoft.Extensions.Logging;
+using System.Collections.Frozen;
 using System.Runtime.ExceptionServices;
 
 namespace Caxivitual.Lunacub.Importing;
@@ -59,6 +60,10 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
 
             if (!exists) {
                 reference = factory(resourceId);
+
+                if (reference == null) {
+                    throw new InvalidOperationException("Factory must return non-null instance.");
+                }
             } else {
                 action(reference!);
             }
@@ -74,15 +79,28 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         TArg arg
     ) where TArg : allows ref struct {
         using (_lock.EnterScope()) {
-            ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, resourceId, out bool exists);
-
-            if (!exists) {
-                reference = factory(resourceId, arg);
+            if (_containers.TryGetValue(resourceId, out var container)) {
+                action(container, arg);
             } else {
-                action(reference!, arg);
+                container = factory(resourceId, arg);
+                _containers.Add(resourceId, container);
             }
 
-            return reference!;
+            return container;
+
+            // ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, resourceId, out bool exists);
+            //
+            // if (!exists) {
+            //     reference = factory(resourceId, arg);
+            //     
+            //     if (reference == null) {
+            //         throw new InvalidOperationException("Factory must return non-null instance.");
+            //     }
+            // } else {
+            //     action(reference!, arg);
+            // }
+            //
+            // return reference!;
         }
     }
 
@@ -103,7 +121,15 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
 
         if (disposing) {
             using (_lock.EnterScope()) {
+                // _environment.Logger.LogDebug("Container ids: {ids}.", string.Join(", ", _containers.Values.Select(x => x.ResourceId)));
+                
                 Task.WaitAll(_containers.Values.Select(async container => {
+                    _environment.Logger.LogDebug("Begin disposing resource id {id}", container.ResourceId);
+                    
+                    using (container.EnterLockScope()) {
+                        container.CancelImport();
+                    }
+                    
                     ResourceHandle handle;
 
                     try {
@@ -112,6 +138,10 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
                         // Ignored.
                         return;
                     }
+                    
+                    _environment.Logger.LogDebug("Null check for {id}: {result}", container.ResourceId, handle.Value == null);
+                    
+                    container.EnsureCancellationTokenSourceIsDisposed();
 
                     if (_environment.Disposers.TryDispose(handle.Value!)) {
                         _environment.Statistics.IncrementDisposedResourceCount();
@@ -121,6 +151,8 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
 
                     container.ReferenceCount = 0;
                     container.Status = ImportingStatus.Disposed;
+                    
+                    _environment.Logger.LogDebug("Resource ID: {id}.", container.ResourceId);
                 }));
 
                 _containers.Clear();
@@ -135,11 +167,41 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         GC.SuppressFinalize(this);
     }
 
-    public ValueTask DisposeAsync() {
-        if (Interlocked.Exchange(ref _disposed, true)) return ValueTask.CompletedTask;
+    public async ValueTask DisposeAsync() {
+        if (Interlocked.Exchange(ref _disposed, true)) return;
 
-        // TODO: Implementation
-        return ValueTask.CompletedTask;
+        _lock.Enter();
+
+        try {
+            await Task.WhenAll(_containers.Values.Select(async container => {
+                // await container.CancellationTokenSource?.CancelAsync() ?? Task.CompletedTask;
+                
+                
+                ResourceHandle handle;
+
+                try {
+                    handle = await container.FinalizeTask;
+                } catch {
+                    // Ignored.
+                    return;
+                }
+
+                if (_environment.Disposers.TryDispose(handle.Value!)) {
+                    _environment.Statistics.IncrementDisposedResourceCount();
+                } else {
+                    _environment.Statistics.IncrementUndisposedResourceCount();
+                }
+
+                container.ReferenceCount = 0;
+                container.Status = ImportingStatus.Disposed;
+            })).ConfigureAwait(false);
+
+            _containers.Clear();
+            _environment.Statistics.ResetReferenceCounts();
+            _environment.Statistics.ResetUniqueResourceCount();
+        } finally {
+            _lock.Exit();
+        }
     }
 
     ~ResourceCache() {
@@ -149,6 +211,7 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     /// <summary>
     /// Represents an outer shell resource container, containing reference count, reference ids, status, etc...
     /// </summary>
+    [StructLayout(LayoutKind.Auto)]
     public sealed class ElementContainer {
         public readonly ResourceID ResourceId;
         public readonly string ResourceName;
@@ -158,13 +221,15 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         public FrozenSet<ResourceID> ReferenceResourceIds;
 
         public ImportingStatus Status;
-        
-        public CancellationTokenSource? CancellationTokenSource { get; private set; }
-        public CancellationToken CancellationToken => CancellationTokenSource!.Token;
+
+        private CancellationTokenSource? _cancellationTokenSource;
+        public CancellationToken CancellationToken => _cancellationTokenSource!.Token;
         
         public Task<ResourceImportDispatcher.ResourceImportResult>? ImportTask { get; set; }
         public Task<ResourceImportDispatcher.ReferenceResolveResult>? ResolvingReferenceTask { get; set; }
         public Task<ResourceHandle> FinalizeTask { get; set; }
+
+        private readonly Lock _lock;
 
         public ElementContainer(ResourceID resourceId, string resourceName) {
             ResourceId = resourceId;
@@ -173,68 +238,79 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
             Status = ImportingStatus.Importing;
             FinalizeTask = null!;
             ReferenceCount = 1;
-            CancellationTokenSource = null!;
+            _cancellationTokenSource = null!;
+            _lock = new();
         }
 
         public void InitializeImport() {
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-            if (CancellationTokenSource == null) {
-                CancellationTokenSource = new();
+            if (_cancellationTokenSource == null) {
+                _cancellationTokenSource = new();
             } else {
                 switch (Status) {
-                    case ImportingStatus.Canceled:
-                        bool resetSuccessfully = CancellationTokenSource.TryReset();
-                        Debug.Assert(resetSuccessfully);
-                        break;
-                    
-                    case ImportingStatus.Disposed:
-                        CancellationTokenSource = new();
+                    case ImportingStatus.Disposed or ImportingStatus.Canceled:
+                        _cancellationTokenSource = new();
                         break;
                     
                     case ImportingStatus.Importing or ImportingStatus.Success:
                         throw new InvalidOperationException();
                     
                     case ImportingStatus.Failed:
-                        // Too busy to think about this case. Will handle later.
-                        throw new NotImplementedException();
+                        // No longer belong to cache.
+                        throw new UnreachableException();
                 }
             }
+
+            Status = ImportingStatus.Importing;
         }
 
         public uint IncrementReference() {
-            uint initialValue, computedValue;
-            do {
-                initialValue = ReferenceCount;
-                computedValue = ReferenceCount == 0 ? 0 : ReferenceCount + 1;
-            } while (initialValue != Interlocked.CompareExchange(ref ReferenceCount, computedValue, initialValue));
-
-            return computedValue;
+            return Interlocked.Increment(ref ReferenceCount);
         }
-
+        
         public uint DecrementReference() {
             uint initialValue, computedValue;
             do {
                 initialValue = ReferenceCount;
                 computedValue = ReferenceCount == 0 ? 0 : ReferenceCount - 1;
             } while (initialValue != Interlocked.CompareExchange(ref ReferenceCount, computedValue, initialValue));
-
+        
             return computedValue;
         }
 
         public uint ResetReferenceCounter() {
             return Interlocked.Exchange(ref ReferenceCount, 0);
         }
+        
+        public void CancelImport() {
+            _cancellationTokenSource?.Cancel();
+        }
 
-        public void NullifyCancellationTokenSource() {
-            CancellationTokenSource = null;
+        public void DisposeCancellationToken() {
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
+        }
+
+        [Conditional("DEBUG")]
+        public void EnsureCancellationTokenSourceIsNotDisposed() {
+            Debug.Assert(_cancellationTokenSource != null);
         }
 
         [Conditional("DEBUG")]
         public void EnsureCancellationTokenSourceIsDisposed() {
-            Debug.Assert(CancellationTokenSource != null! && IsDisposed(CancellationTokenSource));
+            Debug.Assert(_cancellationTokenSource == null);
+        }
 
-            [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_disposed")]
-            static extern ref bool IsDisposed(CancellationTokenSource cts);
+        public void EnterLock() {
+            _lock.Enter();
+        }
+
+        public void ExitLock() {
+            _lock.Exit();
+        }
+
+        public Lock.Scope EnterLockScope() {
+            return _lock.EnterScope();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Caxivitual.Lunacub.Exceptions;
+using System.Diagnostics;
 
 namespace Caxivitual.Lunacub.Tests;
 
@@ -52,9 +53,9 @@ public class SourceProviderTests {
         
         public override void Flush() { }
         public override int Read(byte[] buffer, int offset, int count) => 0;
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotImplementedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new UnreachableException();
         public override void SetLength(long value) {
-            throw new NotImplementedException();
+            throw new UnreachableException();
         }
         public override void Write(byte[] buffer, int offset, int count) { }
     }

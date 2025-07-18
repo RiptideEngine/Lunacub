@@ -1,6 +1,7 @@
 ﻿namespace Caxivitual.Lunacub.Building.Attributes;
 
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+[ExcludeFromCodeCoverage]
 public class AutoTimestampVersionAttribute : Attribute {
     public string Format { get; }
 

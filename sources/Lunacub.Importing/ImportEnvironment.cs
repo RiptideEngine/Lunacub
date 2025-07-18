@@ -55,9 +55,7 @@ public sealed partial class ImportEnvironment : IDisposable {
     }
 
     private void Dispose(bool disposing) {
-        if (_disposed) return;
-
-        _disposed = true;
+        if (Interlocked.Exchange(ref _disposed, true)) return;
 
         if (disposing) {
             _importDispatcher.Dispose();

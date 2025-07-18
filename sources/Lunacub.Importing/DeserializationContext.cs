@@ -2,6 +2,7 @@
 
 namespace Caxivitual.Lunacub.Importing;
 
+[ExcludeFromCodeCoverage]
 public readonly struct DeserializationContext {
     public RequestingReferences RequestingReferences { get; }
     public ILogger Logger { get; }

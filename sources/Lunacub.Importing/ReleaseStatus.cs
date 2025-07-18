@@ -10,6 +10,11 @@ public enum ReleaseStatus {
     Success = 0,
     
     /// <summary>
+    /// Resource object unregistered from cache and disposed by <see cref="Disposer"/>.
+    /// </summary>
+    Disposed,
+    
+    /// <summary>
     /// Resource object unregistered from cache but not disposed, indicates a resource leak.
     /// </summary>
     NotDisposed,

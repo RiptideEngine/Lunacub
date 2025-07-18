@@ -15,10 +15,13 @@ internal static partial class Log {
     
     [LoggerMessage(LogLevel.Information, "End resolving references for resource {rid}.")]
     public static partial void EndResolvingReference(ILogger logger, ResourceID rid);
+    
+    [LoggerMessage(LogLevel.Debug, "Exception occured while importing resource {rid}.")]
+    public static partial void ReportImportException(ILogger logger, ResourceID rid, Exception ex);
 
-    [LoggerMessage(LogLevel.Debug, "ResolveReference: Exception occured while waiting ImportTask of resource {rid}.")]
+    [LoggerMessage(LogLevel.Debug, "Exception occured while waiting import task of resource {rid}.")]
     public static partial void ResolveReferenceExceptionOccured(ILogger logger, ResourceID rid);
     
-    [LoggerMessage(LogLevel.Debug, "FinalizeTask: Exception occured while waiting ResolveReferenceTask of resource {rid}.")]
+    [LoggerMessage(LogLevel.Debug, "Exception occured while waiting reference resolve task of resource {rid}.")]
     public static partial void FinalizeTaskExceptionOccured(ILogger logger, ResourceID rid);
 }

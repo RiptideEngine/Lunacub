@@ -7,7 +7,7 @@ namespace Caxivitual.Lunacub.Building;
 /// into a different <see cref="ContentRepresentation"/> type before serialization.
 /// </summary>
 public abstract class Processor {
-    public virtual string? Version => null;
+    [ExcludeFromCodeCoverage] public virtual string? Version => null;
     
     internal abstract bool CanProcess(ContentRepresentation input);
 
