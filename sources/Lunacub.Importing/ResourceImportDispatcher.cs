@@ -282,8 +282,6 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         Dictionary<ReferencePropertyKey, ReferenceImportResult> references = new(requestReferences.Count);
         List<ResourceCache.ElementContainer> waitContainers = [];
         
-        // RecursivelyCollectReferences(container, requestReferences);
-
         foreach ((var referencePropertyKey, var requesting) in requestReferences) {
             requesting.Deconstruct(out ResourceID requestingId);
 
