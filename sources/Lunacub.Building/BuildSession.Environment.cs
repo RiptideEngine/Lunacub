@@ -8,8 +8,6 @@ namespace Caxivitual.Lunacub.Building;
 
 partial class BuildSession {
     private void BuildEnvironmentResources() {
-        _environment.Logger.LogInformation("Building environment resources.");
-        
         foreach (var library in _environment.Libraries) {
             foreach ((var resourceId, var element) in library.Registry) {
                 BuildingResource resource = element.Option;

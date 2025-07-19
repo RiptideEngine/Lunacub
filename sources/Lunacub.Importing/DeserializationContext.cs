@@ -27,4 +27,12 @@ public readonly struct DeserializationContext {
     public bool TryGetReference(ReferencePropertyKey key, out ResourceHandle handle) {
         return RequestingReferences.TryGetReference(key, out handle);
     }
+
+    public void ReleaseReference(ReferencePropertyKey key) {
+        // TODO: Implementation
+    }
+
+    public void ReleaseReference(ResourceHandle handle) {
+        // TODO: Implementation
+    }
 }

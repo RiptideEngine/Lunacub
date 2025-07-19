@@ -1,7 +1,6 @@
 ﻿// ReSharper disable VariableHidesOuterVariable
 
 using Caxivitual.Lunacub.Compilation;
-using Microsoft.Extensions.Logging;
 using System.Collections.Frozen;
 using System.Collections.ObjectModel;
 
@@ -32,7 +31,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             return new(container);
         }
         
-        return new(_cache.GetOrBeginImporting(resourceId, IncrementContainerReference, BeginImport, element));
+        return new(_cache.GetOrBeginImporting(resourceId, ProcessCachedContainer, BeginImport, element));
         
         ResourceCache.ElementContainer BeginImport(ResourceID resourceId, ResourceRegistry.Element element) {
             ResourceCache.ElementContainer container = new(resourceId, element.Name);
@@ -63,7 +62,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             return new(container);
         }
 
-        return new(_cache.GetOrBeginImporting(id, IncrementContainerReference, BeginImport, name));
+        return new(_cache.GetOrBeginImporting(id, ProcessCachedContainer, BeginImport, name));
         
         ResourceCache.ElementContainer BeginImport(ResourceID resourceId, ReadOnlySpan<char> name) {
             ResourceCache.ElementContainer container = new(resourceId, name.ToString());
@@ -79,176 +78,10 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         }
     }
     
-    private async Task<ResourceImportResult> ImportVesselTask(ResourceCache.ElementContainer container) {
-        await Task.Yield();
-
-        try {
-            if (_environment.Libraries.CreateResourceStream(container.ResourceId) is not { } stream) {
-                string message = string.Format(ExceptionMessages.NullResourceStream, container.ResourceId);
-                throw new InvalidOperationException(message);
-            }
-
-            BinaryHeader header;
-
-            try {
-                header = BinaryHeader.Extract(stream);
-            } catch {
-                await stream.DisposeAsync();
-                throw;
-            }
-
-            switch (header.MajorVersion) {
-                case 1:
-                    return await ResourceImporterVersion1.ImportVessel(_environment, stream, header, container.CancellationToken);
-
-                default:
-                    string message = string.Format(
-                        ExceptionMessages.UnsupportedCompiledResourceVersion,
-                        header.MajorVersion,
-                        header.MinorVersion
-                    );
-                    throw new ArgumentException(message);
-            }
-        } catch (OperationCanceledException) {
-            Log.CancelImport(_environment.Logger, container.ResourceId);
-
-            using (container.EnterLockScope()) {
-                ReleaseContainerReferenceCounter(container);
-                container.Status = ImportingStatus.Canceled;
-            }
-
-            throw;
-        } catch (Exception e) {
-            Log.ReportImportException(_environment.Logger, container.ResourceId, e);
-            
-            ReleaseContainerReferenceCounter(container);
-
-            using (container.EnterLockScope()) {
-                container.DisposeCancellationToken();
-                container.Status = ImportingStatus.Failed;
-            }
-
-            throw;
-        }
-    }
-
-    private async Task<ReferenceResolveResult> ResolveReference(
-        ResourceCache.ElementContainer container
-    ) {
-        Deserializer deserializer;
-        object resource;
-        DeserializationContext context;
-        
-        try {
-            (deserializer, resource, context) = await (container.ImportTask = ImportVesselTask(container));
-        } catch (OperationCanceledException) {
-            Debug.Assert(container.Status == ImportingStatus.Canceled);
-            Debug.Assert(container.ReferenceCount == 0);
-
-            throw;
-        } catch (Exception e) when (e is not OperationCanceledException) {
-            Log.ResolveReferenceExceptionOccured(_environment.Logger, container.ResourceId);
-            
-            Debug.Assert(container.Status == ImportingStatus.Failed);
-            Debug.Assert(container.ReferenceCount == 0);
-            
-            throw;
-        }
-
-        try {
-            if (context.RequestingReferences.Count == 0) {
-                return new(new(container.ResourceId, resource), ReadOnlyCollection<ResourceCache.ElementContainer>.Empty);
-            }
-            
-            container.CancellationToken.ThrowIfCancellationRequested();
-
-            context.RequestingReferences.DisableRequest();
-
-            Log.BeginResolvingReference(_environment.Logger, container.ResourceId);
-
-            // Retrieving reference resources.
-            (var references, var waitContainers) =
-                await CollectReferences(resource, container, context.RequestingReferences.Requesting);
-
-            container.ReferenceResourceIds = references.Select(x => x.Value.Container.ResourceId).ToFrozenSet();
-
-            // Resolving references.
-            try {
-                context.RequestingReferences.SetReferences(references.ToDictionary(x => x.Key, x => x.Value.Handle));
-                deserializer.ResolveReferences(resource, context);
-            } catch {
-                // Ignored.
-            }
-
-            Log.EndResolvingReference(_environment.Logger, container.ResourceId);
-            return new(new(container.ResourceId, resource), waitContainers);
-        } catch (OperationCanceledException) {
-            ReleaseContainerReferenceCounter(container);
-            DisposeResource(resource);
-            
-            throw;
-        }
-    }
-
-    // Collect the references and the waiting containers.
-    private async Task<ReferenceCollectResult> CollectReferences(
-        object currentResource,
-        ResourceCache.ElementContainer currentContainer,
-        IReadOnlyDictionary<ReferencePropertyKey, RequestingReferences.RequestingReference> requestingReferences
-    ) {
-        Dictionary<ReferencePropertyKey, ReferenceImportResult> references = [];
-        HashSet<ResourceCache.ElementContainer> waitContainers = new(ReferenceContainerEqualityComparer.Instance);
-
-        // Depth first traversing the importing graph, collect the reference containers.
-        foreach ((var propertyKey, var requesting) in requestingReferences) {
-            // TODO: Make it parallel and support cancellation token.
-            
-            if (requesting.ResourceId == currentContainer.ResourceId) {
-                currentContainer.IncrementReference();
-                _environment.Statistics.AddReference();
-                
-                references.Add(propertyKey, new(new(requesting.ResourceId, currentResource), currentContainer));
-
-                continue;
-            }
-
-            if (!_environment.Libraries.ContainsResource(requesting.ResourceId, out ResourceRegistry.Element element)) continue;
-
-            // TODO: Fix bug: we somehow got to
-            
-            ResourceCache.ElementContainer referenceContainer =
-                _cache.GetOrBeginImporting(requesting.ResourceId, IncrementContainerReference, BeginReferenceImport, element.Name);
-
-            if (referenceContainer.Status == ImportingStatus.Failed) continue;
-            
-            try {
-                (_, object vessel, _) = await referenceContainer.ImportTask!;
-                
-                references.Add(propertyKey, new(new(requesting.ResourceId, vessel), referenceContainer));
-            } catch {
-                Debug.Assert(referenceContainer.Status == ImportingStatus.Failed);
-                Debug.Assert(referenceContainer.ReferenceCount == 0);
-            }
-        }
-
-        return new(references, waitContainers);
-        
-        ResourceCache.ElementContainer BeginReferenceImport(ResourceID resourceId, string resourceName) {
-            Debug.Assert(_environment.Libraries.ContainsResource(resourceId));
-            
-            ResourceCache.ElementContainer container = new(resourceId, resourceName);
-            _environment.Statistics.AddReference();
-            
-            container.InitializeImport();
-            container.FinalizeTask = ImportingTask(container);
-
-            waitContainers.Add(container);
-            
-            return container;
-        }
-    }
-    
     private async Task<ResourceHandle> ImportingTask(ResourceCache.ElementContainer container) {
+        container.EnsureCancellationTokenSourceIsNotDisposed();
+        Debug.Assert(!container.CancellationToken.IsCancellationRequested);
+        
         ResourceHandle handle;
         IReadOnlyCollection<ResourceCache.ElementContainer> waitContainers;
 
@@ -309,7 +142,176 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         }
     }
     
-    private void IncrementContainerReference<T>(ResourceCache.ElementContainer container, T unusedArg) where T : allows ref struct {
+    private async Task<ReferenceResolveResult> ResolveReference(
+        ResourceCache.ElementContainer container
+    ) {
+        Deserializer deserializer;
+        object resource;
+        DeserializationContext context;
+        
+        try {
+            (deserializer, resource, context) = await (container.ImportTask = ImportVesselTask(container));
+        } catch (OperationCanceledException) {
+            Debug.Assert(container.Status == ImportingStatus.Canceled);
+            Debug.Assert(container.ReferenceCount == 0);
+
+            throw;
+        } catch (Exception e) when (e is not OperationCanceledException) {
+            Log.ResolveReferenceExceptionOccured(_environment.Logger, container.ResourceId);
+            
+            Debug.Assert(container.Status == ImportingStatus.Failed);
+            Debug.Assert(container.ReferenceCount == 0);
+            
+            throw;
+        }
+
+        try {
+            if (context.RequestingReferences.Count == 0) {
+                return new(new(container.ResourceId, resource), ReadOnlyCollection<ResourceCache.ElementContainer>.Empty);
+            }
+            
+            container.CancellationToken.ThrowIfCancellationRequested();
+
+            context.RequestingReferences.DisableRequest();
+
+            Log.BeginResolvingReference(_environment.Logger, container.ResourceId);
+
+            // Retrieving reference resources.
+            (var references, var waitContainers) =
+                await CollectReferences(resource, container, context.RequestingReferences.Requesting);
+
+            container.ReferenceResourceIds = references.Select(x => x.Value.Container.ResourceId).ToFrozenSet();
+
+            // Resolving references.
+            try {
+                context.RequestingReferences.SetReferences(references.ToDictionary(x => x.Key, x => x.Value.Handle));
+                deserializer.ResolveReferences(resource, context);
+            } catch {
+                // Ignored.
+            }
+
+            Log.EndResolvingReference(_environment.Logger, container.ResourceId);
+            return new(new(container.ResourceId, resource), waitContainers);
+        } catch (OperationCanceledException) {
+            ReleaseContainerReferenceCounter(container);
+            DisposeResource(resource);
+            
+            throw;
+        }
+    }
+    
+    private async Task<ResourceImportResult> ImportVesselTask(ResourceCache.ElementContainer container) {
+        await Task.Yield();
+
+        try {
+            if (_environment.Libraries.CreateResourceStream(container.ResourceId) is not { } stream) {
+                string message = string.Format(ExceptionMessages.NullResourceStream, container.ResourceId);
+                throw new InvalidOperationException(message);
+            }
+
+            BinaryHeader header;
+
+            try {
+                header = BinaryHeader.Extract(stream);
+            } catch {
+                await stream.DisposeAsync();
+                throw;
+            }
+
+            switch (header.MajorVersion) {
+                case 1:
+                    return await ResourceImporterVersion1.ImportVessel(_environment, stream, header, container.CancellationToken);
+
+                default:
+                    string message = string.Format(
+                        ExceptionMessages.UnsupportedCompiledResourceVersion,
+                        header.MajorVersion,
+                        header.MinorVersion
+                    );
+                    throw new ArgumentException(message);
+            }
+        } catch (OperationCanceledException) {
+            Log.CancelImport(_environment.Logger, container.ResourceId);
+
+            using (container.EnterLockScope()) {
+                ReleaseContainerReferenceCounter(container);
+                container.Status = ImportingStatus.Canceled;
+            }
+
+            throw;
+        } catch (Exception e) {
+            Log.ReportImportException(_environment.Logger, container.ResourceId, e);
+            
+            ReleaseContainerReferenceCounter(container);
+
+            using (container.EnterLockScope()) {
+                container.DisposeCancellationToken();
+                container.Status = ImportingStatus.Failed;
+            }
+
+            throw;
+        }
+    }
+
+    // Collect the references and the waiting containers.
+    private async Task<ReferenceCollectResult> CollectReferences(
+        object currentResource,
+        ResourceCache.ElementContainer currentContainer,
+        IReadOnlyDictionary<ReferencePropertyKey, RequestingReferences.RequestingReference> requestingReferences
+    ) {
+        Dictionary<ReferencePropertyKey, ReferenceImportResult> references = [];
+        HashSet<ResourceCache.ElementContainer> waitContainers = new(ReferenceContainerEqualityComparer.Instance);
+
+        // Depth first traversing the importing graph, collect the reference containers.
+        foreach ((var propertyKey, var requesting) in requestingReferences) {
+            // TODO: Make it parallel and support cancellation token.
+            
+            if (requesting.ResourceId == currentContainer.ResourceId) {
+                currentContainer.IncrementReference();
+                _environment.Statistics.AddReference();
+                
+                references.Add(propertyKey, new(new(requesting.ResourceId, currentResource), currentContainer));
+
+                continue;
+            }
+
+            if (!_environment.Libraries.ContainsResource(requesting.ResourceId, out ResourceRegistry.Element element)) continue;
+
+            ResourceCache.ElementContainer referenceContainer =
+                _cache.GetOrBeginImporting(requesting.ResourceId, ProcessCachedContainer, BeginReferenceImport, element.Name);
+
+            if (referenceContainer.Status == ImportingStatus.Failed) continue;
+            
+            try {
+                (_, object vessel, _) = await referenceContainer.ImportTask!;
+                
+                references.Add(propertyKey, new(new(requesting.ResourceId, vessel), referenceContainer));
+            } catch {
+                Debug.Assert(referenceContainer.Status == ImportingStatus.Failed);
+                Debug.Assert(referenceContainer.ReferenceCount == 0);
+            }
+        }
+
+        return new(references, waitContainers);
+        
+        ResourceCache.ElementContainer BeginReferenceImport(ResourceID resourceId, string resourceName) {
+            Debug.Assert(_environment.Libraries.ContainsResource(resourceId));
+            
+            Log.BeginImport(_environment.Logger, resourceId);
+            
+            ResourceCache.ElementContainer container = new(resourceId, resourceName);
+            _environment.Statistics.AddReference();
+            
+            container.InitializeImport();
+            container.FinalizeTask = ImportingTask(container);
+
+            waitContainers.Add(container);
+            
+            return container;
+        }
+    }
+    
+    private void ProcessCachedContainer<T>(ResourceCache.ElementContainer container, T unusedArg) where T : allows ref struct {
         switch (container.Status) {
             case ImportingStatus.Success or ImportingStatus.Importing:
                 uint incremented = container.IncrementReference();

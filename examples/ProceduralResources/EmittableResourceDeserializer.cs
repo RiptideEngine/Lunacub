@@ -18,13 +18,12 @@ public sealed class EmittableResourceDeserializer : Deserializer<EmittableResour
     }
 
     protected override void ResolveReferences(EmittableResource instance, DeserializationContext context) {
-        // if (context.GetReference(1))
         var referenceHandle = context.GetReference(1);
 
         if (referenceHandle.Value is SimpleResource reference) {
             instance.Generated = reference;
         } else {
-            // TODO: Release.
+            context.ReleaseReference(referenceHandle);
         }
     }
 }
