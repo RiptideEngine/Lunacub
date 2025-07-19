@@ -42,8 +42,6 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             Log.BeginImport(_environment.Logger, container.ResourceId);
         
             container.InitializeImport();
-            // container.ImportTask = ImportVesselTask(container);
-            // container.ResolvingReferenceTask = ResolveReference(container);
             container.FinalizeTask = ImportingTask(container);
         
             return container;
@@ -242,8 +240,6 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             _environment.Statistics.AddReference();
             
             container.InitializeImport();
-            container.ImportTask = ImportVesselTask(container);
-            container.ResolvingReferenceTask = ResolveReference(container);
             container.FinalizeTask = ImportingTask(container);
 
             waitContainers.Add(container);
@@ -333,8 +329,6 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
                     Log.BeginImport(_environment.Logger, container.ResourceId);
 
                     container.InitializeImport();
-                    container.ImportTask = ImportVesselTask(container);
-                    container.ResolvingReferenceTask = ResolveReference(container);
                     container.FinalizeTask = ImportingTask(container);
                 }
 
