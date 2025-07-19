@@ -20,6 +20,7 @@ public sealed class PrebuildResourcesFixture {
     public static readonly ResourceID ReferencingResourceCircularReferenceA = 109;
     public static readonly ResourceID ReferencingResourceCircularReferenceB = 110;
     public static readonly ResourceID ReferencingResourceReferenceUnregistered = 111;
+    public static readonly ResourceID ReferencingResourceMismatchReferenceType = 113;
 
     public static readonly ResourceID ConfigurableResourceBinary = 201;
     public static readonly ResourceID ConfigurableResourceJson = 202;
@@ -124,6 +125,10 @@ public sealed class PrebuildResourcesFixture {
             
             // Reference unregistered.
             AppendReferencingResource(ReferencingResourceReferenceUnregistered, $"{nameof(ReferencingResource)}_ReferenceUnregistered", 1, ReferencingResourceReferenceUnregistered.Value + 1);
+            
+            // Mismatch reference type.
+            AppendReferencingResource(ReferencingResourceMismatchReferenceType, $"{nameof(ReferencingResource)}_MismatchReferenceType", 1, SimpleResourceStart);
+            
             return;
 
             void AppendReferencingResource(ResourceID id, string name, int value, ResourceID reference) {

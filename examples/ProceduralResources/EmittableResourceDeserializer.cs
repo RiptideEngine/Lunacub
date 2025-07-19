@@ -23,7 +23,7 @@ public sealed class EmittableResourceDeserializer : Deserializer<EmittableResour
         if (referenceHandle.Value is SimpleResource reference) {
             instance.Generated = reference;
         } else {
-            context.ReleaseReference(referenceHandle);
+            context.ReleaseReference(1);
         }
     }
 }

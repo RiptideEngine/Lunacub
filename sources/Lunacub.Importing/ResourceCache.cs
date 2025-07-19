@@ -209,7 +209,6 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         public CancellationToken CancellationToken => _cancellationTokenSource!.Token;
         
         public Task<ResourceImportDispatcher.ResourceImportResult>? ImportTask { get; set; }
-        public Task<ResourceImportDispatcher.ReferenceResolveResult>? ResolvingReferenceTask { get; set; }
         public Task<ResourceHandle> FinalizeTask { get; set; }
 
         private readonly Lock _lock;

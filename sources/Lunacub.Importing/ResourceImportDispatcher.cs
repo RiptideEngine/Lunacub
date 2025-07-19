@@ -89,7 +89,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         IReadOnlyCollection<ResourceID> releaseReferences;
 
         try {
-            (handle, waitContainers, releaseReferences) = await (container.ResolvingReferenceTask = ResolveReference(container));
+            (handle, waitContainers, releaseReferences) = await ResolveReference(container);
         } catch (OperationCanceledException) {
             Debug.Assert(container.Status == ImportingStatus.Canceled);
             

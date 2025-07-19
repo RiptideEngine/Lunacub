@@ -105,4 +105,19 @@ public class ImportOutputTests : IDisposable {
         resource4!.Value.Should().Be(4);
         resource4.Reference.Should().BeNull();
     }
+
+    [Fact]
+    public async Task ImportReferencingResource_MismatchReferenceType_ReleasesMismatchResource() {
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.ReferencingResourceMismatchReferenceType).Task)
+            .Should()
+            .NotThrowAsync())
+            .Which;
+        
+        handle.ResourceId.Should().Be(PrebuildResourcesFixture.ReferencingResourceMismatchReferenceType);
+        var resource1 = handle.Value.Should().BeOfType<ReferencingResource>().Which;
+        resource1.Value.Should().Be(1);
+        resource1.Reference.Should().BeNull();
+        
+        _importEnvironment.GetResourceContainer(PrebuildResourcesFixture.SimpleResourceStart).Should().BeNull();
+    }
 }

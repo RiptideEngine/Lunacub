@@ -61,6 +61,8 @@ public sealed class ReferencingResourceDeserializer : Deserializer<ReferencingRe
         if (context.RequestingReferences.TryGetReference(1, out var handle)) {
             if (handle.Value is ReferencingResource reference) {
                 instance.Reference = reference;
+            } else {
+                context.ReleaseReference(1);
             }
         }
     }
