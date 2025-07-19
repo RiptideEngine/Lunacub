@@ -20,7 +20,7 @@ public class ReferencingResourceDeserializer : Deserializer<ReferencingResource>
         if (reference.Value is SimpleResource typedReference) {
             instance.Reference = typedReference;
         } else {
-            context.ReleaseReference(reference);
+            context.ReleaseReference(1);
         }
     }
 }

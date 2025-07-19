@@ -8,12 +8,14 @@ namespace Caxivitual.Lunacub.Importing;
 
 internal sealed partial class ResourceImportDispatcher : IDisposable {
     private readonly ImportEnvironment _environment;
-    private readonly ResourceCache _cache;
+
+    internal ResourceCache Cache { get; }
+    
     private bool _disposed;
 
     public ResourceImportDispatcher(ImportEnvironment environment) {
         _environment = environment;
-        _cache = new(environment);
+        Cache = new(environment);
     }
 
     public ImportingOperation Import(ResourceID resourceId) {
@@ -31,7 +33,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             return new(container);
         }
         
-        return new(_cache.GetOrBeginImporting(resourceId, ProcessCachedContainer, BeginImport, element));
+        return new(Cache.GetOrBeginImporting(resourceId, ProcessCachedContainer, BeginImport, element));
         
         ResourceCache.ElementContainer BeginImport(ResourceID resourceId, ResourceRegistry.Element element) {
             ResourceCache.ElementContainer container = new(resourceId, element.Name);
@@ -62,7 +64,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             return new(container);
         }
 
-        return new(_cache.GetOrBeginImporting(id, ProcessCachedContainer, BeginImport, name));
+        return new(Cache.GetOrBeginImporting(id, ProcessCachedContainer, BeginImport, name));
         
         ResourceCache.ElementContainer BeginImport(ResourceID resourceId, ReadOnlySpan<char> name) {
             ResourceCache.ElementContainer container = new(resourceId, name.ToString());
@@ -84,9 +86,10 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         
         ResourceHandle handle;
         IReadOnlyCollection<ResourceCache.ElementContainer> waitContainers;
+        IReadOnlyCollection<ResourceID> releaseReferences;
 
         try {
-            (handle, waitContainers) = await (container.ResolvingReferenceTask = ResolveReference(container));
+            (handle, waitContainers, releaseReferences) = await (container.ResolvingReferenceTask = ResolveReference(container));
         } catch (OperationCanceledException) {
             Debug.Assert(container.Status == ImportingStatus.Canceled);
             
@@ -96,7 +99,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             Debug.Assert(container.Status == ImportingStatus.Failed);
             
             // Remove from the cache.
-            bool removedSuccessfully = _cache.Remove(container.ResourceId);
+            bool removedSuccessfully = Cache.Remove(container.ResourceId);
             Debug.Assert(removedSuccessfully);
             
             throw;
@@ -118,8 +121,12 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
             _environment.Statistics.IncrementUniqueResourceCount();
 
-            _cache.RegisterResourceMap(handle.Value!, container.ResourceId);
+            Cache.RegisterResourceMap(handle.Value!, container.ResourceId);
             container.Status = ImportingStatus.Success;
+
+            foreach (var releasingId in releaseReferences) {
+                Release(releasingId);
+            }
 
             return handle;
         } catch (Exception e) {
@@ -130,7 +137,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
             DisposeResource(handle.Value!);
 
-            bool removedSuccessfully = _cache.Remove(container.ResourceId);
+            bool removedSuccessfully = Cache.Remove(container.ResourceId);
             Debug.Assert(removedSuccessfully);
 
             throw;
@@ -142,9 +149,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         }
     }
     
-    private async Task<ReferenceResolveResult> ResolveReference(
-        ResourceCache.ElementContainer container
-    ) {
+    private async Task<ReferenceResolveResult> ResolveReference(ResourceCache.ElementContainer container) {
         Deserializer deserializer;
         object resource;
         DeserializationContext context;
@@ -166,32 +171,30 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         }
 
         try {
+            ResourceHandle handle = new(container.ResourceId, resource);
+            
             if (context.RequestingReferences.Count == 0) {
-                return new(new(container.ResourceId, resource), ReadOnlyCollection<ResourceCache.ElementContainer>.Empty);
+                return new(handle, ReadOnlyCollection<ResourceCache.ElementContainer>.Empty, ReadOnlyCollection<ResourceID>.Empty);
             }
             
             container.CancellationToken.ThrowIfCancellationRequested();
 
-            context.RequestingReferences.DisableRequest();
-
             Log.BeginResolvingReference(_environment.Logger, container.ResourceId);
 
-            // Retrieving reference resources.
-            (var references, var waitContainers) =
-                await CollectReferences(resource, container, context.RequestingReferences.Requesting);
-
-            container.ReferenceResourceIds = references.Select(x => x.Value.Container.ResourceId).ToFrozenSet();
-
-            // Resolving references.
-            try {
-                context.RequestingReferences.SetReferences(references.ToDictionary(x => x.Key, x => x.Value.Handle));
-                deserializer.ResolveReferences(resource, context);
-            } catch {
-                // Ignored.
-            }
+            IReadOnlyCollection<ResourceCache.ElementContainer> waitContainers = 
+                await ProcessReferences(container, context, resource, deserializer);
 
             Log.EndResolvingReference(_environment.Logger, container.ResourceId);
-            return new(new(container.ResourceId, resource), waitContainers);
+
+            List<ResourceID> releaseReferences = [];
+            foreach (var releasingReference in context.RequestingReferences.ReleasedReferences) {
+                bool getSuccessfully = context.RequestingReferences.References!.TryGetValue(releasingReference, out var referenceHandle);
+                Debug.Assert(getSuccessfully);
+                
+                releaseReferences.Add(referenceHandle.ResourceId);
+            }
+            
+            return new(handle, waitContainers, releaseReferences);
         } catch (OperationCanceledException) {
             ReleaseContainerReferenceCounter(container);
             DisposeResource(resource);
@@ -253,45 +256,60 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         }
     }
 
-    // Collect the references and the waiting containers.
-    private async Task<ReferenceCollectResult> CollectReferences(
-        object currentResource,
-        ResourceCache.ElementContainer currentContainer,
-        IReadOnlyDictionary<ReferencePropertyKey, RequestingReferences.RequestingReference> requestingReferences
-    ) {
-        Dictionary<ReferencePropertyKey, ReferenceImportResult> references = [];
-        HashSet<ResourceCache.ElementContainer> waitContainers = new(ReferenceContainerEqualityComparer.Instance);
+    private async Task<IReadOnlyCollection<ResourceCache.ElementContainer>> ProcessReferences(ResourceCache.ElementContainer container, DeserializationContext context, object resource, Deserializer deserializer) {
+        context.RequestingReferences.DisableRequest();
+        
+        var collectedResult = await CollectReferences(container, resource, context.RequestingReferences.Requesting);
+        
+        container.ReferenceResourceIds = collectedResult.References.Select(x => x.Value.Container.ResourceId).ToFrozenSet();
 
-        // Depth first traversing the importing graph, collect the reference containers.
-        foreach ((var propertyKey, var requesting) in requestingReferences) {
-            // TODO: Make it parallel and support cancellation token.
-            
-            if (requesting.ResourceId == currentContainer.ResourceId) {
+        // Resolving references.
+        try {
+            context.RequestingReferences.References = collectedResult.References.ToDictionary(x => x.Key, x => x.Value.Handle);
+            deserializer.ResolveReferences(resource, context);
+        } catch {
+            // Ignored.
+        }
+
+        return collectedResult.WaitContainers;
+    }
+
+    private async Task<ReferenceCollectingResult> CollectReferences(
+        ResourceCache.ElementContainer currentContainer,
+        object currentResource,
+        IReadOnlyDictionary<ReferencePropertyKey, RequestingReferences.RequestingReference> requestReferences
+    ) {
+        Dictionary<ReferencePropertyKey, ReferenceImportResult> references = new(requestReferences.Count);
+        List<ResourceCache.ElementContainer> waitContainers = [];
+        
+        // RecursivelyCollectReferences(container, requestReferences);
+
+        foreach ((var referencePropertyKey, var requesting) in requestReferences) {
+            requesting.Deconstruct(out ResourceID requestingId);
+
+            if (requestingId == currentContainer.ResourceId) {
                 currentContainer.IncrementReference();
                 _environment.Statistics.AddReference();
                 
-                references.Add(propertyKey, new(new(requesting.ResourceId, currentResource), currentContainer));
-
+                references.Add(referencePropertyKey, new(new(requesting.ResourceId, currentResource), currentContainer));
                 continue;
             }
-
+            
             if (!_environment.Libraries.ContainsResource(requesting.ResourceId, out ResourceRegistry.Element element)) continue;
-
+            
             ResourceCache.ElementContainer referenceContainer =
-                _cache.GetOrBeginImporting(requesting.ResourceId, ProcessCachedContainer, BeginReferenceImport, element.Name);
-
-            if (referenceContainer.Status == ImportingStatus.Failed) continue;
+                Cache.GetOrBeginImporting(requesting.ResourceId, ProcessCachedContainer, BeginReferenceImport, element.Name);
             
             try {
                 (_, object vessel, _) = await referenceContainer.ImportTask!;
-                
-                references.Add(propertyKey, new(new(requesting.ResourceId, vessel), referenceContainer));
+    
+                references.Add(referencePropertyKey, new(new(requesting.ResourceId, vessel), referenceContainer));
             } catch {
                 Debug.Assert(referenceContainer.Status == ImportingStatus.Failed);
                 Debug.Assert(referenceContainer.ReferenceCount == 0);
             }
         }
-
+        
         return new(references, waitContainers);
         
         ResourceCache.ElementContainer BeginReferenceImport(ResourceID resourceId, string resourceName) {
@@ -304,7 +322,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             
             container.InitializeImport();
             container.FinalizeTask = ImportingTask(container);
-
+        
             waitContainers.Add(container);
             
             return container;
@@ -358,7 +376,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         if (Interlocked.Exchange(ref _disposed, true)) return;
 
         if (disposing) {
-            _cache.Dispose();
+            Cache.Dispose();
         }
     }
     
@@ -370,7 +388,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
     ~ResourceImportDispatcher() {
         Dispose(false);
     }
-
+    
     public readonly record struct ResourceImportResult(
         Deserializer Deserializer, 
         object Resource, 
@@ -378,16 +396,17 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
     );
     public readonly record struct ReferenceResolveResult(
         ResourceHandle Handle, 
-        IReadOnlyCollection<ResourceCache.ElementContainer> WaitContainers
+        IReadOnlyCollection<ResourceCache.ElementContainer> WaitContainers,
+        IReadOnlyCollection<ResourceID> ReleaseReferences
     );
 
     private readonly record struct ReferenceImportResult(
         ResourceHandle Handle, 
         ResourceCache.ElementContainer Container
     );
-    private readonly record struct ReferenceCollectResult(
+    private readonly record struct ReferenceCollectingResult(
         Dictionary<ReferencePropertyKey, ReferenceImportResult> References,
-        IReadOnlySet<ResourceCache.ElementContainer> WaitContainers
+        IReadOnlyCollection<ResourceCache.ElementContainer> WaitContainers
     );
 
     private sealed class ReferenceContainerEqualityComparer : EqualityComparer<ResourceCache.ElementContainer> {

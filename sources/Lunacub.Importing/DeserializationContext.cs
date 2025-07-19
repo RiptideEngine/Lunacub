@@ -29,10 +29,6 @@ public readonly struct DeserializationContext {
     }
 
     public void ReleaseReference(ReferencePropertyKey key) {
-        // TODO: Implementation
-    }
-
-    public void ReleaseReference(ResourceHandle handle) {
-        // TODO: Implementation
+        RequestingReferences.ReleaseReference(key);
     }
 }

@@ -7,7 +7,7 @@ partial class ResourceImportDispatcher {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (resourceId == ResourceID.Null) return ReleaseStatus.Null;
-        if (_cache.Get(resourceId) is not { } container) return ReleaseStatus.NotImported;
+        if (Cache.Get(resourceId) is not { } container) return ReleaseStatus.NotImported;
 
         return ReleaseContainer(container);
     }
@@ -16,7 +16,7 @@ partial class ResourceImportDispatcher {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
         if (resource == null!) return ReleaseStatus.Null;
-        if (_cache.Get(resource) is not { } container) return ReleaseStatus.InvalidResource;
+        if (Cache.Get(resource) is not { } container) return ReleaseStatus.InvalidResource;
         
         container.EnsureCancellationTokenSourceIsDisposed();
         
@@ -31,10 +31,10 @@ partial class ResourceImportDispatcher {
         
         _environment.Statistics.DecrementUniqueResourceCount();
         
-        bool removedSuccessfully = _cache.RemoveResourceMap(resource);
+        bool removedSuccessfully = Cache.RemoveResourceMap(resource);
         Debug.Assert(removedSuccessfully);
 
-        removedSuccessfully = _cache.Remove(container.ResourceId);
+        removedSuccessfully = Cache.Remove(container.ResourceId);
         Debug.Assert(removedSuccessfully);
 
         ReleaseReferences(container.ReferenceResourceIds);
@@ -49,7 +49,7 @@ partial class ResourceImportDispatcher {
         (ResourceID resourceId, object? resource) = handle;
         
         if (resourceId == ResourceID.Null || resource == null) return ReleaseStatus.Null;
-        if (_cache.Get(resource) is not { } container) return ReleaseStatus.InvalidResource;
+        if (Cache.Get(resource) is not { } container) return ReleaseStatus.InvalidResource;
         
         container.EnsureCancellationTokenSourceIsDisposed();
         
@@ -65,10 +65,10 @@ partial class ResourceImportDispatcher {
         
         _environment.Statistics.DecrementUniqueResourceCount();
         
-        bool removedSuccessfully = _cache.RemoveResourceMap(resource);
+        bool removedSuccessfully = Cache.RemoveResourceMap(resource);
         Debug.Assert(removedSuccessfully);
 
-        removedSuccessfully = _cache.Remove(resourceId);
+        removedSuccessfully = Cache.Remove(resourceId);
         Debug.Assert(removedSuccessfully);
 
         ReleaseReferences(container.ReferenceResourceIds);
@@ -82,7 +82,7 @@ partial class ResourceImportDispatcher {
         
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (operation.ResourceId == ResourceID.Null || operation.UnderlyingContainer == null) return ReleaseStatus.Null;
-        if (_cache.Get(operation.ResourceId) is not { } container) return ReleaseStatus.InvalidOperationId;
+        if (Cache.Get(operation.ResourceId) is not { } container) return ReleaseStatus.InvalidOperationId;
         if (!ReferenceEquals(container, operation.UnderlyingContainer)) return ReleaseStatus.InvalidOperationContainer;
 
         return ReleaseContainer(container);
@@ -121,10 +121,10 @@ partial class ResourceImportDispatcher {
 
         _environment.Statistics.DecrementUniqueResourceCount();
 
-        bool removedSuccessfully = _cache.RemoveResourceMap(handle.Value!);
+        bool removedSuccessfully = Cache.RemoveResourceMap(handle.Value!);
         Debug.Assert(removedSuccessfully);
 
-        removedSuccessfully = _cache.Remove(handle.ResourceId);
+        removedSuccessfully = Cache.Remove(handle.ResourceId);
         Debug.Assert(removedSuccessfully);
 
         ReleaseReferences(container.ReferenceResourceIds);

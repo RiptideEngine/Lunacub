@@ -100,6 +100,24 @@ public class ResourceLifecycleTests : IDisposable {
         operation.Status.Should().Be(ImportingStatus.Disposed);
         operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
     }
+
+    [Fact]
+    public async Task ReferenceImport_HasCorrectReferenceCount() {
+        var operation = _importEnvironment.Import(PrebuildResourcesFixture.ReferencingResource2ObjectsChainA);
+        ResourceHandle<ReferencingResource> handle = (await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync()).Which.Convert<ReferencingResource>();
+
+        handle.Value.Should().NotBeNull();
+        
+        var resourceContainer = _importEnvironment.GetResourceContainer(handle.ResourceId);
+        resourceContainer.Should().NotBeNull();
+        resourceContainer!.ReferenceCount.Should().Be(1);
+        resourceContainer.Status.Should().Be(ImportingStatus.Success);
+
+        var referenceContainer = _importEnvironment.GetResourceContainer(handle.Value!);
+        referenceContainer.Should().NotBeNull();
+        referenceContainer!.ReferenceCount.Should().Be(1);
+        referenceContainer.Status.Should().Be(ImportingStatus.Success);
+    }
     
     [Fact]
     public async Task Reimport_AfterDispose_ReinitializeImportOperation() {

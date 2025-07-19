@@ -112,11 +112,7 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
 
         if (disposing) {
             using (_lock.EnterScope()) {
-                // _environment.Logger.LogDebug("Container ids: {ids}.", string.Join(", ", _containers.Values.Select(x => x.ResourceId)));
-                
                 Task.WaitAll(_containers.Values.Select(async container => {
-                    _environment.Logger.LogDebug("Begin disposing resource id {id}", container.ResourceId);
-                    
                     using (container.EnterLockScope()) {
                         container.CancelImport();
                     }
@@ -130,8 +126,6 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
                         return;
                     }
                     
-                    _environment.Logger.LogDebug("Null check for {id}: {result}", container.ResourceId, handle.Value == null);
-                    
                     container.EnsureCancellationTokenSourceIsDisposed();
 
                     if (_environment.Disposers.TryDispose(handle.Value!)) {
@@ -142,8 +136,6 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
 
                     container.ReferenceCount = 0;
                     container.Status = ImportingStatus.Disposed;
-                    
-                    _environment.Logger.LogDebug("Resource ID: {id}.", container.ResourceId);
                 }));
 
                 _containers.Clear();

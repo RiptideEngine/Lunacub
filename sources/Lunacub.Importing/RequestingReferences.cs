@@ -4,13 +4,16 @@ public sealed class RequestingReferences {
     private bool _enableRequest;
     
     private readonly Dictionary<ReferencePropertyKey, RequestingReference> _requestingReferences;
-    private IReadOnlyDictionary<ReferencePropertyKey, ResourceHandle>? _references;
+    public Dictionary<ReferencePropertyKey, ResourceHandle>? References { get; set; }
     
     public int Count => _requestingReferences.Count;
     
     internal IReadOnlyDictionary<ReferencePropertyKey, RequestingReference> Requesting => _requestingReferences;
+
+    private readonly HashSet<ReferencePropertyKey> _releaseReferences = [];
+    internal IReadOnlySet<ReferencePropertyKey> ReleasedReferences => _releaseReferences;
     
-    public RequestingReferences() {
+    internal RequestingReferences() {
         _enableRequest = true;
         _requestingReferences = [];
     }
@@ -38,24 +41,37 @@ public sealed class RequestingReferences {
     }
 
     public ResourceHandle GetReference(ReferencePropertyKey key) {
-        if (_references == null) {
+        if (References == null) {
             throw new InvalidOperationException("Reference retrieving is disabled.");
         }
 
-        return _references[key];
+        if (_releaseReferences.Contains(key)) return default;
+
+        return References[key];
     }
 
     public bool TryGetReference(ReferencePropertyKey key, out ResourceHandle handle) {
-        if (_references == null) {
+        if (References == null) {
             throw new InvalidOperationException("Reference retrieving is disabled.");
         }
+
+        if (_releaseReferences.Contains(key)) {
+            handle = default;
+            return false;
+        }
         
-        return _references.TryGetValue(key, out handle);
+        return References.TryGetValue(key, out handle);
     }
 
-    internal void SetReferences(Dictionary<ReferencePropertyKey, ResourceHandle> references) {
-        _references = references;
+    public void ReleaseReference(ReferencePropertyKey key) {
+        if (References == null) {
+            throw new InvalidOperationException("Reference releasing is disabled.");
+        }
+
+        if (!References.ContainsKey(key)) return;
+
+        _releaseReferences.Add(key);
     }
-    
+
     public readonly record struct RequestingReference(ResourceID ResourceId);
 }
