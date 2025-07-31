@@ -4,18 +4,17 @@
 /// Represents a lightweight, immutable handle that identify the underlying imported object.
 /// </summary>
 /// <seealso cref="ResourceHandle"/>
-/// <seealso cref="ResourceID"/>
 public readonly struct ResourceHandle<T> : IEquatable<ResourceHandle<T>> where T : class {
-    public readonly ResourceID ResourceId;
+    public readonly ResourceAddress Address;
     public readonly T? Value;
 
     /// <summary>
     /// Creates new instance of <see cref="ResourceHandle{T}"/> with the specified <see cref="ResourceID"/> and underlying object.
     /// </summary>
-    /// <param name="resourceId">Id of the handle.</param>
+    /// <param name="address">Address of the resource.</param>
     /// <param name="value">Underlying resource object of the handle.</param>
-    public ResourceHandle(ResourceID resourceId, T? value) {
-        ResourceId = resourceId;
+    public ResourceHandle(ResourceAddress address, T? value) {
+        Address = address;
         Value = value;
     }
     
@@ -27,7 +26,7 @@ public readonly struct ResourceHandle<T> : IEquatable<ResourceHandle<T>> where T
     ///     The type to which the underlying resource object is converted. Must be a reference type.
     /// </typeparam>
     /// <returns>
-    ///     A new instance of <see cref="ResourceHandle{T}"/> with the same <see cref="ResourceId"/> and <see cref="Value"/>
+    ///     A new instance of <see cref="ResourceHandle{T}"/> with the same <see cref="Address"/> and <see cref="Value"/>
     ///     with the specified type.
     /// </returns>
     /// <exception cref="InvalidCastException">
@@ -38,7 +37,7 @@ public readonly struct ResourceHandle<T> : IEquatable<ResourceHandle<T>> where T
     ///     one if casting succeeds.
     /// </remarks>
     public ResourceHandle<TOther> ConvertUnsafe<TOther>() where TOther : class {
-        return new(ResourceId, (TOther?)(object?)Value);
+        return new(Address, (TOther?)(object?)Value);
     }
     
     /// <summary>
@@ -49,7 +48,7 @@ public readonly struct ResourceHandle<T> : IEquatable<ResourceHandle<T>> where T
     ///     The type to which the underlying resource object is converted. Must be a reference type.
     /// </typeparam>
     /// <returns>
-    ///     A new instance of <see cref="ResourceHandle{T}"/> with the same <see cref="ResourceId"/> and <see cref="Value"/>
+    ///     A new instance of <see cref="ResourceHandle{T}"/> with the same <see cref="Address"/> and <see cref="Value"/>
     ///     with the specified type.
     /// </returns>
     /// <remarks>
@@ -57,12 +56,12 @@ public readonly struct ResourceHandle<T> : IEquatable<ResourceHandle<T>> where T
     ///     one if casting succeeds. Otherwise, <see cref="Value"/> will be <see langword="null"/>.
     /// </remarks>
     public ResourceHandle<TOther> Convert<TOther>() where TOther : class {
-        return new(ResourceId, Value as TOther);
+        return new(Address, Value as TOther);
     }
     
     /// <inheritdoc cref="ResourceHandle.Deconstruct"/>
-    public void Deconstruct(out ResourceID resourceId, out T? value) {
-        resourceId = ResourceId;
+    public void Deconstruct(out ResourceAddress address, out T? value) {
+        address = Address;
         value = Value;
     }
     
@@ -71,9 +70,9 @@ public readonly struct ResourceHandle<T> : IEquatable<ResourceHandle<T>> where T
     /// </summary>
     /// <param name="other">The other <see cref="ResourceHandle{T}"/> to compare to.</param>
     /// <returns>
-    ///     <see langword="true"/> if the <see cref="ResourceId"/> and <see cref="Value"/> of both handles are equal.
+    ///     <see langword="true"/> if the <see cref="Address"/> and <see cref="Value"/> of both handles are equal.
     /// </returns>
-    public bool Equals(ResourceHandle<T> other) => other.ResourceId == ResourceId && Value == other.Value;
+    public bool Equals(ResourceHandle<T> other) => other.Address == Address && Value == other.Value;
     
     /// <summary>
     /// Converts this instance into an instance of weakly-typed <see cref="ResourceHandle"/>.
@@ -88,13 +87,13 @@ public readonly struct ResourceHandle<T> : IEquatable<ResourceHandle<T>> where T
     /// </summary>
     /// <param name="obj">The object to compare to.</param>
     /// <returns>
-    ///     <see langword="true"/> if <paramref name="obj"/> is a <see cref="ResourceHandle"/> and its <see cref="ResourceId"/>
+    ///     <see langword="true"/> if <paramref name="obj"/> is a <see cref="ResourceHandle"/> and its <see cref="Address"/>
     ///     and <see cref="Value"/> are equal to the instance; otherwise, <see langword="false"/>.
     /// </returns>
     /// <seealso cref="Equals(ResourceHandle{T})"/>
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is ResourceHandle<T> other && Equals(other);
     
-    [ExcludeFromCodeCoverage] public override int GetHashCode() => HashCode.Combine(ResourceId, Value);
+    [ExcludeFromCodeCoverage] public override int GetHashCode() => HashCode.Combine(Address, Value);
     
     public static bool operator ==(ResourceHandle<T> left, ResourceHandle<T> right) => left.Equals(right);
     public static bool operator !=(ResourceHandle<T> left, ResourceHandle<T> right) => !left.Equals(right);

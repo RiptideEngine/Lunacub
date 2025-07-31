@@ -5,54 +5,48 @@ using System.Text.Json.Serialization;
 namespace Caxivitual.Lunacub;
 
 /// <summary>
-/// Represents an identification number of a resource.
+/// Represents an identification number of a resource library.
 /// </summary>
-[JsonConverter(typeof(ResourceIDConverter))]
+[JsonConverter(typeof(LibraryIDConverter))]
 [DebuggerDisplay("{Value}")]
-public readonly struct ResourceID :
-    IEquatable<ResourceID>, 
+public readonly struct LibraryID :
+    IEquatable<LibraryID>, 
     IEquatable<ulong>,
     ISpanFormattable,
     IUtf8SpanFormattable,
-    ISpanParsable<ResourceID>,
-    IUtf8SpanParsable<ResourceID>
+    ISpanParsable<LibraryID>,
+    IUtf8SpanParsable<LibraryID>
 {
     /// <summary>
-    /// Represents a default or null value of the <see cref="ResourceID"/> type, used to signify the absence of a
-    /// valid resource identifier.
-    /// </summary>
-    public static ResourceID Null => default;
-
-    /// <summary>
-    /// The underlying 64-bit unsigned integer value of <see cref="ResourceID"/>.
+    /// The underlying 64-bit unsigned integer value of <see cref="LibraryID"/>.
     /// </summary>
     [DebuggerBrowsable(DebuggerBrowsableState.Never)] public ulong Value { get; }
     
     /// <summary>
-    /// Creates a new instance of <see cref="ResourceID"/> with the specified 64-bit unsigned integer value.
+    /// Creates a new instance of <see cref="LibraryID"/> with the specified 64-bit unsigned integer value.
     /// </summary>
-    /// <param name="value">The specified 64-bit unsigned integer value to create <see cref="ResourceID"/> from.</param>
-    public ResourceID(ulong value) {
+    /// <param name="value">The specified 64-bit unsigned integer value to create <see cref="LibraryID"/> from.</param>
+    public LibraryID(ulong value) {
         Value = value;
     }
 
     /// <summary>
-    /// Parses a string into a <see cref="ResourceID"/> with formatting information object.
+    /// Parses a string into a <see cref="LibraryID"/> with formatting information object.
     /// </summary>
     /// <param name="s">A string represents a 64-bit unsigned integer to parse.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="s"/>.</param>
     /// <returns>The result of parsing <paramref name="s"/>.</returns>
-    public static ResourceID Parse(string s, IFormatProvider? formatProvider) {
+    public static LibraryID Parse(string s, IFormatProvider? formatProvider) {
         return new(ulong.Parse(s, formatProvider));
     }
     
     /// <inheritdoc cref="Parse(ReadOnlySpan{char},IFormatProvider?)"/>
-    public static ResourceID Parse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider) {
+    public static LibraryID Parse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider) {
         return new(ulong.Parse(span, formatProvider));
     }
 
     /// <inheritdoc cref="Parse(ReadOnlySpan{char},NumberStyles,IFormatProvider?)"/>
-    public static ResourceID Parse(
+    public static LibraryID Parse(
         ReadOnlySpan<byte> span,
         NumberStyles style = NumberStyles.Integer,
         IFormatProvider? formatProvider = null
@@ -61,23 +55,23 @@ public readonly struct ResourceID :
     }
     
     /// <summary>
-    /// Parses a span of characters into a <see cref="ResourceID"/> with formatting information object.
+    /// Parses a span of characters into a <see cref="LibraryID"/> with formatting information object.
     /// </summary>
     /// <param name="span">A span of character represents a 64-bit unsigned integer to parse.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="span"/>.</param>
     /// <returns>The result of parsing <paramref name="span"/>.</returns>
-    public static ResourceID Parse(ReadOnlySpan<char> span, IFormatProvider? formatProvider) {
+    public static LibraryID Parse(ReadOnlySpan<char> span, IFormatProvider? formatProvider) {
         return new(ulong.Parse(span, formatProvider));
     }
 
     /// <summary>
-    /// Parses a span of characters into a <see cref="ResourceID"/> with formatting information object.
+    /// Parses a span of characters into a <see cref="LibraryID"/> with formatting information object.
     /// </summary>
     /// <param name="span">A span of character represents a 64-bit unsigned integer to parse.</param>
     /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="span"/>.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="span"/>.</param>
     /// <returns>The result of parsing <paramref name="span"/>.</returns>
-    public static ResourceID Parse(
+    public static LibraryID Parse(
         ReadOnlySpan<char> span,
         NumberStyles style = NumberStyles.Integer,
         IFormatProvider? formatProvider = null
@@ -85,8 +79,8 @@ public readonly struct ResourceID :
         return new(ulong.Parse(span, style, formatProvider));
     }
     
-    /// <inheritdoc cref="TryParse(ReadOnlySpan{char},IFormatProvider?,out Caxivitual.Lunacub.ResourceID)"/>
-    public static bool TryParse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider, out ResourceID result) {
+    /// <inheritdoc cref="TryParse(ReadOnlySpan{char},IFormatProvider?,out Caxivitual.Lunacub.LibraryID)"/>
+    public static bool TryParse(ReadOnlySpan<byte> span, IFormatProvider? formatProvider, out LibraryID result) {
         if (ulong.TryParse(span, formatProvider, out var value)) {
             result = new(value);
             return true;
@@ -96,12 +90,12 @@ public readonly struct ResourceID :
         return false;
     }
     
-    /// <inheritdoc cref="TryParse(ReadOnlySpan{char},NumberStyles,IFormatProvider?,out Caxivitual.Lunacub.ResourceID)"/>
+    /// <inheritdoc cref="TryParse(ReadOnlySpan{char},NumberStyles,IFormatProvider?,out Caxivitual.Lunacub.LibraryID)"/>
     public static bool TryParse(
         ReadOnlySpan<byte> span,
         NumberStyles style,
         IFormatProvider? formatProvider,
-        out ResourceID result
+        out LibraryID result
     ) {
         if (ulong.TryParse(span, style, formatProvider, out var value)) {
             result = new(value);
@@ -113,18 +107,18 @@ public readonly struct ResourceID :
     }
     
     /// <summary>
-    /// Tries to parse a span of character into a <see cref="ResourceID"/>.
+    /// Tries to parse a span of character into a <see cref="LibraryID"/>.
     /// </summary>
     /// <param name="span">A span of character represents a 64-bit unsigned integer to parse.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="span"/>.</param>
     /// <param name="result">
     ///     When this method returns, contains the result of successfully parsing <paramref name="span"/>, or the default
-    ///     value of <see cref="ResourceID"/> if parsing failed.
+    ///     value of <see cref="LibraryID"/> if parsing failed.
     /// </param>
     /// <returns>
     ///     <see langword="true"/> if <paramref name="span"/> was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool TryParse(ReadOnlySpan<char> span, IFormatProvider? formatProvider, out ResourceID result) {
+    public static bool TryParse(ReadOnlySpan<char> span, IFormatProvider? formatProvider, out LibraryID result) {
         if (ulong.TryParse(span, formatProvider, out var value)) {
             result = new(value);
             return true;
@@ -135,19 +129,19 @@ public readonly struct ResourceID :
     }
     
     /// <summary>
-    /// Tries to parse a span of character into a <see cref="ResourceID"/>.
+    /// Tries to parse a span of character into a <see cref="LibraryID"/>.
     /// </summary>
     /// <param name="span">A span of character represents a 64-bit unsigned integer to parse.</param>
     /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="span"/>.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="span"/>.</param>
     /// <param name="result">
     ///     When this method returns, contains the result of successfully parsing <paramref name="span"/>, or the default
-    ///     value of <see cref="ResourceID"/> if parsing failed.
+    ///     value of <see cref="LibraryID"/> if parsing failed.
     /// </param>
     /// <returns>
     ///     <see langword="true"/> if <paramref name="span"/> was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool TryParse(ReadOnlySpan<char> span, NumberStyles style, IFormatProvider? formatProvider, out ResourceID result) {
+    public static bool TryParse(ReadOnlySpan<char> span, NumberStyles style, IFormatProvider? formatProvider, out LibraryID result) {
         if (ulong.TryParse(span, style, formatProvider, out var value)) {
             result = new(value);
             return true;
@@ -158,30 +152,30 @@ public readonly struct ResourceID :
     }
 
     /// <summary>
-    /// Tries to parse a string into a <see cref="ResourceID"/>.
+    /// Tries to parse a string into a <see cref="LibraryID"/>.
     /// </summary>
     /// <param name="s">A string represents a 64-bit unsigned integer to parse.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="s"/>.</param>
     /// <param name="result">
     ///     When this method returns, contains the result of successfully parsing <paramref name="s"/>, or the default
-    ///     value of <see cref="ResourceID"/> if parsing failed.
+    ///     value of <see cref="LibraryID"/> if parsing failed.
     /// </param>
     /// <returns>
     ///     <see langword="true"/> if <paramref name="s"/> was parsed successfully; otherwise, <see langword="false"/>.
     /// </returns>
-    public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? formatProvider, out ResourceID result) {
+    public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? formatProvider, out LibraryID result) {
         return TryParse(s.AsSpan(), formatProvider, out result);
     }
     
     /// <summary>
-    /// Tries to parse a string into a <see cref="ResourceID"/>.
+    /// Tries to parse a string into a <see cref="LibraryID"/>.
     /// </summary>
     /// <param name="s">A string represents a 64-bit unsigned integer to parse.</param>
     /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s"/>.</param>
     /// <param name="formatProvider">An object contains formatting information about <paramref name="s"/>.</param>
     /// <param name="result">
     ///     When this method returns, contains the result of successfully parsing <paramref name="s"/>, or the default
-    ///     value of <see cref="ResourceID"/> if parsing failed.
+    ///     value of <see cref="LibraryID"/> if parsing failed.
     /// </param>
     /// <returns>
     ///     <see langword="true"/> if <paramref name="s"/> was parsed successfully; otherwise, <see langword="false"/>.
@@ -190,7 +184,7 @@ public readonly struct ResourceID :
         [NotNullWhen(true)] string? s,
         NumberStyles style,
         IFormatProvider? formatProvider,
-    out ResourceID result) {
+    out LibraryID result) {
         return TryParse(s.AsSpan(), style, formatProvider, out result);
     }
 
@@ -253,14 +247,14 @@ public readonly struct ResourceID :
     }
 
     /// <summary>
-    /// Determines whether the specified <see cref="ResourceID"/> is equal to the current instance.
+    /// Determines whether the specified <see cref="LibraryID"/> is equal to the current instance.
     /// </summary>
-    /// <param name="other">The <see cref="ResourceID"/> to compare with the current instance.</param>
+    /// <param name="other">The <see cref="LibraryID"/> to compare with the current instance.</param>
     /// <returns>
-    ///     <see langword="true"/> if the specified <see cref="ResourceID"/> is equal to the current instance;
+    ///     <see langword="true"/> if the specified <see cref="LibraryID"/> is equal to the current instance;
     ///     otherwise, <see langword="false"/>.
     /// </returns>
-    public bool Equals(ResourceID other) => this == other;
+    public bool Equals(LibraryID other) => this == other;
 
     /// <summary>
     /// Determines whether the <see cref="Value"/> of the current instance is equal to the specified 64-bit unsigned
@@ -274,39 +268,39 @@ public readonly struct ResourceID :
     public bool Equals(ulong other) => this == other;
 
     /// <summary>
-    /// Determines whether this instance and a specified object, which can be either an instance of <see cref="ResourceID"/>
+    /// Determines whether this instance and a specified object, which can be either an instance of <see cref="LibraryID"/>
     /// or a 64-bit unsigned integer, are equal.
     /// </summary>
     /// <param name="other">The object to compare to.</param>
     /// <returns>
-    ///     <see langword="true"/> if <paramref name="other"/> is a <see cref="ResourceID"/> and is equal to the current instance,
+    ///     <see langword="true"/> if <paramref name="other"/> is a <see cref="LibraryID"/> and is equal to the current instance,
     ///     or if <paramref name="other"/> is a 64-bit unsigned integer and is equal to the <see cref="Value"/> of the current
     ///     instance; otherwise, <see langword="false"/>.
     /// </returns>
-    /// <seealso cref="Equals(ResourceID)"/>
+    /// <seealso cref="Equals(LibraryID)"/>
     /// <seealso cref="Equals(ulong)"/>
     public override bool Equals([NotNullWhen(true)] object? other) {
         return other switch {
-            ResourceID rid => Equals(rid),
-            ulong u128 => Equals(u128),
+            LibraryID rid => Equals(rid),
+            ulong u64 => Equals(u64),
             _ => false,
         };
     }
     
     [ExcludeFromCodeCoverage] public override int GetHashCode() => Value.GetHashCode();
 
-    public static bool operator ==(ResourceID left, ResourceID right) => left.Value == right.Value;
-    public static bool operator !=(ResourceID left, ResourceID right) => left.Value != right.Value;
-    public static bool operator ==(ResourceID left, ulong right) => left.Value == right;
-    public static bool operator !=(ResourceID left, ulong right) => left.Value != right;
+    public static bool operator ==(LibraryID left, LibraryID right) => left.Value == right.Value;
+    public static bool operator !=(LibraryID left, LibraryID right) => left.Value != right.Value;
+    public static bool operator ==(LibraryID left, ulong right) => left.Value == right;
+    public static bool operator !=(LibraryID left, ulong right) => left.Value != right;
     
-    public static implicit operator ResourceID(uint value) => new(value);
-    public static implicit operator ResourceID(ulong value) => new(value);
-    public static implicit operator ulong(ResourceID value) => value.Value;
+    public static implicit operator LibraryID(uint value) => new(value);
+    public static implicit operator LibraryID(ulong value) => new(value);
+    public static implicit operator ulong(LibraryID value) => value.Value;
 
     /// <summary>
     /// Returns the string representation of this instance in default decimal integer format.
     /// </summary>
-    /// <returns>A string that represents the current <see cref="ResourceID"/> in default decimal integer format.</returns>
+    /// <returns>A string that represents the current <see cref="LibraryID"/> in default decimal integer format.</returns>
     public override string ToString() => Value.ToString();
 }
