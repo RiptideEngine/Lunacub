@@ -11,7 +11,7 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
 
         SourceLastWriteTimes sourceLastWriteTimes = default;
         BuildingOptions buildingOptions = default;
-        IReadOnlySet<ResourceID> dependencies = FrozenSet<ResourceID>.Empty;
+        IReadOnlySet<ResourceAddress> dependencies = FrozenSet<ResourceAddress>.Empty;
         ComponentVersions componentVersions = default;
             
         while (reader.Read()) {
@@ -35,10 +35,10 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
                     buildingOptions = JsonSerializer.Deserialize<BuildingOptions>(ref reader, options);
                     break;
                 
-                case nameof(IncrementalInfo.Dependencies):
-                    dependencies = JsonSerializer.Deserialize<HashSet<ResourceID>>(ref reader, options) is { } set ?
+                case nameof(IncrementalInfo.DependencyAddresses):
+                    dependencies = JsonSerializer.Deserialize<HashSet<ResourceAddress>>(ref reader, options) is { } set ?
                         set.ToFrozenSet() :
-                        FrozenSet<ResourceID>.Empty;
+                        FrozenSet<ResourceAddress>.Empty;
                     break;
                 
                 case nameof(IncrementalInfo.ComponentVersions):
@@ -63,8 +63,8 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
         writer.WritePropertyName(nameof(IncrementalInfo.Options));
         JsonSerializer.Serialize(writer, info.Options, options);
         
-        writer.WritePropertyName(nameof(IncrementalInfo.Dependencies));
-        JsonSerializer.Serialize(writer, info.Dependencies, options);
+        writer.WritePropertyName(nameof(IncrementalInfo.DependencyAddresses));
+        JsonSerializer.Serialize(writer, info.DependencyAddresses, options);
         
         writer.WritePropertyName(nameof(IncrementalInfo.ComponentVersions));
         JsonSerializer.Serialize(writer, info.ComponentVersions, options);

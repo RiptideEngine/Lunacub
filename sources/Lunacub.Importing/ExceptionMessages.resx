@@ -22,10 +22,10 @@
         <value>Key cannot be empty or consist of only whitespace characters.</value>
     </data>
     <data name="ResourceStreamMustBeSeekableOrReadable" xml:space="preserve">
-        <value>Resource Stream for resource with ID of '{0}' must be readable and seekable.</value>
+        <value>Resource stream for resource with id of {0} at library {1} must be readable and seekable.</value>
     </data>
     <data name="ResourceStreamMustNotBeWritable" xml:space="preserve">
-        <value>Resource Stream for resource with ID of '{0}' must not be writable.</value>
+        <value>Resource stream for resource with id of {0} at library {1} must not be writable.</value>
     </data>
     <data name="ResourceMissingChunk" xml:space="preserve">
         <value>Cannot find chunk {0} in compiled resource binary.</value>
@@ -36,16 +36,22 @@
     <data name="UnsupportedCompiledResourceVersion" xml:space="preserve">
         <value>Compiled resource version {0}.{1} is not supported.</value>
     </data>
-    <data name="UnregisteredResourceId" xml:space="preserve">
-        <value>Resource with Id of {0} is unregistered.</value>
+    <data name="ImportFromUnregisteredResourceLibrary" xml:space="preserve">
+        <value>Trying to import resource from unregistered library id of {0}.</value>
     </data>
-    <data name="UnregisteredResourceName" xml:space="preserve">
-        <value>Resource with name '{0}' is unregistered.</value>
+    <data name="ImportFromUnregisteredResourceName" xml:space="preserve">
+        <value>Trying to import resource from unregistered name of '{0}' at library {1}.</value>
     </data>
     <data name="NullResourceStream" xml:space="preserve">
         <value>Null Stream was returned for resource with Id of {0}.</value>
     </data>
     <data name="UnexpectedTaskStatus" xml:space="preserve">
         <value>Unexpected task status '{0}' for resource id {1}.</value>
+    </data>
+    <data name="ImportFromUnregisteredResourceId" xml:space="preserve">
+        <value>Trying to import resource from unregistered id of {0} at library {1}.</value>
+    </data>
+    <data name="ImportFromNullLibraryId" xml:space="preserve">
+        <value>Trying to import resource from null library id of 0.</value>
     </data>
 </root>

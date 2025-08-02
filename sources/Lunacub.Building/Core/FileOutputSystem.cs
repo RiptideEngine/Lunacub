@@ -1,16 +1,17 @@
-﻿using System.Globalization;
+﻿using Caxivitual.Lunacub.Building.Collections;
+using System.Globalization;
 
 namespace Caxivitual.Lunacub.Building.Core;
 
 [ExcludeFromCodeCoverage]
 public class FileOutputSystem : OutputSystem {
-    public string ReportDirectory { get; }
+    public string IncrementalInfoDirectory { get; }
     public string ResourceOutputDirectory { get; }
     
-    public FileOutputSystem(string reportDirectory, string resourceOutputDirectory) {
-        ReportDirectory = Path.GetFullPath(reportDirectory);
-        if (!Directory.Exists(ReportDirectory)) {
-            throw new ArgumentException($"Report directory '{ReportDirectory}' does not exist.");
+    public FileOutputSystem(string incrementalInfoDirectory, string resourceOutputDirectory) {
+        IncrementalInfoDirectory = Path.GetFullPath(incrementalInfoDirectory);
+        if (!Directory.Exists(IncrementalInfoDirectory)) {
+            throw new ArgumentException($"Incremental information directory '{IncrementalInfoDirectory}' does not exist.");
         }
         
         ResourceOutputDirectory = Path.GetFullPath(resourceOutputDirectory);
@@ -19,55 +20,90 @@ public class FileOutputSystem : OutputSystem {
         }
     }
 
-    public override void CollectIncrementalInfos(IDictionary<ResourceID, IncrementalInfo> receiver) {
-        string searchPattern = $"*{CompilingConstants.ReportExtension}";
-        
-        foreach (var file in Directory.EnumerateFiles(ReportDirectory, searchPattern, SearchOption.TopDirectoryOnly)) {
-            if (!ResourceID.TryParse(Path.GetFileNameWithoutExtension(file), NumberStyles.HexNumber, null, out var rid)) {
-                continue;
-            }
+    public override void CollectIncrementalInfos(EnvironmentIncrementalInfos receiver) {
+        const string searchPattern = $"*{CompilingConstants.ReportExtension}";
 
-            try {
-                using FileStream reportFile = File.OpenRead(file);
+        foreach (var libraryDirectoryPath in Directory.EnumerateDirectories(IncrementalInfoDirectory, "*", SearchOption.TopDirectoryOnly)) {
+            ReadOnlySpan<char> libraryDirectoryName = Path.GetFileName(libraryDirectoryPath.AsSpan());
+
+            if (!LibraryID.TryParse(libraryDirectoryName, null, out LibraryID libraryId)) continue;
+
+            LibraryIncrementalInfos libraryIncrementalInfos = [];
+            
+            foreach (var reportFilePath in Directory.EnumerateFiles(libraryDirectoryPath, searchPattern, SearchOption.TopDirectoryOnly)) {
+                ReadOnlySpan<char> idPart = Path.GetFileNameWithoutExtension(reportFilePath.AsSpan());
                 
-                receiver.Add(rid, JsonSerializer.Deserialize<IncrementalInfo>(reportFile));
-            } catch (Exception) {
-                // Ignore any failed attempt to deserialize report.
+                if (!ResourceID.TryParse(idPart, NumberStyles.Integer, null, out ResourceID resourceId)) {
+                    continue;
+                }
+                
+                try {
+                    using FileStream reportFile = File.OpenRead(reportFilePath);
+    
+                    libraryIncrementalInfos.Add(resourceId, JsonSerializer.Deserialize<IncrementalInfo>(reportFile));
+                } catch (Exception) {
+                    // Ignore any failed attempt to deserialize report.
+                }
+            }
+            
+            receiver.Add(libraryId, libraryIncrementalInfos);
+        }
+    }
+
+    public override void FlushIncrementalInfos(EnvironmentIncrementalInfos incrementalInfos) {
+        foreach ((var libraryId, var libraryIncrementalInfos) in incrementalInfos) {
+            string libraryInfoPath = Path.Combine(IncrementalInfoDirectory, libraryId.ToString());
+
+            if (Directory.Exists(libraryInfoPath)) {
+                Directory.Delete(libraryInfoPath, recursive: true);
+            }
+
+            Directory.CreateDirectory(libraryInfoPath);
+
+            foreach ((var resourceId, var incrementalInfo) in libraryIncrementalInfos) {
+                string resourceInfoPath = Path.Combine(libraryInfoPath, $"{resourceId}{CompilingConstants.ReportExtension}");
+
+                using FileStream stream = File.OpenWrite(resourceInfoPath);
+
+                JsonSerializer.Serialize(stream, incrementalInfo);
             }
         }
     }
 
-    public override void FlushIncrementalInfos(IReadOnlyDictionary<ResourceID, IncrementalInfo> reports) {
-        foreach ((var rid, var report) in reports) {
-            using FileStream reportFile = File.OpenWrite(Path.Combine(ReportDirectory, $"{rid:X}{CompilingConstants.ReportExtension}"));
-            reportFile.SetLength(0);
-
-            JsonSerializer.Serialize(reportFile, report);
-        }
-    }
-
-    public override DateTime? GetResourceLastBuildTime(ResourceID rid) {
-        string fileName = $"{rid:X}{CompilingConstants.CompiledResourceExtension}";
-        string path = Path.Combine(ResourceOutputDirectory, fileName);
+    public override DateTime? GetResourceLastBuildTime(ResourceAddress address) {
+        string path = GetCompiledResourcePath(address);
         
         return File.Exists(path) ? File.GetLastWriteTime(path) : null;
     }
 
-    public override void CopyCompiledResourceOutput(Stream sourceStream, ResourceID rid) {
-        string fileName = $"{rid:X}{CompilingConstants.CompiledResourceExtension}";
-        using FileStream fs = File.OpenWrite(Path.Combine(ResourceOutputDirectory, fileName));
-        
+    public override void CopyCompiledResourceOutput(Stream sourceStream, ResourceAddress address) {
+        string path = GetCompiledResourcePath(address);
+
+        // Probably no need to if-checking but ehhh whatever i call it sanity checking.
+        if (Path.GetDirectoryName(path) is { } directoryName) {
+            Directory.CreateDirectory(directoryName);
+        }
+
+        using FileStream fs = File.OpenWrite(path);
         fs.SetLength(0);
         fs.Flush();
         
         sourceStream.CopyTo(fs);
     }
 
-    public override void OutputResourceRegistry(ResourceRegistry<ResourceRegistry.Element> registry) {
-        using FileStream fs = File.OpenWrite(Path.Combine(ResourceOutputDirectory, "__registry"));
+    public override void OutputLibraryRegistry(ResourceRegistry<ResourceRegistry.Element> registry, LibraryID libraryId) {
+        using FileStream fs = File.OpenWrite(GetLibraryRegistryPath(libraryId));
         fs.SetLength(0);
         fs.Flush();
+        
+        JsonSerializer.Serialize(fs, registry);
+    }
 
-        JsonSerializer.Serialize(fs, registry.ToDictionary());
+    private string GetCompiledResourcePath(ResourceAddress address) {
+        return Path.Combine(ResourceOutputDirectory, address.LibraryId.ToString(), $"{address.ResourceId}{CompilingConstants.CompiledResourceExtension}");
+    }
+
+    private string GetLibraryRegistryPath(LibraryID libraryId) {
+        return Path.Combine(ResourceOutputDirectory, libraryId.ToString(), "__registry");
     }
 }

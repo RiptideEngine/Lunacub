@@ -14,10 +14,10 @@ public sealed class ComponentsFixture {
             .ToList();
         
         ComponentTypes = new Dictionary<Type, ImmutableArray<Type>> {
-            [typeof(Importer)] = [..types.Where(x => x.IsSubclassOf(typeof(Importer)))],
-            [typeof(Processor)] = [..types.Where(x => x.IsSubclassOf(typeof(Processor)))],
-            [typeof(SerializerFactory)] = [..types.Where(x => x.IsSubclassOf(typeof(SerializerFactory)))],
-            [typeof(Deserializer)] = [..types.Where(x => x.IsSubclassOf(typeof(Deserializer)))],
+            [typeof(Importer)] = [..types.Where(x => x.IsSubclassOf(typeof(Importer)) && !x.ContainsGenericParameters)],
+            [typeof(Processor)] = [..types.Where(x => x.IsSubclassOf(typeof(Processor)) && !x.ContainsGenericParameters)],
+            [typeof(SerializerFactory)] = [..types.Where(x => x.IsSubclassOf(typeof(SerializerFactory)) && !x.ContainsGenericParameters)],
+            [typeof(Deserializer)] = [..types.Where(x => x.IsSubclassOf(typeof(Deserializer)) && !x.ContainsGenericParameters)],
         };
     }
 

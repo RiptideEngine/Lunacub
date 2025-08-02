@@ -12,7 +12,7 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     /// <summary>
     /// Gets the dependency ids of the resource.
     /// </summary>
-    public IReadOnlySet<ResourceID> DependencyIds { get; init; }
+    public IReadOnlySet<ResourceAddress> DependencyAddresses { get; init; }
     
     /// <summary>
     /// Gets the name of <see cref="Processor"/> used to convert the <see cref="ContentRepresentation"/> after the
@@ -33,7 +33,7 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     public BuildingProceduralResource() {
         Tags = [];
         Options = null;
-        DependencyIds = FrozenSet<ResourceID>.Empty;
+        DependencyAddresses = FrozenSet<ResourceAddress>.Empty;
     }
 
     [SetsRequiredMembers]
@@ -48,7 +48,7 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
         IImportOptions? options
     ) {
         Object = obj;
-        DependencyIds = FrozenSet<ResourceID>.Empty;
+        DependencyAddresses = FrozenSet<ResourceAddress>.Empty;
         ProcessorName = processorName;
         Tags = tags;
         Options = options;
@@ -56,7 +56,7 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     
     public bool Equals(BuildingProceduralResource other) {
         return Object == other.Object &&
-               DependencyIds.SequenceEqual(other.DependencyIds) &&
+               DependencyAddresses.SequenceEqual(other.DependencyAddresses) &&
                ProcessorName == other.ProcessorName &&
                Tags.SequenceEqual(other.Tags) &&
                (Options?.Equals(other.Options) ?? other.Options == null);
@@ -69,7 +69,7 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
         HashCode hc = new();
         
         hc.Add(Object);
-        hc.Add(DependencyIds);
+        hc.Add(DependencyAddresses);
         hc.Add(ProcessorName);
         hc.Add(Options);
         

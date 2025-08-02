@@ -22,7 +22,7 @@ public class ImportOutputTests : IDisposable {
             .NotThrowAsync())
             .Which;
     
-        handle.ResourceId.Should().Be(PrebuildResourcesFixture.SimpleResourceStart);
+        handle.Address.Should().Be(PrebuildResourcesFixture.SimpleResourceStart);
         handle.Value.Should().BeOfType<SimpleResource>().Which.Value.Should().Be(1);
     }
     
@@ -33,7 +33,7 @@ public class ImportOutputTests : IDisposable {
             .NotThrowAsync())
             .Which;
     
-        handle.ResourceId.Should().Be(PrebuildResourcesFixture.ConfigurableResourceBinary);
+        handle.Address.Should().Be(PrebuildResourcesFixture.ConfigurableResourceBinary);
         handle.Value.Should().BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
     }
     
@@ -44,7 +44,7 @@ public class ImportOutputTests : IDisposable {
             .NotThrowAsync())
             .Which;
     
-        handle.ResourceId.Should().Be(PrebuildResourcesFixture.ConfigurableResourceJson);
+        handle.Address.Should().Be(PrebuildResourcesFixture.ConfigurableResourceJson);
         handle.Value.Should().BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
     }
     
@@ -55,7 +55,7 @@ public class ImportOutputTests : IDisposable {
             .NotThrowAsync())
             .Which;
         
-        handle.ResourceId.Should().Be(PrebuildResourcesFixture.ReferencingResourceReferenceUnregistered);
+        handle.Address.Should().Be(PrebuildResourcesFixture.ReferencingResourceReferenceUnregistered);
 
         var resource = handle.Value.Should().BeOfType<ReferencingResource>().Which;
         resource.Value.Should().Be(1);
@@ -69,7 +69,7 @@ public class ImportOutputTests : IDisposable {
             .NotThrowAsync())
             .Which;
         
-        handle.ResourceId.Should().Be(PrebuildResourcesFixture.ReferencingResource2ObjectsChainA);
+        handle.Address.Should().Be(PrebuildResourcesFixture.ReferencingResource2ObjectsChainA);
         var resource1 = handle.Value.Should().BeOfType<ReferencingResource>().Which;
         resource1.Value.Should().Be(1);
     
@@ -86,7 +86,7 @@ public class ImportOutputTests : IDisposable {
             .NotThrowAsync())
             .Which;
         
-        handle.ResourceId.Should().Be(PrebuildResourcesFixture.ReferencingResource4ObjectsChainA);
+        handle.Address.Should().Be(PrebuildResourcesFixture.ReferencingResource4ObjectsChainA);
         var resource1 = handle.Value.Should().BeOfType<ReferencingResource>().Which;
         resource1.Value.Should().Be(1);
         
@@ -113,7 +113,7 @@ public class ImportOutputTests : IDisposable {
             .NotThrowAsync())
             .Which;
         
-        handle.ResourceId.Should().Be(PrebuildResourcesFixture.ReferencingResourceMismatchReferenceType);
+        handle.Address.Should().Be(PrebuildResourcesFixture.ReferencingResourceMismatchReferenceType);
         var resource1 = handle.Value.Should().BeOfType<ReferencingResource>().Which;
         resource1.Value.Should().Be(1);
         resource1.Reference.Should().BeNull();

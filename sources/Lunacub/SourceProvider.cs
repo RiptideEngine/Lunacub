@@ -2,8 +2,8 @@
 
 namespace Caxivitual.Lunacub;
 
-public abstract class SourceProvider {
-    public Stream? CreateStream(string address) {
+public abstract class SourceProvider<T> {
+    public Stream? CreateStream(T address) {
         if (CreateStreamCore(address) is { } stream) {
             if (!stream.CanRead || !stream.CanSeek) {
                 string message = string.Format(ExceptionMessages.SourceStreamMustBeSeekableOrReadable, address);
@@ -21,5 +21,5 @@ public abstract class SourceProvider {
         return null;
     }
 
-    protected abstract Stream? CreateStreamCore(string address);
+    protected abstract Stream? CreateStreamCore(T address);
 }

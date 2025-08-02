@@ -17,14 +17,12 @@ public sealed class DisposableResourceImporter : Importer<DisposableResourceDTO>
     }
 }
 
-public sealed class DisposableResourceSerializerFactory : SerializerFactory {
-    public override bool CanSerialize(Type representationType) => representationType == typeof(DisposableResourceDTO);
-
-    protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
+public sealed class DisposableResourceSerializerFactory : SerializerFactory<DisposableResourceDTO> {
+    protected override Serializer<DisposableResourceDTO> CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
     }
 
-    private sealed class SerializerCore : Serializer {
+    private sealed class SerializerCore : Serializer<DisposableResourceDTO> {
         public override string DeserializerName => nameof(DisposableResourceDeserializer);
 
         public SerializerCore(ContentRepresentation contentRepresentation, SerializationContext context) : base(contentRepresentation, context) { }

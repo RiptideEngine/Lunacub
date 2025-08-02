@@ -18,14 +18,16 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         Cache = new(environment);
     }
 
-    public ImportingOperation Import(ResourceID resourceId) {
+    public ImportingOperation Import(ResourceAddress address) {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        
-        if (!_environment.Libraries.ContainsResource(resourceId, out ResourceRegistry.Element element)) {
-            string message = string.Format(ExceptionMessages.UnregisteredResourceId, resourceId);
 
-            ResourceCache.ElementContainer container = new(resourceId, string.Empty) {
-                FinalizeTask = Task.FromException<ResourceHandle>(new ArgumentException(message, nameof(resourceId))),
+        if (!TryGetImportingLibrary(address.LibraryId, out var failureContainer, out var library)) return new(failureContainer);
+        
+        if (!library.Registry.TryGetValue(address.ResourceId, out ResourceRegistry.Element element)) {
+            string message = string.Format(ExceptionMessages.ImportFromUnregisteredResourceId, address.ResourceId, address.LibraryId);
+
+            ResourceCache.ElementContainer container = new(address, string.Empty) {
+                FinalizeTask = Task.FromException<ResourceHandle>(new ArgumentException(message, nameof(address))),
                 ReferenceCount = 0,
                 Status = ImportingStatus.Failed,
             };
@@ -33,14 +35,14 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             return new(container);
         }
         
-        return new(Cache.GetOrBeginImporting(resourceId, ProcessCachedContainer, BeginImport, element));
+        return new(Cache.GetOrBeginImporting(address, ProcessCachedContainer, BeginImport, element));
         
-        ResourceCache.ElementContainer BeginImport(ResourceID resourceId, ResourceRegistry.Element element) {
-            ResourceCache.ElementContainer container = new(resourceId, element.Name);
+        ResourceCache.ElementContainer BeginImport(ResourceAddress address, ResourceRegistry.Element element) {
+            ResourceCache.ElementContainer container = new(address, element.Name);
         
             _environment.Statistics.AddReference();
         
-            Log.BeginImport(_environment.Logger, container.ResourceId);
+            Log.BeginImport(_environment.Logger, address.LibraryId, address.ResourceId);
         
             container.InitializeImport();
             container.FinalizeTask = ImportingTask(container);
@@ -49,13 +51,15 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         }
     }
 
-    public ImportingOperation Import(ReadOnlySpan<char> name) {
+    public ImportingOperation Import(LibraryID libraryId, ReadOnlySpan<char> name) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!_environment.Libraries.ContainsResource(name, out ResourceID id)) {
-            string message = string.Format(ExceptionMessages.UnregisteredResourceName, name.ToString());
+        if (!TryGetImportingLibrary(libraryId, out var failureContainer, out var library)) return new(failureContainer);
 
-            ResourceCache.ElementContainer container = new(ResourceID.Null, name.ToString()) {
+        if (!_environment.Libraries.ContainsResource(libraryId, name, out ResourceID resourceId)) {
+            string message = string.Format(ExceptionMessages.ImportFromUnregisteredResourceName, name.ToString());
+
+            ResourceCache.ElementContainer container = new(new(libraryId, default), name.ToString()) {
                 FinalizeTask = Task.FromException<ResourceHandle>(new ArgumentException(message, nameof(name))),
                 ReferenceCount = 0,
                 Status = ImportingStatus.Failed,
@@ -64,20 +68,50 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             return new(container);
         }
 
-        return new(Cache.GetOrBeginImporting(id, ProcessCachedContainer, BeginImport, name));
+        return new(Cache.GetOrBeginImporting(new(libraryId, resourceId), ProcessCachedContainer, BeginImport, name));
         
-        ResourceCache.ElementContainer BeginImport(ResourceID resourceId, ReadOnlySpan<char> name) {
-            ResourceCache.ElementContainer container = new(resourceId, name.ToString());
+        ResourceCache.ElementContainer BeginImport(ResourceAddress address, ReadOnlySpan<char> name) {
+            ResourceCache.ElementContainer container = new(address, name.ToString());
         
             _environment.Statistics.AddReference();
         
-            Log.BeginImport(_environment.Logger, container.ResourceId);
+            Log.BeginImport(_environment.Logger, address.LibraryId, address.ResourceId);
         
             container.InitializeImport();
             container.FinalizeTask = ImportingTask(container);
         
             return container;
         }
+    }
+
+    private bool TryGetImportingLibrary(LibraryID libraryId, [NotNullWhen(false)] out ResourceCache.ElementContainer? failureContainer, [NotNullWhen(true)] out ImportResourceLibrary? library) {
+        if (libraryId == LibraryID.Null) {
+            failureContainer = new(default, string.Empty) {
+                FinalizeTask =
+                    Task.FromException<ResourceHandle>(new ArgumentException(ExceptionMessages.ImportFromNullLibraryId, nameof(libraryId))),
+                ReferenceCount = 0,
+                Status = ImportingStatus.Failed,
+            };
+            library = null;
+
+            return false;
+        }
+        
+        if (!_environment.Libraries.Contains(libraryId, out library)) {
+            string message = string.Format(ExceptionMessages.ImportFromUnregisteredResourceLibrary, libraryId);
+            
+            failureContainer = new(default, string.Empty) {
+                FinalizeTask = Task.FromException<ResourceHandle>(new ArgumentException(message, nameof(libraryId))),
+                ReferenceCount = 0,
+                Status = ImportingStatus.Failed,
+            };
+            library = null;
+
+            return false;
+        }
+
+        failureContainer = null;
+        return true;
     }
     
     private async Task<ResourceHandle> ImportingTask(ResourceCache.ElementContainer container) {
@@ -86,7 +120,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         
         ResourceHandle handle;
         IReadOnlyCollection<ResourceCache.ElementContainer> waitContainers;
-        IReadOnlyCollection<ResourceID> releaseReferences;
+        IReadOnlyCollection<ResourceAddress> releaseReferences;
 
         try {
             (handle, waitContainers, releaseReferences) = await ResolveReference(container);
@@ -99,7 +133,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             Debug.Assert(container.Status == ImportingStatus.Failed);
             
             // Remove from the cache.
-            bool removedSuccessfully = Cache.Remove(container.ResourceId);
+            bool removedSuccessfully = Cache.Remove(container.Address);
             Debug.Assert(removedSuccessfully);
             
             throw;
@@ -121,7 +155,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
             _environment.Statistics.IncrementUniqueResourceCount();
 
-            Cache.RegisterResourceMap(handle.Value!, container.ResourceId);
+            Cache.RegisterResourceMap(handle.Value!, container.Address);
             container.Status = ImportingStatus.Success;
 
             foreach (var releasingId in releaseReferences) {
@@ -133,11 +167,11 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             Debug.Assert(e is not OperationCanceledException, "Should not happen.");
             Debug.Assert(container.Status == ImportingStatus.Failed);
 
-            Log.FinalizeTaskExceptionOccured(_environment.Logger, container.ResourceId);
+            Log.FinalizeTaskExceptionOccured(_environment.Logger, container.Address.LibraryId, container.Address.ResourceId);
 
             DisposeResource(handle.Value!);
 
-            bool removedSuccessfully = Cache.Remove(container.ResourceId);
+            bool removedSuccessfully = Cache.Remove(container.Address);
             Debug.Assert(removedSuccessfully);
 
             throw;
@@ -162,7 +196,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
             throw;
         } catch (Exception e) when (e is not OperationCanceledException) {
-            Log.ResolveReferenceExceptionOccured(_environment.Logger, container.ResourceId);
+            Log.ResolveReferenceExceptionOccured(_environment.Logger, container.Address.LibraryId, container.Address.ResourceId);
             
             Debug.Assert(container.Status == ImportingStatus.Failed);
             Debug.Assert(container.ReferenceCount == 0);
@@ -171,27 +205,27 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         }
 
         try {
-            ResourceHandle handle = new(container.ResourceId, resource);
+            ResourceHandle handle = new(container.Address, resource);
             
             if (context.RequestingReferences.Count == 0) {
-                return new(handle, ReadOnlyCollection<ResourceCache.ElementContainer>.Empty, ReadOnlyCollection<ResourceID>.Empty);
+                return new(handle, ReadOnlyCollection<ResourceCache.ElementContainer>.Empty, ReadOnlyCollection<ResourceAddress>.Empty);
             }
             
             container.CancellationToken.ThrowIfCancellationRequested();
 
-            Log.BeginResolvingReference(_environment.Logger, container.ResourceId);
+            Log.BeginResolvingReference(_environment.Logger, container.Address.LibraryId, container.Address.ResourceId);
 
             IReadOnlyCollection<ResourceCache.ElementContainer> waitContainers = 
                 await ProcessReferences(container, context, resource, deserializer);
 
-            Log.EndResolvingReference(_environment.Logger, container.ResourceId);
+            Log.EndResolvingReference(_environment.Logger, container.Address.LibraryId, container.Address.ResourceId);
 
-            List<ResourceID> releaseReferences = [];
+            List<ResourceAddress> releaseReferences = [];
             foreach (var releasingReference in context.RequestingReferences.ReleasedReferences) {
                 bool getSuccessfully = context.RequestingReferences.References!.TryGetValue(releasingReference, out var referenceHandle);
                 Debug.Assert(getSuccessfully);
                 
-                releaseReferences.Add(referenceHandle.ResourceId);
+                releaseReferences.Add(referenceHandle.Address);
             }
             
             return new(handle, waitContainers, releaseReferences);
@@ -207,8 +241,8 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         await Task.Yield();
 
         try {
-            if (_environment.Libraries.CreateResourceStream(container.ResourceId) is not { } stream) {
-                string message = string.Format(ExceptionMessages.NullResourceStream, container.ResourceId);
+            if (_environment.Libraries.CreateResourceStream(container.Address) is not { } stream) {
+                string message = string.Format(ExceptionMessages.NullResourceStream, container.Address);
                 throw new InvalidOperationException(message);
             }
 
@@ -234,7 +268,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
                     throw new ArgumentException(message);
             }
         } catch (OperationCanceledException) {
-            Log.CancelImport(_environment.Logger, container.ResourceId);
+            Log.CancelImport(_environment.Logger, container.Address.LibraryId, container.Address.ResourceId);
 
             using (container.EnterLockScope()) {
                 ReleaseContainerReferenceCounter(container);
@@ -243,7 +277,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
             throw;
         } catch (Exception e) {
-            Log.ReportImportException(_environment.Logger, container.ResourceId, e);
+            Log.ReportImportException(_environment.Logger, container.Address.LibraryId, container.Address.ResourceId, e);
             
             ReleaseContainerReferenceCounter(container);
 
@@ -261,7 +295,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         
         var collectedResult = await CollectReferences(container, resource, context.RequestingReferences.Requesting);
         
-        container.ReferenceResourceIds = collectedResult.References.Select(x => x.Value.Container.ResourceId).ToFrozenSet();
+        container.ReferenceResourceAddresses = collectedResult.References.Select(x => x.Value.Container.Address).ToFrozenSet();
 
         // Resolving references.
         try {
@@ -283,25 +317,25 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         List<ResourceCache.ElementContainer> waitContainers = [];
         
         foreach ((var referencePropertyKey, var requesting) in requestReferences) {
-            requesting.Deconstruct(out ResourceID requestingId);
+            requesting.Deconstruct(out ResourceAddress requestingAddress);
 
-            if (requestingId == currentContainer.ResourceId) {
+            if (requestingAddress == currentContainer.Address) {
                 currentContainer.IncrementReference();
                 _environment.Statistics.AddReference();
                 
-                references.Add(referencePropertyKey, new(new(requesting.ResourceId, currentResource), currentContainer));
+                references.Add(referencePropertyKey, new(new(requesting.ResourceAddress, currentResource), currentContainer));
                 continue;
             }
             
-            if (!_environment.Libraries.ContainsResource(requesting.ResourceId, out ResourceRegistry.Element element)) continue;
+            if (!_environment.Libraries.ContainsResource(requesting.ResourceAddress, out ResourceRegistry.Element element)) continue;
             
             ResourceCache.ElementContainer referenceContainer =
-                Cache.GetOrBeginImporting(requesting.ResourceId, ProcessCachedContainer, BeginReferenceImport, element.Name);
+                Cache.GetOrBeginImporting(requesting.ResourceAddress, ProcessCachedContainer, BeginReferenceImport, element.Name);
             
             try {
                 (_, object vessel, _) = await referenceContainer.ImportTask!;
     
-                references.Add(referencePropertyKey, new(new(requesting.ResourceId, vessel), referenceContainer));
+                references.Add(referencePropertyKey, new(new(requesting.ResourceAddress, vessel), referenceContainer));
             } catch {
                 Debug.Assert(referenceContainer.Status == ImportingStatus.Failed);
                 Debug.Assert(referenceContainer.ReferenceCount == 0);
@@ -310,12 +344,12 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         
         return new(references, waitContainers);
         
-        ResourceCache.ElementContainer BeginReferenceImport(ResourceID resourceId, string resourceName) {
-            Debug.Assert(_environment.Libraries.ContainsResource(resourceId));
+        ResourceCache.ElementContainer BeginReferenceImport(ResourceAddress resourceAddress, string resourceName) {
+            Debug.Assert(_environment.Libraries.ContainsResource(resourceAddress));
             
-            Log.BeginImport(_environment.Logger, resourceId);
+            Log.BeginImport(_environment.Logger, resourceAddress.LibraryId, resourceAddress.ResourceId);
             
-            ResourceCache.ElementContainer container = new(resourceId, resourceName);
+            ResourceCache.ElementContainer container = new(resourceAddress, resourceName);
             _environment.Statistics.AddReference();
             
             container.InitializeImport();
@@ -344,7 +378,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
                     _environment.Statistics.AddReference();
 
-                    Log.BeginImport(_environment.Logger, container.ResourceId);
+                    Log.BeginImport(_environment.Logger, container.Address.LibraryId, container.Address.ResourceId);
 
                     container.InitializeImport();
                     container.FinalizeTask = ImportingTask(container);
@@ -395,7 +429,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
     public readonly record struct ReferenceResolveResult(
         ResourceHandle Handle, 
         IReadOnlyCollection<ResourceCache.ElementContainer> WaitContainers,
-        IReadOnlyCollection<ResourceID> ReleaseReferences
+        IReadOnlyCollection<ResourceAddress> ReleaseReferences
     );
 
     private readonly record struct ReferenceImportResult(
@@ -416,9 +450,9 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             
             Debug.Assert(x != null && y != null);
             
-            return x.ResourceId.Equals(y.ResourceId);
+            return x.Address.Equals(y.Address);
         }
         
-        public override int GetHashCode(ResourceCache.ElementContainer container) => container.ResourceId.GetHashCode();
+        public override int GetHashCode(ResourceCache.ElementContainer container) => container.Address.GetHashCode();
     }
 }

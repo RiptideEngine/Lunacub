@@ -1,11 +1,11 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
-public sealed class ImportResourceLibrary {
-    private ImportSourceProvider _provider;
+public sealed class ImportResourceLibrary : ResourceLibrary {
+    private readonly ImportSourceProvider _provider;
     
     public ResourceRegistry<ResourceRegistry.Element> Registry { get; }
     
-    public ImportResourceLibrary(ImportSourceProvider sourceProvider) {
+    public ImportResourceLibrary(LibraryID id, ImportSourceProvider sourceProvider) : base(id) {
         ArgumentNullException.ThrowIfNull(sourceProvider, nameof(sourceProvider));
         
         _provider = sourceProvider;
@@ -13,8 +13,8 @@ public sealed class ImportResourceLibrary {
     }
 
     public Stream? CreateResourceStream(ResourceID resourceId) {
-        if (resourceId == ResourceID.Null || !Registry.ContainsKey(resourceId)) return null;
+        if (!Registry.ContainsKey(resourceId)) return null;
         
-        return _provider.CreateStream(resourceId);
+        return _provider.CreateStream(new(Id, resourceId));
     }
 }

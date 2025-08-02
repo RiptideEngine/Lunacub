@@ -54,4 +54,7 @@
     <data name="SourceStreamMustNotBeWritable" xml:space="preserve">
         <value>Source Stream at address '{0}' must not be writable.</value>
     </data>
+    <data name="LibraryIDMustBeNotNull" xml:space="preserve">
+        <value>Creating resource library with id of 0 is invalid.</value>
+    </data>
 </root>

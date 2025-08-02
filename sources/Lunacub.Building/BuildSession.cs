@@ -1,31 +1,31 @@
 ﻿// ReSharper disable VariableHidesOuterVariable
 
-using Caxivitual.Lunacub.Building.Exceptions;
-using Caxivitual.Lunacub.Exceptions;
+using Caxivitual.Lunacub.Building.Collections;
 
 namespace Caxivitual.Lunacub.Building;
 
 internal sealed partial class BuildSession {
     private readonly BuildEnvironment _environment;
 
-    public Dictionary<ResourceID, ResourceBuildingResult> Results { get; }
-    private readonly ResourceRegistry<ResourceRegistry.Element> _outputRegistry;
+    public EnvironmentLibraryDictionary<ResourceResultDictionary> Results { get; }
     
-    private readonly Dictionary<ResourceID, EnvironmentResourceVertex> _graph;
-    private readonly Dictionary<ResourceID, BuildingProceduralResource> _proceduralResources;
+    private readonly Dictionary<LibraryID, ResourceRegistry<ResourceRegistry.Element>> _outputRegistries;
+    
+    private readonly Dictionary<ResourceAddress, EnvironmentResourceVertex> _graph;
+    private readonly Dictionary<ResourceAddress, BuildingProceduralResource> _proceduralResources;
     
     public BuildSession(BuildEnvironment environment) {
         _environment = environment;
         _graph = new(_environment.Libraries.Sum(x => x.Registry.Count));
         Results = new();
-        _outputRegistry = [];
+        _outputRegistries = [];
 
         _proceduralResources = [];
     }
 
     public void Build() {
         Results.Clear();
-        _outputRegistry.Clear();
+        _outputRegistries.Clear();
         
         BuildEnvironmentResources();
         
@@ -41,23 +41,77 @@ internal sealed partial class BuildSession {
             "Resource leaked after building procedural resources."
         );
 
-        _environment.Output.OutputResourceRegistry(_outputRegistry);
+        foreach ((LibraryID libraryId, ResourceRegistry<ResourceRegistry.Element> registry) in _outputRegistries) {
+            _environment.Output.OutputLibraryRegistry(registry, libraryId);
+        }
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_disposed")]
     private static extern ref bool IsDisposed(ContentRepresentation contentRepresentation);
 
-    private void ReleaseDependencies(IReadOnlyCollection<ResourceID> dependencyIds) {
-        foreach (var dependencyId in dependencyIds) {
-            if (!_graph.TryGetValue(dependencyId, out EnvironmentResourceVertex? resourceVertex)) continue;
+    private void ReleaseDependencies(IReadOnlyCollection<ResourceAddress> dependencyAddresses) {
+        foreach (var dependencyAddress in dependencyAddresses) {
+            if (!_graph.TryGetValue(dependencyAddress, out EnvironmentResourceVertex? resourceVertex)) continue;
             
             resourceVertex.Release();
         }
     }
 
+    private void AddOutputResourceRegistry(ResourceAddress address, ResourceRegistry.Element element) {
+        ref var registry = ref CollectionsMarshal.GetValueRefOrAddDefault(_outputRegistries, address.LibraryId, out bool exists);
+
+        if (!exists) {
+            registry = [];
+        }
+        
+        registry!.Add(address.ResourceId, element);
+    }
+
+    private void SetResult(ResourceAddress address, ResourceBuildingResult result) {
+        if (Results.TryGetValue(address.LibraryId, out var resourceResults)) {
+            resourceResults[address.ResourceId] = result;
+        } else {
+            resourceResults = new() {
+                [address.ResourceId] = result,
+            };
+
+            Results.Add(address.LibraryId, resourceResults);
+        }
+    }
+    
+    private bool TryGetResult(LibraryID libraryId, ResourceID resourceId, out ResourceBuildingResult result) {
+        if (!Results.TryGetValue(libraryId, out var libraryResults)) {
+            result = default;
+            return false;
+        }
+        
+        return libraryResults.TryGetValue(resourceId, out result);
+    }
+
+    private bool TryGetResult(ResourceAddress address, out ResourceBuildingResult result) {
+        if (!Results.TryGetValue(address.LibraryId, out var libraryResults)) {
+            result = default;
+            return false;
+        }
+        
+        return libraryResults.TryGetValue(address.ResourceId, out result);
+    }
+    
+    private void SetResult(LibraryID libraryId, ResourceID resourceId, ResourceBuildingResult result) {
+        if (Results.TryGetValue(libraryId, out var resourceResults)) {
+            resourceResults[resourceId] = result;
+        } else {
+            resourceResults = new() {
+                [resourceId] = result,
+            };
+
+            Results.Add(libraryId, resourceResults);
+        }
+    }
+
     private void SerializeProcessedObject(
         ContentRepresentation processed,
-        ResourceID rid,
+        ResourceAddress address,
         IImportOptions? options,
         IReadOnlyCollection<string> tags
     ) {
@@ -67,32 +121,34 @@ internal sealed partial class BuildSession {
             throw new InvalidOperationException(string.Format(ExceptionMessages.NoSuitableSerializerFactory, processed.GetType()));
         }
 
-        using MemoryStream ms = new(4096);
+        using MemoryStream ms = _environment.MemoryStreamManager.GetStream($"BuildSession L{address.LibraryId}-R{address.ResourceId}");
 
         var serializer = factory.InternalCreateSerializer(processed, new(options, _environment.Logger));
         
         CompileHelpers.Compile(serializer, ms, tags);
         ms.Position = 0;
-        _environment.Output.CopyCompiledResourceOutput(ms, rid);
+        _environment.Output.CopyCompiledResourceOutput(ms, address);
     }
 
     private void AppendProceduralResources(
-        ResourceID rid,
+        ResourceAddress address,
         IReadOnlyDictionary<ProceduralResourceID, BuildingProceduralResource> proceduralResources,
-        Dictionary<ResourceID, BuildingProceduralResource> receiver
+        Dictionary<ResourceAddress, BuildingProceduralResource> receiver
     ) {
         foreach ((var proceduralId, var proceduralResource) in proceduralResources) {
-            ResourceID hashedId = rid.Combine(proceduralId);
-
+            ResourceID hashedId = address.ResourceId.Combine(proceduralId);
+    
             Debug.Assert(!_environment.Libraries.ContainsResource(hashedId), "ResourceID collided.");
-            receiver.Add(hashedId, proceduralResource);
+            receiver.Add(address with {
+                ResourceId = hashedId,
+            }, proceduralResource);
         }
     }
     
     /// <summary>
     /// Determines whether a resource should be rebuilt based on timeline, configurations, dependencies from previous build informations.
     /// </summary>
-    /// <param name="rid">Resource to determines whether rebuilding needed.</param>
+    /// <param name="address">Resource to determines whether rebuilding needed.</param>
     /// <param name="sourceLastWriteTimes">The last write times of resource's sources.</param>
     /// <param name="currentOptions">Building options of the resource.</param>
     /// <param name="currentDependencies">Dependencies of the resource.</param>
@@ -103,19 +159,24 @@ internal sealed partial class BuildSession {
     /// <returns><see langword="true"/> if the resource should be rebuilt; otherwise, <see langword="false"/>.</returns>
     /// <remarks>The function does not account for the version of building components.</remarks>
     private bool IsResourceCacheable(
-        ResourceID rid,
+        ResourceAddress address,
         SourceLastWriteTimes sourceLastWriteTimes,
         BuildingOptions currentOptions,
-        IReadOnlySet<ResourceID> currentDependencies,
+        IReadOnlySet<ResourceAddress> currentDependencies,
         out IncrementalInfo previousIncrementalInfo
     ) {
+        if (!_environment.IncrementalInfos.TryGetValue(address.LibraryId, out var libraryIncrementalInfos)) {
+            previousIncrementalInfo = default;
+            return false;
+        }
+        
         // If resource has been built before, and have old report, we can begin checking for caching.
-        if (_environment.Output.GetResourceLastBuildTime(rid) is { } resourceLastBuildTime &&
-            _environment.IncrementalInfos.TryGet(rid, out previousIncrementalInfo)) {
+        if (_environment.Output.GetResourceLastBuildTime(address) is { } resourceLastBuildTime &&
+            libraryIncrementalInfos.TryGetValue(address.ResourceId, out previousIncrementalInfo)) {
             if (CompareLastWriteTimes(previousIncrementalInfo.SourcesLastWriteTime, sourceLastWriteTimes)) {
                 // If the options are equal, no need to rebuild.
                 if (currentOptions.Equals(previousIncrementalInfo.Options)) {
-                    if (previousIncrementalInfo.Dependencies.SequenceEqual(currentDependencies)) {
+                    if (previousIncrementalInfo.DependencyAddresses.SequenceEqual(currentDependencies)) {
                         return true;
                     }
                 }
@@ -151,7 +212,7 @@ internal sealed partial class BuildSession {
         /// Gets the Id of the dependency resources, the collection is unsanitied, thus it can reference unregistered resource
         /// id, or self-referencing.
         /// </summary>
-        public IReadOnlySet<ResourceID> DependencyIds;
+        public IReadOnlySet<ResourceAddress> DependencyResourceAddresses;
         public readonly ResourceRegistry.Element<BuildingResource> RegistryElement;
         
         public ContentRepresentation? ImportOutput { get; private set; }
@@ -160,11 +221,11 @@ internal sealed partial class BuildSession {
 
         public EnvironmentResourceVertex(
             BuildResourceLibrary library,
-            IReadOnlySet<ResourceID> dependencies,
+            IReadOnlySet<ResourceAddress> dependencyResourceAddresses,
             ResourceRegistry.Element<BuildingResource> registryElement
         ) {
             Library = library;
-            DependencyIds = dependencies;
+            DependencyResourceAddresses = dependencyResourceAddresses;
             RegistryElement = registryElement;
         }
 

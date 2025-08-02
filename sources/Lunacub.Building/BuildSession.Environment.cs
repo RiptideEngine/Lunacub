@@ -13,55 +13,55 @@ partial class BuildSession {
                 BuildingResource resource = element.Option;
                 
                 if (!_environment.Importers.TryGetValue(resource.Options.ImporterName, out var importer)) {
-                    Results.Add(resourceId, new(BuildStatus.UnknownImporter));
+                    SetResult(library.Id, resourceId, new(BuildStatus.UnknownImporter));
                     continue;
                 }
 
                 try {
                     importer.ValidateResource(resource);
                 } catch (Exception e) {
-                    Results.Add(resourceId, new(BuildStatus.InvalidBuildingResource, ExceptionDispatchInfo.Capture(e)));
+                    SetResult(library.Id, resourceId, new(BuildStatus.InvalidBuildingResource, ExceptionDispatchInfo.Capture(e)));
                     continue;
                 }
 
-                IReadOnlySet<ResourceID> dependencyIds;
+                IReadOnlySet<ResourceAddress> dependencyAddresses;
                 
                 if (importer.Flags.HasFlag(ImporterFlags.NoDependency)) {
-                    dependencyIds = FrozenSet<ResourceID>.Empty;
+                    dependencyAddresses = FrozenSet<ResourceAddress>.Empty;
                 } else {
                     using SourceStreams streams = library.CreateSourceStreams(resourceId);
                     
                     if (streams.PrimaryStream == null) {
-                        Results.Add(resourceId, new(BuildStatus.NullPrimaryResourceStream));
+                        SetResult(library.Id, resourceId, new(BuildStatus.NullPrimaryResourceStream));
                         continue;
                     }
 
                     foreach ((_, var secondaryStream) in streams.SecondaryStreams) {
                         if (secondaryStream == null) {
-                            Results.Add(resourceId, new(BuildStatus.NullSecondaryResourceStream));
+                            SetResult(library.Id, resourceId, new(BuildStatus.NullSecondaryResourceStream));
                             break;
                         }
                     }
 
-                    if (Results.ContainsKey(resourceId)) continue;
-
+                    if (TryGetResult(library.Id, resourceId, out _)) continue;
+                    
                     try {
-                        IReadOnlyCollection<ResourceID> extractedDependencies = importer.ExtractDependencies(streams);
+                        IReadOnlyCollection<ResourceAddress> extractedDependencies = importer.ExtractDependencies(streams);
 
-                        if (extractedDependencies is IReadOnlySet<ResourceID> dependencySet && !dependencySet.Contains(resourceId)) {
-                            dependencyIds = dependencySet;
+                        if (extractedDependencies is IReadOnlySet<ResourceAddress> dependencySet && !dependencySet.Contains(new(library.Id, resourceId))) {
+                            dependencyAddresses = dependencySet;
                         } else {
-                            HashSet<ResourceID> createdSet = new(extractedDependencies);
-                            createdSet.Remove(resourceId);
-                            dependencyIds = createdSet;
+                            HashSet<ResourceAddress> createdSet = new(extractedDependencies);
+                            createdSet.Remove(new(library.Id, resourceId));
+                            dependencyAddresses = createdSet;
                         }
                     } catch (Exception e) {
-                        Results.Add(resourceId, new(BuildStatus.ExtractDependenciesFailed, ExceptionDispatchInfo.Capture(e)));
+                        SetResult(library.Id, resourceId, new(BuildStatus.ExtractDependenciesFailed, ExceptionDispatchInfo.Capture(e)));
                         continue;
                     }
                 }
 
-                _graph.Add(resourceId, new(library, dependencyIds, element));
+                _graph.Add(new(library.Id, resourceId), new(library, dependencyAddresses, element));
             }
         }
 
@@ -70,8 +70,8 @@ partial class BuildSession {
         
         // Assigning reference count for dependencies.
         foreach ((_, var vertex) in _graph) {
-            foreach (var dependencyId in vertex.DependencyIds) {
-                if (!_graph.TryGetValue(dependencyId, out EnvironmentResourceVertex? dependencyVertex)) continue;
+            foreach (var dependencyAddress in vertex.DependencyResourceAddresses) {
+                if (!_graph.TryGetValue(dependencyAddress, out EnvironmentResourceVertex? dependencyVertex)) continue;
                 
                 dependencyVertex.ReferenceCount++;
             }
@@ -80,8 +80,8 @@ partial class BuildSession {
         }
 
         // Handle the building procedure.
-        foreach ((var rid, var vertex) in _graph) {
-            BuildEnvironmentResource(rid, vertex, out _);
+        foreach ((var resourceAddress, var vertex) in _graph) {
+            BuildEnvironmentResource(resourceAddress, vertex, out _);
         }
         
         Debug.Assert(_graph.Values.All(x => x.ReferenceCount == 0));
@@ -89,44 +89,49 @@ partial class BuildSession {
         void ValidateGraph() {
             if (_graph.Count == 0) return;
         
-            HashSet<ResourceID> temporaryMarks = [], permanentMarks = [];
-            Stack<ResourceID> path = [];
+            HashSet<ResourceAddress> temporaryMarks = [], permanentMarks = [];
+            Stack<ResourceAddress> path = [];
             
-            foreach ((var rid, _) in _graph) {
-                Visit(rid, temporaryMarks, permanentMarks, path);
+            foreach ((var resourceAddress, _) in _graph) {
+                Visit(resourceAddress, temporaryMarks, permanentMarks, path);
             }
 
-            void Visit(ResourceID rid, HashSet<ResourceID> temporaryMarks, HashSet<ResourceID> permanentMarks, Stack<ResourceID> path) {
-                if (!_graph.ContainsKey(rid)) return;
-                if (permanentMarks.Contains(rid)) return;
+            void Visit(
+                ResourceAddress resourceAddress,
+                HashSet<ResourceAddress> temporaryMarks,
+                HashSet<ResourceAddress> permanentMarks,
+                Stack<ResourceAddress> path
+            ) {
+                if (!_graph.ContainsKey(resourceAddress)) return;
+                if (permanentMarks.Contains(resourceAddress)) return;
                 
-                path.Push(rid);
+                path.Push(resourceAddress);
                 
-                if (!temporaryMarks.Add(rid)) {
+                if (!temporaryMarks.Add(resourceAddress)) {
                     throw new InvalidOperationException($"Circular dependency detected: {string.Join(" -> ", path.Reverse())}.");
                 }
                 
-                foreach (var dependencyID in _graph[rid].DependencyIds) {
+                foreach (var dependencyID in _graph[resourceAddress].DependencyResourceAddresses) {
                     Visit(dependencyID, temporaryMarks, permanentMarks, path);
                 }
                 
-                permanentMarks.Add(rid);
+                permanentMarks.Add(resourceAddress);
                 path.Pop();
             }
         }
     }
     
     private void BuildEnvironmentResource(
-        ResourceID rid,
+        ResourceAddress address,
         EnvironmentResourceVertex resourceVertex,
         out ResourceBuildingResult outputResult
     ) {
-        Debug.Assert(rid != ResourceID.Null);
+        if (TryGetResult(address, out outputResult)) return;
         
-        if (Results.TryGetValue(rid, out outputResult)) return;
+        Debug.Assert(resourceVertex.Library.Id == address.LibraryId);
         
         bool dependencyRebuilt = false;
-        foreach (var dependencyId in resourceVertex.DependencyIds) {
+        foreach (var dependencyId in resourceVertex.DependencyResourceAddresses) {
             if (!_graph.TryGetValue(dependencyId, out var dependencyVertexInfo)) continue;
             
             BuildEnvironmentResource(dependencyId, dependencyVertexInfo, out ResourceBuildingResult dependencyResult);
@@ -146,25 +151,24 @@ partial class BuildSession {
             Processor? processor = null;
 
             if (!string.IsNullOrEmpty(processorName) && !_environment.Processors.TryGetValue(processorName, out processor)) {
-                Results.Add(rid, outputResult = new(BuildStatus.UnknownProcessor));
+                SetResult(address, outputResult = new(BuildStatus.UnknownProcessor));
                 return;
             }
 
-            // DateTime resourceLastWriteTime = resourceVertex.Library.GetResourceLastWriteTime(rid);
             SourceLastWriteTimes lastWriteTimes;
 
             try {
-                lastWriteTimes = resourceVertex.Library.GetSourceLastWriteTimes(rid);
+                lastWriteTimes = resourceVertex.Library.GetSourceLastWriteTimes(address.ResourceId);
             } catch (Exception e) {
-                Results.Add(rid, outputResult = new(BuildStatus.GetSourceLastWriteTimesFailed, ExceptionDispatchInfo.Capture(e)));
+                SetResult(address, outputResult = new(BuildStatus.GetSourceLastWriteTimesFailed, ExceptionDispatchInfo.Capture(e)));
                 return;
             }
             
             if (!dependencyRebuilt) {
-                if (IsResourceCacheable(rid, lastWriteTimes, options, resourceVertex.DependencyIds, out var previousIncrementalInfo)) {
+                if (IsResourceCacheable(address, lastWriteTimes, options, resourceVertex.DependencyResourceAddresses, out var previousIncrementalInfo)) {
                     if (new ComponentVersions(importer.Version, processor?.Version) == previousIncrementalInfo.ComponentVersions) {
-                        Results.Add(rid, outputResult = new(BuildStatus.Cached));
-                        _outputRegistry.Add(rid, new(registryElement.Name, registryElement.Tags));
+                        SetResult(address, outputResult = new(BuildStatus.Cached));
+                        AddOutputResourceRegistry(address, new(registryElement.Name, registryElement.Tags));
                         return;
                     }
                 }
@@ -172,52 +176,52 @@ partial class BuildSession {
             
             // Import if haven't.
             if (resourceVertex.ImportOutput == null) {
-                if (!Import(rid, resourceVertex.Library, importer, options.Options, out var importOutput, out outputResult)) {
+                if (!Import(address, resourceVertex.Library, importer, options.Options, out var importOutput, out outputResult)) {
                     return;
                 }
                 
                 resourceVertex.SetImportResult(importOutput);
             }
 
-            IReadOnlySet<ResourceID> dependencyIds;
+            IReadOnlySet<ResourceAddress> dependencyIds;
             
             if (processor == null) {
                 try {
-                    SerializeProcessedObject(resourceVertex.ImportOutput, rid, options.Options, registryElement.Tags);
+                    SerializeProcessedObject(resourceVertex.ImportOutput, address, options.Options, registryElement.Tags);
                 } catch (Exception e) {
-                    Results.Add(rid, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
+                    SetResult(address, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
                     return;
                 }
                 
-                dependencyIds = FrozenSet<ResourceID>.Empty;
+                dependencyIds = FrozenSet<ResourceAddress>.Empty;
             } else {
                 if (!processor.CanProcess(resourceVertex.ImportOutput)) {
-                    Results.Add(rid, outputResult = new(BuildStatus.Unprocessable));
+                    SetResult(address, outputResult = new(BuildStatus.Unprocessable));
                     return;
                 }
 
                 CollectDependencies(
-                    resourceVertex.DependencyIds,
-                    out IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies,
-                    out IReadOnlySet<ResourceID> validDependencyIds
+                    resourceVertex.DependencyResourceAddresses,
+                    out IReadOnlyDictionary<ResourceAddress, ContentRepresentation> dependencies,
+                    out IReadOnlySet<ResourceAddress> validDependencyIds
                 );
-                resourceVertex.DependencyIds = validDependencyIds;
+                resourceVertex.DependencyResourceAddresses = validDependencyIds;
 
                 ContentRepresentation processed;
                 ProcessingContext processingContext;
                 
                 try {
-                    processingContext = new(_environment, rid, options.Options, dependencies, _environment.Logger);
+                    processingContext = new(_environment, address, options.Options, dependencies, _environment.Logger);
                     processed = processor.Process(resourceVertex.ImportOutput, processingContext);
                 } catch (Exception e) {
-                    Results.Add(rid, outputResult = new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
+                    SetResult(address, outputResult = new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
                     return;
                 }
 
                 try {
-                    SerializeProcessedObject(processed, rid, options.Options, registryElement.Tags);
+                    SerializeProcessedObject(processed, address, options.Options, registryElement.Tags);
                 } catch (Exception e) {
-                    Results.Add(rid, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
+                    SetResult(address, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
                     return;
                 } finally {
                     if (!ReferenceEquals(resourceVertex.ImportOutput, processed)) {
@@ -225,49 +229,49 @@ partial class BuildSession {
                     }
                 }
                 
-                AppendProceduralResources(rid, processingContext.ProceduralResources, _proceduralResources);
+                AppendProceduralResources(address, processingContext.ProceduralResources, _proceduralResources);
                 dependencyIds = validDependencyIds;
             }
 
-            Results.Add(rid, outputResult = new(BuildStatus.Success));
-            _environment.IncrementalInfos.Add(rid, new(lastWriteTimes, options, dependencyIds, new(importer.Version, processor?.Version)));
-            _outputRegistry.Add(rid, new(registryElement.Name, registryElement.Tags));
+            SetResult(address, outputResult = new(BuildStatus.Success));
+            _environment.IncrementalInfos.SetIncrementalInfo(address, new(lastWriteTimes, options, dependencyIds, new(importer.Version, processor?.Version)));
+            AddOutputResourceRegistry(address, new(registryElement.Name, registryElement.Tags));
         } finally {
-            ReleaseDependencies(resourceVertex.DependencyIds);
+            ReleaseDependencies(resourceVertex.DependencyResourceAddresses);
             resourceVertex.Release();
         }
 
         return;
 
         void CollectDependencies(
-            IReadOnlyCollection<ResourceID> dependencyIds,
-            out IReadOnlyDictionary<ResourceID, ContentRepresentation> collectedDependencies,
-            out IReadOnlySet<ResourceID> validDependencies
+            IReadOnlyCollection<ResourceAddress> dependencyAddresses,
+            out IReadOnlyDictionary<ResourceAddress, ContentRepresentation> collectedDependencies,
+            out IReadOnlySet<ResourceAddress> validDependencies
         ) {
-            if (dependencyIds.Count == 0) {
-                collectedDependencies = FrozenDictionary<ResourceID, ContentRepresentation>.Empty;
-                validDependencies = FrozenSet<ResourceID>.Empty;
+            if (dependencyAddresses.Count == 0) {
+                collectedDependencies = FrozenDictionary<ResourceAddress, ContentRepresentation>.Empty;
+                validDependencies = FrozenSet<ResourceAddress>.Empty;
                 return;
             }
         
-            Dictionary<ResourceID, ContentRepresentation> dependencyCollection = [];
-            HashSet<ResourceID> validDependencyIds = [];
+            Dictionary<ResourceAddress, ContentRepresentation> dependencyCollection = [];
+            HashSet<ResourceAddress> validDependencyIds = [];
 
-            foreach (var dependencyId in dependencyIds) {
-                if (!_graph.TryGetValue(dependencyId, out EnvironmentResourceVertex? dependencyVertex)) continue;
+            foreach (var dependencyAddress in dependencyAddresses) {
+                if (!_graph.TryGetValue(dependencyAddress, out EnvironmentResourceVertex? dependencyVertex)) continue;
 
                 if (dependencyVertex.ImportOutput is { } dependencyImportOutput) {
-                    dependencyCollection.Add(dependencyId, dependencyImportOutput);
-                    validDependencyIds.Add(dependencyId);
+                    dependencyCollection.Add(dependencyAddress, dependencyImportOutput);
+                    validDependencyIds.Add(dependencyAddress);
                 } else {
-                    if (Results.TryGetValue(dependencyId, out var result)) {
+                    if (TryGetResult(dependencyAddress, out var result)) {
                         // Traversed through this resource vertex before.
                         switch (result.Status) {
                             case BuildStatus.Success:
                                 Debug.Assert(dependencyVertex.ImportOutput != null);
                             
-                                dependencyCollection[dependencyId] = dependencyVertex.ImportOutput;
-                                validDependencyIds.Add(dependencyId);
+                                dependencyCollection[dependencyAddress] = dependencyVertex.ImportOutput;
+                                validDependencyIds.Add(dependencyAddress);
                                 continue;
                         
                             case BuildStatus.Cached:
@@ -281,10 +285,10 @@ partial class BuildSession {
                         BuildingOptions options = dependencyVertex.RegistryElement.Option.Options;
 
                         Importer importer = _environment.Importers[options.ImporterName];
-                        if (Import(dependencyId, dependencyVertex.Library, importer, options.Options, out var imported, out _)) {
+                        if (Import(dependencyAddress, dependencyVertex.Library, importer, options.Options, out var imported, out _)) {
                             dependencyVertex.SetImportResult(imported);
-                            dependencyCollection.Add(dependencyId, imported);
-                            validDependencyIds.Add(dependencyId);
+                            dependencyCollection.Add(dependencyAddress, imported);
+                            validDependencyIds.Add(dependencyAddress);
                         }
                     }
                 }
@@ -296,7 +300,7 @@ partial class BuildSession {
     }
     
     private bool Import(
-        ResourceID rid,
+        ResourceAddress address,
         BuildResourceLibrary library,
         Importer importer,
         IImportOptions? options,
@@ -306,18 +310,16 @@ partial class BuildSession {
         SourceStreams streams;
 
         try {
-            streams = library.CreateSourceStreams(rid);
+            streams = library.CreateSourceStreams(address.ResourceId);
         } catch (InvalidResourceStreamException e) {
-            Results.Add(rid, failureResult = new(BuildStatus.InvalidResourceStream, ExceptionDispatchInfo.Capture(e)));
-
+            SetResult(address, failureResult = new(BuildStatus.InvalidResourceStream, ExceptionDispatchInfo.Capture(e)));
             imported = null;
             return false;
         }
 
         try {
             if (streams.PrimaryStream is null) {
-                Results.Add(rid, failureResult = new(BuildStatus.NullPrimaryResourceStream));
-
+                SetResult(address, failureResult = new(BuildStatus.NullPrimaryResourceStream));
                 imported = null;
                 return false;
             }
@@ -329,8 +331,7 @@ partial class BuildSession {
                 failureResult = default;
                 return true;
             } catch (Exception e) {
-                Results.Add(rid, failureResult = new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
-        
+                SetResult(address, failureResult = new(BuildStatus.ImportingFailed, ExceptionDispatchInfo.Capture(e)));
                 imported = null;
                 return false;
             }

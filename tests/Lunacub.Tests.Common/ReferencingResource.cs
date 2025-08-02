@@ -24,21 +24,19 @@ public sealed class ReferencingResourceImporter : Importer<ReferencingResourceDT
     }
 }
 
-public sealed class ReferencingResourceSerializerFactory : SerializerFactory {
-    public override bool CanSerialize(Type representationType) => representationType == typeof(ReferencingResourceDTO);
-
-    protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
+public sealed class ReferencingResourceSerializerFactory : SerializerFactory<ReferencingResourceDTO> {
+    protected override Serializer<ReferencingResourceDTO> CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
     }
 
-    private sealed class SerializerCore : Serializer {
+    private sealed class SerializerCore : Serializer<ReferencingResourceDTO> {
         public override string DeserializerName => nameof(ReferencingResourceDeserializer);
 
         public SerializerCore(ContentRepresentation contentRepresentation, SerializationContext context) : base(contentRepresentation, context) {
         }
 
         public override void SerializeObject(Stream outputStream) {
-            ReferencingResourceDTO serializing = (ReferencingResourceDTO)SerializingObject;
+            ReferencingResourceDTO serializing = SerializingObject;
             
             using var writer = new BinaryWriter(outputStream, Encoding.UTF8, leaveOpen: true);
         

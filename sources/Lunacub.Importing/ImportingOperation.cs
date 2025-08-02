@@ -9,7 +9,7 @@ public readonly struct ImportingOperation {
     /// <summary>
     /// The Id of the importing resource.
     /// </summary>
-    public ResourceID ResourceId => _resourceContainer.ResourceId;
+    public ResourceAddress Address => _resourceContainer.Address;
 
     /// <summary>
     /// The name of the importing resource.

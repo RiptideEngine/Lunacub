@@ -27,7 +27,7 @@ public sealed class RequestingReferences {
             throw new InvalidOperationException("Reference requesting is disabled.");
         }
 
-        if (requesting.ResourceId == ResourceID.Null) return;
+        if (requesting.ResourceAddress.IsNull) return;
 
         _requestingReferences[key] = requesting;
     }
@@ -73,5 +73,5 @@ public sealed class RequestingReferences {
         _releaseReferences.Add(key);
     }
 
-    public readonly record struct RequestingReference(ResourceID ResourceId);
+    public readonly record struct RequestingReference(ResourceAddress ResourceAddress);
 }

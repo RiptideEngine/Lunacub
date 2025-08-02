@@ -2,23 +2,34 @@
 
 partial class ImportEnvironment {
     private readonly ResourceImportDispatcher _importDispatcher;
-
+    
     /// <summary>
-    /// Imports the weakly-typed resource associates with <paramref name="rid"/> along with its references.
+    /// Imports the weakly-typed resource along with its references.
     /// </summary>
-    /// <param name="rid">Id of the resource to import.</param>
+    /// <param name="address">Address of the resource to import.</param>
     /// <returns>The <see cref="ImportingOperation"/> instance that encapsulates the importing operation.</returns>
-    public ImportingOperation Import(ResourceID rid) {
-        return _importDispatcher.Import(rid);
+    public ImportingOperation Import(ResourceAddress address) {
+        return _importDispatcher.Import(address);
     }
 
     /// <summary>
-    /// Imports the weakly-typed resource associates with <see cref="name"/> along with its references.
+    /// Imports the weakly-typed resource along with its references.
     /// </summary>
+    /// <param name="libraryId">Id of the library to import the resource with specified <paramref name="resourceId"/>.</param>
+    /// <param name="resourceId">Id of the resource to import.</param>
+    /// <returns>The <see cref="ImportingOperation"/> instance that encapsulates the importing operation.</returns>
+    public ImportingOperation Import(LibraryID libraryId, ResourceID resourceId) {
+        return _importDispatcher.Import(new(libraryId, resourceId));
+    }
+
+    /// <summary>
+    /// Imports the weakly-typed resource along with its references.
+    /// </summary>
+    /// <param name="libraryId">Id of the library to import the resource with specified <paramref name="name"/>.</param>
     /// <param name="name">Name of the resource to import.</param>
     /// <returns>The <see cref="ImportingOperation"/> instance that encapsulates the importing operation.</returns>
-    public ImportingOperation Import(ReadOnlySpan<char> name) {
-        return _importDispatcher.Import(name);
+    public ImportingOperation Import(LibraryID libraryId, ReadOnlySpan<char> name) {
+        return _importDispatcher.Import(libraryId, name);
     }
 
     // TODO: Generic overload.
@@ -55,11 +66,11 @@ partial class ImportEnvironment {
     /// <summary>
     /// Releases the resource using the specified resource Id.
     /// </summary>
-    /// <param name="resourceId">The Id of the resource to release.</param>
+    /// <param name="address">The address of resource to release.</param>
     /// <returns>The status of releasing operation.</returns>
     /// <seealso cref="ResourceID"/>
-    public ReleaseStatus Release(ResourceID resourceId) {
-        return _importDispatcher.Release(resourceId);
+    public ReleaseStatus Release(ResourceAddress address) {
+        return _importDispatcher.Release(address);
     }
 
     /// <summary>

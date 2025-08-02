@@ -26,6 +26,8 @@ public sealed class PrebuildResourcesFixture {
     public static readonly ResourceID ConfigurableResourceJson = 202;
 
     public static readonly ResourceID DeferrableResource = 301;
+    
+    public static readonly ResourceID UnregisteredResourceID = UInt128.MaxValue;
 
     private readonly Caxivitual.Lunacub.Building.Core.MemoryOutputSystem _buildOutput;
     private readonly IReadOnlyDictionary<Type, ImmutableArray<Type>> _componentTypes;
@@ -38,10 +40,10 @@ public sealed class PrebuildResourcesFixture {
             .ToList();
         
         _componentTypes = new Dictionary<Type, ImmutableArray<Type>> {
-            [typeof(Importer)] = [..types.Where(x => x.IsSubclassOf(typeof(Importer)))],
-            [typeof(Processor)] = [..types.Where(x => x.IsSubclassOf(typeof(Processor)))],
-            [typeof(SerializerFactory)] = [..types.Where(x => x.IsSubclassOf(typeof(SerializerFactory)))],
-            [typeof(Deserializer)] = [..types.Where(x => x.IsSubclassOf(typeof(Deserializer)))],
+            [typeof(Importer)] = [..types.Where(x => x.IsSubclassOf(typeof(Importer)) && !x.ContainsGenericParameters)],
+            [typeof(Processor)] = [..types.Where(x => x.IsSubclassOf(typeof(Processor)) && !x.ContainsGenericParameters)],
+            [typeof(SerializerFactory)] = [..types.Where(x => x.IsSubclassOf(typeof(SerializerFactory)) && !x.ContainsGenericParameters)],
+            [typeof(Deserializer)] = [..types.Where(x => x.IsSubclassOf(typeof(Deserializer)) && !x.ContainsGenericParameters)],
         };
         
         var buildSourceProvider = new BuildMemorySourceProvider();

@@ -43,7 +43,7 @@ public class EnvironmentTests {
             Options = (IImportOptions?)null,
         });
 
-        info.Dependencies.Should().BeEquivalentTo(new ResourceID[] { 1, 2, 3 });
+        info.DependencyAddresses.Should().BeEquivalentTo(new ResourceID[] { 1, 2, 3 });
 
         info.ComponentVersions.Should().Be(new ComponentVersions("1.0", "1.0"));
     }

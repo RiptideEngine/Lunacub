@@ -40,7 +40,7 @@ public class ResourceLifecycleTests : IDisposable {
         var operation = _importEnvironment.Import(PrebuildResourcesFixture.SimpleResourceStart);
         await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
 
-        _importEnvironment.Release(operation.ResourceId).Should().BeOneOf(ReleaseStatus.Disposed, ReleaseStatus.NotDisposed);
+        _importEnvironment.Release(operation.Address).Should().BeOneOf(ReleaseStatus.Disposed, ReleaseStatus.NotDisposed);
         
         operation.Status.Should().Be(ImportingStatus.Disposed);
         operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
@@ -50,7 +50,7 @@ public class ResourceLifecycleTests : IDisposable {
     public async Task ReleaseByID_DuringImporting_ShouldBeDisposed() {
         var operation = _importEnvironment.Import(PrebuildResourcesFixture.DeferrableResource);
 
-        _importEnvironment.Release(operation.ResourceId).Should().BeOneOf(ReleaseStatus.Canceled);
+        _importEnvironment.Release(operation.Address).Should().BeOneOf(ReleaseStatus.Canceled);
         
         operation.Status.Should().Be(ImportingStatus.Canceled);
         operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
@@ -108,7 +108,7 @@ public class ResourceLifecycleTests : IDisposable {
 
         handle.Value.Should().NotBeNull();
         
-        var resourceContainer = _importEnvironment.GetResourceContainer(handle.ResourceId);
+        var resourceContainer = _importEnvironment.GetResourceContainer(handle.Address);
         resourceContainer.Should().NotBeNull();
         resourceContainer!.ReferenceCount.Should().Be(1);
         resourceContainer.Status.Should().Be(ImportingStatus.Success);

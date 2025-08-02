@@ -7,12 +7,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="coverlet.collector" Version="6.0.0"/>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
+        <PackageReference Include="coverlet.collector" Version="6.0.4">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
         <PackageReference Include="Neovolve.Logging.Xunit.v3" Version="7.1.0" />
-        <PackageReference Include="System.IO.Abstractions" Version="22.0.11" />
-        <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" Version="22.0.11" />
-        <PackageReference Include="xunit.v3" Version="2.0.3" />
+        <PackageReference Include="System.IO.Abstractions" Version="22.0.15" />
+        <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" Version="22.0.15" />
+        <PackageReference Include="xunit.v3" Version="3.0.0" />
     </ItemGroup>
 
     <ItemGroup>

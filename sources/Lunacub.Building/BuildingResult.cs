@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Building;
+﻿using Caxivitual.Lunacub.Building.Collections;
+
+namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
 /// Represents the result of an overall resource building process.
@@ -17,15 +19,15 @@ public readonly struct BuildingResult {
     /// <summary>
     /// The collections of every resources involves in the building process and their building results.
     /// </summary>
-    public readonly IReadOnlyDictionary<ResourceID, ResourceBuildingResult> ResourceResults;
+    public readonly EnvironmentLibraryDictionary<ResourceResultDictionary> EnvironmentResults;
 
     internal BuildingResult(
         DateTime startTime,
         DateTime finishTime,
-        IReadOnlyDictionary<ResourceID, ResourceBuildingResult> resourceResults
+        EnvironmentLibraryDictionary<ResourceResultDictionary> environmentResults
     ) {
         BuildStartTime = startTime;
         BuildFinishTime = finishTime;
-        ResourceResults = resourceResults;
+        EnvironmentResults = environmentResults;
     }
 }

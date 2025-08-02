@@ -31,7 +31,6 @@ public class ResourceRegistry<TElement>
     // TODO: Probably adding Notifications.
 
     public void Add(ResourceID resourceId, TElement element) {
-        ValidateResourceId(resourceId);
         ValidateElement(element);
 
         if (_resources.ContainsKey(resourceId)) {
@@ -49,7 +48,6 @@ public class ResourceRegistry<TElement>
     }
 
     void ICollection<KeyValuePair<ResourceID, TElement>>.Add(KeyValuePair<ResourceID, TElement> item) {
-        ValidateResourceId(item.Key);
         ValidateElement(item.Value);
 
         (ResourceID resourceId, TElement element) = item;
@@ -131,7 +129,7 @@ public class ResourceRegistry<TElement>
             return true;
         }
 
-        output = ResourceID.Null;
+        output = default;
         return false;
     }
 
@@ -148,7 +146,6 @@ public class ResourceRegistry<TElement>
     public TElement this[ResourceID resourceId] {
         get => _resources[resourceId];
         set {
-            ValidateResourceId(resourceId);
             ValidateElement(value);
             
             if (_nameMap.TryGetValue(value.Name, out ResourceID nameId)) {
@@ -170,13 +167,6 @@ public class ResourceRegistry<TElement>
 
     void ICollection<KeyValuePair<ResourceID, TElement>>.CopyTo(KeyValuePair<ResourceID, TElement>[] array, int arrayIndex) {
         ((ICollection<KeyValuePair<ResourceID, TElement>>)_resources).CopyTo(array, arrayIndex);
-    }
-
-    [StackTraceHidden]
-    private static void ValidateResourceId(ResourceID resourceId) {
-        if (resourceId == ResourceID.Null) {
-            throw new ArgumentException("Resource ID cannot be null or zero value.", nameof(resourceId));
-        }
     }
 
     [StackTraceHidden]

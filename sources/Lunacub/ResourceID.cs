@@ -18,12 +18,6 @@ public readonly struct ResourceID :
     IUtf8SpanParsable<ResourceID>
 {
     /// <summary>
-    /// Represents a default or null value of the <see cref="ResourceID"/> type, used to signify the absence of a
-    /// valid resource identifier.
-    /// </summary>
-    public static ResourceID Null => default;
-
-    /// <summary>
     /// The underlying 64-bit unsigned integer value of <see cref="ResourceID"/>.
     /// </summary>
     [DebuggerBrowsable(DebuggerBrowsableState.Never)] public ulong Value { get; }

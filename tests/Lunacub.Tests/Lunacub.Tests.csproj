@@ -13,11 +13,11 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="FluentAssertions" Version="[7.1.0]" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0-preview-25107-01" />
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.7" />
-        <PackageReference Include="System.IO.Abstractions" Version="22.0.11" />
-        <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" Version="22.0.11" />
-        <PackageReference Include="xunit.v3" Version="2.0.3" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+        <PackageReference Include="System.IO.Abstractions" Version="22.0.15" />
+        <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" Version="22.0.15" />
+        <PackageReference Include="xunit.v3" Version="3.0.0" />
     </ItemGroup>
 
     <ItemGroup>

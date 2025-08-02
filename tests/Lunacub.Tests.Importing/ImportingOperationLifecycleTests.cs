@@ -187,7 +187,7 @@ public class ImportingOperationLifecycleTests : IDisposable {
     [Fact]
     public async Task ReleaseByID_SingleTime_ShouldCancelImportingOperation() {
         var operation = _importEnvironment.Import(PrebuildResourcesFixture.DeferrableResource);
-        _importEnvironment.Release(operation.ResourceId).Should().Be(ReleaseStatus.Canceled);
+        _importEnvironment.Release(operation.Address).Should().Be(ReleaseStatus.Canceled);
 
         await new Func<Task<ResourceHandle>>(async () => await operation).Should().ThrowAsync<OperationCanceledException>();
         
@@ -207,7 +207,7 @@ public class ImportingOperationLifecycleTests : IDisposable {
 
         operation.UnderlyingContainer.ReferenceCount.Should().Be(2);
         
-        _importEnvironment.Release(operation.ResourceId).Should().Be(ReleaseStatus.Success);
+        _importEnvironment.Release(operation.Address).Should().Be(ReleaseStatus.Success);
 
         operation.UnderlyingContainer.ReferenceCount.Should().Be(1);
         operation.Status.Should().Be(ImportingStatus.Importing);
@@ -233,7 +233,7 @@ public class ImportingOperationLifecycleTests : IDisposable {
         
         Parallel.ForEach(Partitioner.Create(0, count, count / 10), (range, _) => {
             for (int i = range.Item1; i < range.Item2; i++) {
-                _importEnvironment.Release(operation.ResourceId).Should().Be(ReleaseStatus.Success);
+                _importEnvironment.Release(operation.Address).Should().Be(ReleaseStatus.Success);
             }
         });
         

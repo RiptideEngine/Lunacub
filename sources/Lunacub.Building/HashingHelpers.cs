@@ -12,7 +12,7 @@ public static class HashingHelpers {
                 Unsafe.Write(pointer, resourceId);
                 Unsafe.Write(pointer + sizeof(ResourceID), proceduralResourceID);
 
-                return XxHash128.HashToUInt128(buffer);
+                return XxHash64.HashToUInt64(buffer);
             }
         }
     }

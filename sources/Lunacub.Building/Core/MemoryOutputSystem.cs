@@ -1,47 +1,77 @@
-﻿using System.Collections.Frozen;
+﻿using Caxivitual.Lunacub.Building.Collections;
+using System.Collections.Frozen;
 using ResourceOutput = (System.Collections.Immutable.ImmutableArray<byte>, System.DateTime);
 
 namespace Caxivitual.Lunacub.Building.Core;
 
 public sealed class MemoryOutputSystem : OutputSystem {
-    private readonly ResourceRegistry<ResourceRegistry.Element> _registry = [];
-    public IReadOnlyDictionary<ResourceID, ResourceRegistry.Element> OutputRegistry => _registry;
+    public Dictionary<LibraryID, LibraryOutput> Outputs { get; } = [];
 
-    private readonly Dictionary<ResourceID, ResourceOutput> _outputResources = [];
+    public EnvironmentIncrementalInfos IncrementalInfos { get; } = [];
     
-    public IReadOnlyDictionary<ResourceID, ResourceOutput> OutputResources => _outputResources;
-    
-    private readonly Dictionary<ResourceID, IncrementalInfo> _incrementalInfos = [];
-    public IReadOnlyDictionary<ResourceID, IncrementalInfo> IncrementalInfos => _incrementalInfos;
+    public override void CollectIncrementalInfos(EnvironmentIncrementalInfos receiver) {
+        foreach ((var libraryId, var libraryIncrementalInfos) in IncrementalInfos) {
+            LibraryIncrementalInfos receiverLibraryIncrementalInfos = [];
 
-    public override void CollectIncrementalInfos(IDictionary<ResourceID, IncrementalInfo> receiver) {
-        foreach ((var rid, var info) in _incrementalInfos) {
-            receiver.Add(rid, info);
-        }
-    }
-    
-    public override void FlushIncrementalInfos(IReadOnlyDictionary<ResourceID, IncrementalInfo> reports) {
-        foreach ((var rid, var report) in reports) {
-            _incrementalInfos[rid] = report;
+            foreach ((var resourceId, var incrementalInfos) in libraryIncrementalInfos) {
+                receiverLibraryIncrementalInfos.Add(resourceId, incrementalInfos);
+            }
+            
+            receiver.Add(libraryId, receiverLibraryIncrementalInfos);
         }
     }
 
-    public override DateTime? GetResourceLastBuildTime(ResourceID rid) {
-        return _outputResources.TryGetValue(rid, out var output) ? output.Item2 : null;
-    }
-    
-    public override void CopyCompiledResourceOutput(Stream sourceStream, ResourceID rid) {
-        byte[] buffer = new byte[sourceStream.Length];
-        sourceStream.ReadExactly(buffer);
+    public override void FlushIncrementalInfos(EnvironmentIncrementalInfos envIncrementalInfos) {
+        IncrementalInfos.Clear();
         
-        _outputResources[rid] = (ImmutableCollectionsMarshal.AsImmutableArray(buffer), DateTime.Now);
-    }
+        foreach ((var libraryId, var libraryIncrementalInfos) in envIncrementalInfos) {
+            if (IncrementalInfos.TryGetValue(libraryId, out var receiverLibraryIncrementalInfos)) {
+                foreach ((var resourceId, var incrementalInfos) in libraryIncrementalInfos) {
+                    receiverLibraryIncrementalInfos[resourceId] = incrementalInfos;
+                }
+            } else {
+                receiverLibraryIncrementalInfos = [];
 
-    public override void OutputResourceRegistry(ResourceRegistry<ResourceRegistry.Element> registry) {
-        _registry.Clear();
-
-        foreach ((var id, var element) in registry) {
-            _registry.Add(id, element);
+                foreach ((var resourceId, var incrementalInfos) in libraryIncrementalInfos) {
+                    receiverLibraryIncrementalInfos.Add(resourceId, incrementalInfos);
+                }
+            
+                IncrementalInfos.Add(libraryId, receiverLibraryIncrementalInfos);
+            }
         }
     }
+
+    public override void CopyCompiledResourceOutput(Stream sourceStream, ResourceAddress address) {
+        ref var libraryOutput = ref CollectionsMarshal.GetValueRefOrAddDefault(Outputs, address.LibraryId, out bool exists);
+
+        if (!exists) {
+            libraryOutput = new([], []);
+        }
+        
+        byte[] buffer = new byte[sourceStream.Length];
+        sourceStream.ReadExactly(buffer, 0, buffer.Length);
+        
+        libraryOutput.CompiledResources[address.ResourceId] = (ImmutableCollectionsMarshal.AsImmutableArray(buffer), DateTime.Now);
+    }
+
+    public override void OutputLibraryRegistry(ResourceRegistry<ResourceRegistry.Element> registry, LibraryID libraryId) {
+        if (!Outputs.TryGetValue(libraryId, out var libraryOutput)) return;
+
+        libraryOutput.Registry.Clear();
+        
+        foreach ((var resourceId, var element) in registry) {
+            libraryOutput.Registry.Add(resourceId, element);
+        }
+    }
+
+    public override DateTime? GetResourceLastBuildTime(ResourceAddress address) {
+        if (!Outputs.TryGetValue(address.LibraryId, out var libraryOutput)) return null;
+
+        return libraryOutput.CompiledResources.TryGetValue(address.ResourceId, out ResourceOutput output) ? output.Item2 : null;
+    }
+
+    public readonly record struct LibraryOutput(
+        Dictionary<ResourceID, ResourceOutput> CompiledResources,
+        ResourceRegistry<ResourceRegistry.Element> Registry
+    );
 }

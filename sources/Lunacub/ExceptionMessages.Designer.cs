@@ -123,6 +123,15 @@ namespace Caxivitual.Lunacub {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Creating resource library with id of 0 is invalid..
+        /// </summary>
+        internal static string LibraryIDMustBeNotNull {
+            get {
+                return ResourceManager.GetString("LibraryIDMustBeNotNull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The comparer must implement IAlternateEqualityComparer&lt;{0}, {1}&gt;.
         /// </summary>
         internal static string RequiresComparerImplementsAlternateLookup {

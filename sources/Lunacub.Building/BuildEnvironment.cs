@@ -1,6 +1,7 @@
 ﻿using Caxivitual.Lunacub.Building.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.IO;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -39,12 +40,14 @@ public sealed class BuildEnvironment : IDisposable {
     /// <summary>
     /// Gets the collection that stores the <see cref="IncrementalInfo"/>.
     /// </summary>
-    internal IncrementalInfoStorage IncrementalInfos { get; }
+    internal EnvironmentIncrementalInfos IncrementalInfos { get; }
     
     /// <summary>
     /// Gets and sets the <see cref="ILogger"/> instance used for debugging and reporting purpose.
     /// </summary>
     public ILogger Logger { get; set; }
+    
+    internal RecyclableMemoryStreamManager MemoryStreamManager { get; }
     
     private bool _disposed;
 
@@ -54,13 +57,23 @@ public sealed class BuildEnvironment : IDisposable {
     /// <see cref="OutputSystem"/> object.
     /// </summary>
     /// <param name="output">The <see cref="OutputSystem"/> object for the instance to use.</param>
-    public BuildEnvironment(OutputSystem output) {
+    /// <param name="memoryStreamManager">
+    /// An instance of memory stream manager that used to temporary stores the built resource output.
+    /// </param>
+    public BuildEnvironment(OutputSystem output, RecyclableMemoryStreamManager memoryStreamManager) {
         Output = output;
         Libraries = [];
-        IncrementalInfos = new(output);
+        IncrementalInfos = new();
         Logger = NullLogger.Instance;
+        MemoryStreamManager = memoryStreamManager;
+        
+        Output.CollectIncrementalInfos(IncrementalInfos);
     }
     
+    /// <summary>
+    /// Build all the registered resources from registered resource libraries.
+    /// </summary>
+    /// <returns>An structure that contains all the building resources.</returns>
     public BuildingResult BuildResources() {
         DateTime begin = DateTime.Now;
         
@@ -70,11 +83,15 @@ public sealed class BuildEnvironment : IDisposable {
         return new(begin, DateTime.Now, session.Results);
     }
 
+    public void FlushIncrementalInfos() {
+        Output.FlushIncrementalInfos(IncrementalInfos);
+    }
+
     private void Dispose(bool disposing) {
         if (Interlocked.Exchange(ref _disposed, true)) return;
 
         if (disposing) {
-            Output.FlushIncrementalInfos(IncrementalInfos);
+            FlushIncrementalInfos();
         }
     }
 

@@ -14,14 +14,12 @@ public sealed class SimpleResourceImporter : Importer<SimpleResourceDTO> {
     }
 }
 
-public sealed class SimpleResourceSerializerFactory : SerializerFactory {
-    public override bool CanSerialize(Type representationType) => representationType == typeof(SimpleResourceDTO);
-
-    protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
+public sealed class SimpleResourceSerializerFactory : SerializerFactory<SimpleResourceDTO> {
+    protected override Serializer<SimpleResourceDTO> CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
     }
 
-    private sealed class SerializerCore : Serializer {
+    private sealed class SerializerCore : Serializer<SimpleResourceDTO> {
         public override string DeserializerName => nameof(SimpleResourceDeserializer);
         
         public SerializerCore(ContentRepresentation serializingObject, SerializationContext context) : base(serializingObject, context) { }

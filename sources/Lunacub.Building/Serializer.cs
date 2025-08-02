@@ -1,7 +1,7 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
-/// Provides the base class that handles the serialization process of a resource as a <see cref="ContentRepresentation"/>
+/// Provides the base class that handles the serialization process of a resource in form of a <see cref="ContentRepresentation"/>
 /// from previous processing step.
 /// </summary>
 /// <seealso cref="ContentRepresentation"/>
@@ -37,4 +37,19 @@ public abstract class Serializer {
     /// </summary>
     /// <param name="outputStream">Output stream to receive the serialized options data.</param>
     public virtual void SerializeOptions(Stream outputStream) { }
+}
+
+/// <summary>
+/// Provides the base class that handles the serialization process of a resource in form of type <typeparamref name="T"/> extends
+/// <see cref="ContentRepresentation"/> from previous processing step.
+/// </summary>
+/// <typeparam name="T">The type extends <see cref="ContentRepresentation"/>.</typeparam>
+public abstract class Serializer<T> : Serializer where T : ContentRepresentation {
+    /// <summary>
+    /// Gets the object that is being serialized.
+    /// </summary>
+    public new T SerializingObject => (T)base.SerializingObject;
+    
+    protected Serializer(ContentRepresentation serializingObject, SerializationContext context) : base(serializingObject, context) {
+    }
 }

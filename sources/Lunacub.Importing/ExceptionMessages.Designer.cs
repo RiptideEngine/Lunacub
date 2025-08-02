@@ -69,6 +69,42 @@ namespace Caxivitual.Lunacub.Importing {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Trying to import resource from null library id of 0..
+        /// </summary>
+        internal static string ImportFromNullLibraryId {
+            get {
+                return ResourceManager.GetString("ImportFromNullLibraryId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Trying to import resource from unregistered id of {0} at library {1}..
+        /// </summary>
+        internal static string ImportFromUnregisteredResourceId {
+            get {
+                return ResourceManager.GetString("ImportFromUnregisteredResourceId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Trying to import resource from unregistered library id of {0}..
+        /// </summary>
+        internal static string ImportFromUnregisteredResourceLibrary {
+            get {
+                return ResourceManager.GetString("ImportFromUnregisteredResourceLibrary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Trying to import resource from unregistered name of &apos;{0}&apos; at library {1}..
+        /// </summary>
+        internal static string ImportFromUnregisteredResourceName {
+            get {
+                return ResourceManager.GetString("ImportFromUnregisteredResourceName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Null Stream was returned for resource with Id of {0}..
         /// </summary>
         internal static string NullResourceStream {
@@ -87,7 +123,7 @@ namespace Caxivitual.Lunacub.Importing {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Resource Stream for resource with ID of &apos;{0}&apos; must be readable and seekable..
+        ///   Looks up a localized string similar to Resource stream for resource with id of {0} at library {1} must be readable and seekable..
         /// </summary>
         internal static string ResourceStreamMustBeSeekableOrReadable {
             get {
@@ -96,7 +132,7 @@ namespace Caxivitual.Lunacub.Importing {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Resource Stream for resource with ID of &apos;{0}&apos; must not be writable..
+        ///   Looks up a localized string similar to Resource stream for resource with id of {0} at library {1} must not be writable..
         /// </summary>
         internal static string ResourceStreamMustNotBeWritable {
             get {
@@ -119,24 +155,6 @@ namespace Caxivitual.Lunacub.Importing {
         internal static string UnregisteredDeserializer {
             get {
                 return ResourceManager.GetString("UnregisteredDeserializer", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Resource with Id of {0} is unregistered..
-        /// </summary>
-        internal static string UnregisteredResourceId {
-            get {
-                return ResourceManager.GetString("UnregisteredResourceId", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Resource with name &apos;{0}&apos; is unregistered..
-        /// </summary>
-        internal static string UnregisteredResourceName {
-            get {
-                return ResourceManager.GetString("UnregisteredResourceName", resourceCulture);
             }
         }
         

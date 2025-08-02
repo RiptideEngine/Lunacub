@@ -11,8 +11,8 @@ public abstract class Importer {
 
     public virtual void ValidateResource(BuildingResource resource) { }
 
-    public virtual IReadOnlyCollection<ResourceID> ExtractDependencies(SourceStreams sourceStream) {
-        return FrozenSet<ResourceID>.Empty;
+    public virtual IReadOnlyCollection<ResourceAddress> ExtractDependencies(SourceStreams sourceStream) {
+        return FrozenSet<ResourceAddress>.Empty;
     }
     
     internal abstract ContentRepresentation ImportObject(SourceStreams sourceStreams, ImportingContext context);

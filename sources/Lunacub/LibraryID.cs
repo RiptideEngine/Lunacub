@@ -18,6 +18,12 @@ public readonly struct LibraryID :
     IUtf8SpanParsable<LibraryID>
 {
     /// <summary>
+    /// Represents a default or null value of <see cref="LibraryID"/>, used to signify the absence of a
+    /// valid resource library identifier.
+    /// </summary>
+    public static LibraryID Null => default;
+    
+    /// <summary>
     /// The underlying 64-bit unsigned integer value of <see cref="LibraryID"/>.
     /// </summary>
     [DebuggerBrowsable(DebuggerBrowsableState.Never)] public ulong Value { get; }

@@ -3,11 +3,11 @@
 namespace Caxivitual.Lunacub.Importing;
 
 partial class ResourceImportDispatcher {
-    public ReleaseStatus Release(ResourceID resourceId) {
+    public ReleaseStatus Release(ResourceAddress resourceAddress) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (resourceId == ResourceID.Null) return ReleaseStatus.Null;
-        if (Cache.Get(resourceId) is not { } container) return ReleaseStatus.NotImported;
+        if (resourceAddress.IsNull) return ReleaseStatus.Null;
+        if (Cache.Get(resourceAddress) is not { } container) return ReleaseStatus.NotImported;
 
         return ReleaseContainer(container);
     }
@@ -34,10 +34,10 @@ partial class ResourceImportDispatcher {
         bool removedSuccessfully = Cache.RemoveResourceMap(resource);
         Debug.Assert(removedSuccessfully);
 
-        removedSuccessfully = Cache.Remove(container.ResourceId);
+        removedSuccessfully = Cache.Remove(container.Address);
         Debug.Assert(removedSuccessfully);
 
-        ReleaseReferences(container.ReferenceResourceIds);
+        ReleaseReferences(container.ReferenceResourceAddresses);
         
         container.Status = ImportingStatus.Disposed;
         return DisposeResource(resource) ? ReleaseStatus.Disposed : ReleaseStatus.NotDisposed;
@@ -46,14 +46,14 @@ partial class ResourceImportDispatcher {
     public ReleaseStatus Release(ResourceHandle handle) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        (ResourceID resourceId, object? resource) = handle;
+        (ResourceAddress resourceAddress, object? resource) = handle;
         
-        if (resourceId == ResourceID.Null || resource == null) return ReleaseStatus.Null;
+        if (resourceAddress.IsNull || resource == null) return ReleaseStatus.Null;
         if (Cache.Get(resource) is not { } container) return ReleaseStatus.InvalidResource;
         
         container.EnsureCancellationTokenSourceIsDisposed();
         
-        if (container.ResourceId != resourceId) return ReleaseStatus.IdIncompatible;
+        if (container.Address != resourceAddress) return ReleaseStatus.IdIncompatible;
         if (container.Status != ImportingStatus.Success) return ReleaseStatus.InvalidResource;
         
         Debug.Assert(container.FinalizeTask.Status == TaskStatus.RanToCompletion);
@@ -68,10 +68,10 @@ partial class ResourceImportDispatcher {
         bool removedSuccessfully = Cache.RemoveResourceMap(resource);
         Debug.Assert(removedSuccessfully);
 
-        removedSuccessfully = Cache.Remove(resourceId);
+        removedSuccessfully = Cache.Remove(resourceAddress);
         Debug.Assert(removedSuccessfully);
 
-        ReleaseReferences(container.ReferenceResourceIds);
+        ReleaseReferences(container.ReferenceResourceAddresses);
         
         container.Status = ImportingStatus.Disposed;
         return DisposeResource(resource) ? ReleaseStatus.Disposed : ReleaseStatus.NotDisposed;
@@ -81,8 +81,8 @@ partial class ResourceImportDispatcher {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-        if (operation.ResourceId == ResourceID.Null || operation.UnderlyingContainer == null) return ReleaseStatus.Null;
-        if (Cache.Get(operation.ResourceId) is not { } container) return ReleaseStatus.InvalidOperationId;
+        if (operation.Address.IsNull || operation.UnderlyingContainer == null) return ReleaseStatus.Null;
+        if (Cache.Get(operation.Address) is not { } container) return ReleaseStatus.InvalidOperationId;
         if (!ReferenceEquals(container, operation.UnderlyingContainer)) return ReleaseStatus.InvalidOperationContainer;
 
         return ReleaseContainer(container);
@@ -107,7 +107,7 @@ partial class ResourceImportDispatcher {
             Debug.Assert(container.Status is ImportingStatus.Canceled);
             
             return ReleaseStatus.Canceled;
-        } catch (Exception e) {
+        } catch (Exception) {
             container.EnsureCancellationTokenSourceIsDisposed();
             Debug.Assert(container.Status is ImportingStatus.Failed);
             
@@ -117,23 +117,23 @@ partial class ResourceImportDispatcher {
         container.EnsureCancellationTokenSourceIsDisposed();
         
         Debug.Assert(container.Status == ImportingStatus.Success);
-        Debug.Assert(handle.ResourceId == container.ResourceId);
+        Debug.Assert(handle.Address == container.Address);
 
         _environment.Statistics.DecrementUniqueResourceCount();
 
         bool removedSuccessfully = Cache.RemoveResourceMap(handle.Value!);
         Debug.Assert(removedSuccessfully);
 
-        removedSuccessfully = Cache.Remove(handle.ResourceId);
+        removedSuccessfully = Cache.Remove(handle.Address);
         Debug.Assert(removedSuccessfully);
 
-        ReleaseReferences(container.ReferenceResourceIds);
+        ReleaseReferences(container.ReferenceResourceAddresses);
 
         container.Status = ImportingStatus.Disposed;
         return DisposeResource(handle.Value!) ? ReleaseStatus.Success : ReleaseStatus.NotDisposed;
     }
 
-    private void ReleaseReferences(IReadOnlySet<ResourceID> resourceIds) {
+    private void ReleaseReferences(IReadOnlySet<ResourceAddress> resourceIds) {
         foreach (var reference in resourceIds) {
             Release(reference);
         }

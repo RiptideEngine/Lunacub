@@ -13,13 +13,12 @@ partial class BuildSession {
 
     private sealed class ProceduralResourceBuild {
         private readonly BuildSession _session;
-        private readonly Dictionary<ResourceID, BuildingProceduralResource> _current;
+        private readonly Dictionary<ResourceAddress, BuildingProceduralResource> _current;
         private readonly ProceduralResourceBuild? _previous;
 
         public ProceduralResourceBuild(
             BuildSession session,
-            Dictionary<ResourceID,
-            BuildingProceduralResource> current,
+            Dictionary<ResourceAddress, BuildingProceduralResource> current,
             ProceduralResourceBuild? previous
         ) {
             _session = session;
@@ -32,19 +31,19 @@ partial class BuildSession {
 
             ValidateProceduralResources();
 
-            Dictionary<ResourceID, BuildingProceduralResource> next = [];
+            Dictionary<ResourceAddress, BuildingProceduralResource> next = [];
 
             // Assign the reference count to environment resources.
             foreach ((_, var proceduralResource) in _current) {
-                foreach (var dependencyId in proceduralResource.DependencyIds) {
+                foreach (var dependencyId in proceduralResource.DependencyAddresses) {
                     if (_session._graph.TryGetValue(dependencyId, out var environmentResourceVertex)) {
                         environmentResourceVertex.ReferenceCount++;
                     }
                 }
             }
 
-            foreach ((var resourceId, var proceduralResource) in _current) {
-                BuildProceduralResource(resourceId, proceduralResource, next);
+            foreach ((var resourceAddress, var proceduralResource) in _current) {
+                BuildProceduralResource(resourceAddress, proceduralResource, next);
             }
 
             try {
@@ -61,41 +60,44 @@ partial class BuildSession {
         private void ValidateProceduralResources() {
             // Only have to validate _current for cyclic dependency.
 
-            HashSet<ResourceID> temporaryMarks = [], permanentMarks = [];
-            Stack<ResourceID> path = [];
+            HashSet<ResourceAddress> temporaryMarks = [], permanentMarks = [];
+            Stack<ResourceAddress> path = [];
 
-            foreach ((var rid, _) in _current) {
-                Visit(rid, temporaryMarks, permanentMarks, path);
+            foreach ((var address, _) in _current) {
+                Visit(address, temporaryMarks, permanentMarks, path);
             }
 
-            void Visit(ResourceID rid, HashSet<ResourceID> temporaryMarks, HashSet<ResourceID> permanentMarks, Stack<ResourceID> path) {
-                if (permanentMarks.Contains(rid)) return;
+            void Visit(
+                ResourceAddress address,
+                HashSet<ResourceAddress> temporaryMarks,
+                HashSet<ResourceAddress> permanentMarks,
+                Stack<ResourceAddress> path
+            ) {
+                if (permanentMarks.Contains(address)) return;
 
-                path.Push(rid);
+                path.Push(address);
 
-                if (!temporaryMarks.Add(rid)) {
+                if (!temporaryMarks.Add(address)) {
                     throw new InvalidOperationException($"Circular dependency detected: {string.Join(" -> ", path.Reverse())}.");
                 }
 
-                foreach (var dependencyID in _current[rid].DependencyIds) {
-                    if (!_current.ContainsKey(rid)) continue;
+                foreach (var dependencyID in _current[address].DependencyAddresses) {
+                    if (!_current.ContainsKey(address)) continue;
 
                     Visit(dependencyID, temporaryMarks, permanentMarks, path);
                 }
 
-                permanentMarks.Add(rid);
+                permanentMarks.Add(address);
                 path.Pop();
             }
         }
 
         private void BuildProceduralResource(
-            ResourceID resourceId,
+            ResourceAddress resourceAddress,
             BuildingProceduralResource resource,
-            Dictionary<ResourceID, BuildingProceduralResource> next
+            Dictionary<ResourceAddress, BuildingProceduralResource> next
         ) {
-            Debug.Assert(resourceId != ResourceID.Null);
-            
-            if (_session.Results.ContainsKey(resourceId)) return;
+            if (_session.TryGetResult(resourceAddress, out _)) return;
 
             BuildEnvironment environment = _session._environment;
 
@@ -104,39 +106,39 @@ partial class BuildSession {
 
                 if (string.IsNullOrEmpty(processorName)) {
                     try {
-                        _session.SerializeProcessedObject(resource.Object, resourceId, resource.Options, resource.Tags);
+                        _session.SerializeProcessedObject(resource.Object, resourceAddress, resource.Options, resource.Tags);
                     } catch (Exception e) {
-                        _session.Results.Add(resourceId, new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
+                        _session.SetResult(resourceAddress, new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
                         return;
                     }
                 } else {
                     if (!environment.Processors.TryGetValue(processorName, out var processor)) {
-                        _session.Results.Add(resourceId, new(BuildStatus.UnknownProcessor));
+                        _session.SetResult(resourceAddress, new(BuildStatus.UnknownProcessor));
                         return;
                     }
                     
                     if (!processor.CanProcess(resource.Object)) {
-                        _session.Results.Add(resourceId, new(BuildStatus.Unprocessable));
+                        _session.SetResult(resourceAddress, new(BuildStatus.Unprocessable));
                         return;
                     }
                     
-                    CollectDependencies(resource.DependencyIds, out IReadOnlyDictionary<ResourceID, ContentRepresentation> dependencies);
+                    CollectDependencies(resource.DependencyAddresses, out var dependencies);
                     
                     ContentRepresentation processed;
                     ProcessingContext processingContext;
                     
                     try {
-                        processingContext = new(environment, resourceId, resource.Options, dependencies, environment.Logger);
+                        processingContext = new(environment, resourceAddress, resource.Options, dependencies, environment.Logger);
                         processed = processor.Process(resource.Object, processingContext);
                     } catch (Exception e) {
-                        _session.Results.Add(resourceId, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
+                        _session.SetResult(resourceAddress, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
                         return;
                     }
                     
                     try {
-                        _session.SerializeProcessedObject(processed, resourceId, resource.Options, resource.Tags);
+                        _session.SerializeProcessedObject(processed, resourceAddress, resource.Options, resource.Tags);
                     } catch (Exception e) {
-                        _session.Results.Add(resourceId, new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
+                        _session.SetResult(resourceAddress, new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
                         return;
                     } finally {
                         if (!ReferenceEquals(resource.Object, processed)) {
@@ -144,38 +146,38 @@ partial class BuildSession {
                         }
                     }
                     
-                    _session.AppendProceduralResources(resourceId, processingContext.ProceduralResources, next);
+                    _session.AppendProceduralResources(resourceAddress, processingContext.ProceduralResources, next);
                 }
                 
-                _session.Results.Add(resourceId, new(BuildStatus.Success));
+                _session.SetResult(resourceAddress, new(BuildStatus.Success));
             } finally {
-                _session.ReleaseDependencies(resource.DependencyIds);
+                _session.ReleaseDependencies(resource.DependencyAddresses);
             }
         }
         
         private void CollectDependencies(
-            IReadOnlySet<ResourceID> dependencyIds,
-            out IReadOnlyDictionary<ResourceID, ContentRepresentation> collectedDependencies
+            IReadOnlySet<ResourceAddress> dependencyIds,
+            out IReadOnlyDictionary<ResourceAddress, ContentRepresentation> collectedDependencies
         ) {
             if (dependencyIds.Count == 0) {
-                collectedDependencies = FrozenDictionary<ResourceID, ContentRepresentation>.Empty;
+                collectedDependencies = FrozenDictionary<ResourceAddress, ContentRepresentation>.Empty;
                 return;
             }
             
-            Dictionary<ResourceID, ContentRepresentation> dependencyCollection = [];
+            Dictionary<ResourceAddress, ContentRepresentation> dependencyCollection = [];
 
-            foreach (var dependencyId in dependencyIds) {
-                if (_session._graph.TryGetValue(dependencyId, out EnvironmentResourceVertex? dependencyVertex)) {
+            foreach (var dependencyAddress in dependencyIds) {
+                if (_session._graph.TryGetValue(dependencyAddress, out EnvironmentResourceVertex? dependencyVertex)) {
                     if (dependencyVertex.ImportOutput is { } dependencyImportOutput) {
-                        dependencyCollection.Add(dependencyId, dependencyImportOutput);
+                        dependencyCollection.Add(dependencyAddress, dependencyImportOutput);
                     } else {
-                        if (_session.Results.TryGetValue(dependencyId, out var result)) {
+                        if (_session.TryGetResult(dependencyAddress, out var result)) {
                             // Traversed through this resource vertex before.
                             switch (result.Status) {
                                 case BuildStatus.Success:
                                     Debug.Assert(dependencyVertex.ImportOutput != null);
                         
-                                    dependencyCollection[dependencyId] = dependencyVertex.ImportOutput;
+                                    dependencyCollection[dependencyAddress] = dependencyVertex.ImportOutput;
                                     continue;
                     
                                 case BuildStatus.Cached:
@@ -189,7 +191,7 @@ partial class BuildSession {
                             BuildingOptions options = dependencyVertex.RegistryElement.Option.Options;
 
                             if (_session.Import(
-                                dependencyId,
+                                dependencyAddress,
                                 dependencyVertex.Library,
                                 _session._environment.Importers[options.ImporterName],
                                 options.Options,
@@ -197,22 +199,22 @@ partial class BuildSession {
                                 out _)
                             ) {
                                 dependencyVertex.SetImportResult(imported);
-                                dependencyCollection.Add(dependencyId, imported);
+                                dependencyCollection.Add(dependencyAddress, imported);
                             }
                         }
                     }
-                } else if (RecursivelyTryGetProceduralResource(dependencyId) is { } proceduralResource) {
-                    dependencyCollection.Add(dependencyId, proceduralResource);
+                } else if (RecursivelyTryGetProceduralResource(dependencyAddress) is { } proceduralResource) {
+                    dependencyCollection.Add(dependencyAddress, proceduralResource);
                 }
             }
 
             collectedDependencies = dependencyCollection;
         }
 
-        private ContentRepresentation? RecursivelyTryGetProceduralResource(ResourceID resourceId) {
-            if (_current.TryGetValue(resourceId, out BuildingProceduralResource resource)) return resource.Object;
+        private ContentRepresentation? RecursivelyTryGetProceduralResource(ResourceAddress resourceAddress) {
+            if (_current.TryGetValue(resourceAddress, out BuildingProceduralResource resource)) return resource.Object;
             
-            return _previous?.RecursivelyTryGetProceduralResource(resourceId);
+            return _previous?.RecursivelyTryGetProceduralResource(resourceAddress);
         }
     }
 }

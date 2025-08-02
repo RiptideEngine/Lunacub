@@ -15,9 +15,9 @@ public readonly struct ProcessingContext {
     public BuildEnvironment Environment { get; }
     
     /// <summary>
-    /// Gets the Id of the currently processing resource.
+    /// Gets the address of the currently processing resource.
     /// </summary>
-    public ResourceID BuildingResourceId { get; }
+    public ResourceAddress ResourceAddress { get; }
 
     /// <summary>
     /// Gets user-provided options that can be used during the processing process.
@@ -29,7 +29,7 @@ public readonly struct ProcessingContext {
     /// Gets the dependency resources requested from importing stage.
     /// </summary>
     /// <seealso cref="Importer.ExtractDependencies"/>
-    public IReadOnlyDictionary<ResourceID, ContentRepresentation> Dependencies { get; }
+    public IReadOnlyDictionary<ResourceAddress, ContentRepresentation> Dependencies { get; }
     
     /// <summary>
     /// Gets the procedural resources container generated during processing stage.
@@ -43,14 +43,13 @@ public readonly struct ProcessingContext {
     
     internal ProcessingContext(
         BuildEnvironment environment,
-        ResourceID buildingResourceId,
+        ResourceAddress resourceAddress,
         IImportOptions? options,
-        IReadOnlyDictionary<ResourceID,
-        ContentRepresentation> dependencies,
+        IReadOnlyDictionary<ResourceAddress, ContentRepresentation> dependencies,
         ILogger logger
     ) {
         Environment = environment;
-        BuildingResourceId = buildingResourceId;
+        ResourceAddress = resourceAddress;
         Options = options;
         Dependencies = dependencies;
         ProceduralResources = [];

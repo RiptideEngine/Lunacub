@@ -15,8 +15,8 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     private readonly ImportEnvironment _environment;
     private readonly Lock _lock;
     
-    private readonly Dictionary<ResourceID, ElementContainer> _containers;
-    private readonly Dictionary<object, ResourceID> _resourceMap;
+    private readonly Dictionary<ResourceAddress, ElementContainer> _containers;
+    private readonly Dictionary<object, ResourceAddress> _resourceMap;
     
     // ReSharper disable once ConvertConstructorToMemberInitializers
     public ResourceCache(ImportEnvironment environment) {
@@ -26,9 +26,9 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         _resourceMap = [];
     }
 
-    public ElementContainer? Get(ResourceID resourceId) {
+    public ElementContainer? Get(ResourceAddress address) {
         using (_lock.EnterScope()) {
-            return _containers.GetValueOrDefault(resourceId);
+            return _containers.GetValueOrDefault(address);
         }
     }
 
@@ -38,28 +38,28 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         }
     }
 
-    public bool Remove(ResourceID resourceId) {
+    public bool Remove(ResourceAddress address) {
         using (_lock.EnterScope()) {
-            return _containers.Remove(resourceId);
+            return _containers.Remove(address);
         }
     }
 
-    public bool Contains(ResourceID resourceId) {
+    public bool Contains(ResourceAddress address) {
         using (_lock.EnterScope()) {
-            return _containers.ContainsKey(resourceId);
+            return _containers.ContainsKey(address);
         }
     }
 
     public ElementContainer GetOrBeginImporting(
-        ResourceID resourceId,
+        ResourceAddress address,
         Action<ElementContainer> action,
-        Func<ResourceID, ElementContainer> factory
+        Func<ResourceAddress, ElementContainer> factory
     ) {
         using (_lock.EnterScope()) {
-            ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, resourceId, out bool exists);
+            ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, address, out bool exists);
 
             if (!exists) {
-                reference = factory(resourceId);
+                reference = factory(address);
 
                 if (reference == null) {
                     throw new InvalidOperationException("Factory must return non-null instance.");
@@ -73,16 +73,16 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     }
     
     public ElementContainer GetOrBeginImporting<TArg>(
-        ResourceID resourceId,
+        ResourceAddress address,
         Action<ElementContainer, TArg> action,
-        Func<ResourceID, TArg, ElementContainer> factory,
+        Func<ResourceAddress, TArg, ElementContainer> factory,
         TArg arg
     ) where TArg : allows ref struct {
         using (_lock.EnterScope()) {
-            ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, resourceId, out bool exists);
+            ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, address, out bool exists);
             
             if (!exists) {
-                reference = factory(resourceId, arg);
+                reference = factory(address, arg);
                 
                 if (reference == null) {
                     throw new InvalidOperationException("Factory must return non-null instance.");
@@ -95,9 +95,9 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         }
     }
 
-    public void RegisterResourceMap(object resource, ResourceID resourceId) {
+    public void RegisterResourceMap(object resource, ResourceAddress address) {
         using (_lock.EnterScope()) {
-            _resourceMap.Add(resource, resourceId);
+            _resourceMap.Add(resource, address);
         }
     }
 
@@ -196,42 +196,42 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     /// </summary>
     [StructLayout(LayoutKind.Auto)]
     public sealed class ElementContainer {
-        public readonly ResourceID ResourceId;
+        public readonly ResourceAddress Address;
         public readonly string ResourceName;
 
         public uint ReferenceCount;
         
-        public FrozenSet<ResourceID> ReferenceResourceIds;
+        public FrozenSet<ResourceAddress> ReferenceResourceAddresses;
 
         public ImportingStatus Status;
 
-        private CancellationTokenSource? _cancellationTokenSource;
-        public CancellationToken CancellationToken => _cancellationTokenSource!.Token;
+        internal CancellationTokenSource? CancellationTokenSource { get; private set; }
+        public CancellationToken CancellationToken => CancellationTokenSource!.Token;
         
         public Task<ResourceImportDispatcher.ResourceImportResult>? ImportTask { get; set; }
         public Task<ResourceHandle> FinalizeTask { get; set; }
 
         private readonly Lock _lock;
 
-        public ElementContainer(ResourceID resourceId, string resourceName) {
-            ResourceId = resourceId;
+        public ElementContainer(ResourceAddress address, string resourceName) {
+            Address = address;
             ResourceName = resourceName;
-            ReferenceResourceIds = FrozenSet<ResourceID>.Empty;
+            ReferenceResourceAddresses = FrozenSet<ResourceAddress>.Empty;
             Status = ImportingStatus.Importing;
             FinalizeTask = null!;
             ReferenceCount = 1;
-            _cancellationTokenSource = null!;
+            CancellationTokenSource = null!;
             _lock = new();
         }
 
         public void InitializeImport() {
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-            if (_cancellationTokenSource == null) {
-                _cancellationTokenSource = new();
+            if (CancellationTokenSource == null) {
+                CancellationTokenSource = new();
             } else {
                 switch (Status) {
                     case ImportingStatus.Disposed or ImportingStatus.Canceled:
-                        _cancellationTokenSource = new();
+                        CancellationTokenSource = new();
                         break;
                     
                     case ImportingStatus.Importing or ImportingStatus.Success:
@@ -265,22 +265,20 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         }
         
         public void CancelImport() {
-            _cancellationTokenSource?.Cancel();
+            CancellationTokenSource?.Cancel();
         }
 
         public void DisposeCancellationToken() {
-            _cancellationTokenSource?.Dispose();
-            _cancellationTokenSource = null;
+            CancellationTokenSource?.Dispose();
+            CancellationTokenSource = null;
         }
 
-        [Conditional("DEBUG")]
         public void EnsureCancellationTokenSourceIsNotDisposed() {
-            Debug.Assert(_cancellationTokenSource != null);
+            Debug.Assert(CancellationTokenSource != null);
         }
 
-        [Conditional("DEBUG")]
         public void EnsureCancellationTokenSourceIsDisposed() {
-            Debug.Assert(_cancellationTokenSource == null);
+            Debug.Assert(CancellationTokenSource == null);
         }
 
         public void EnterLock() {

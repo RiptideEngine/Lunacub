@@ -11,6 +11,6 @@ public sealed partial class EmittableResourceProcessor : Processor<EmittableReso
             },
         });
 
-        return new(importedObject.Value, context.BuildingResourceId.Combine(1));
+        return new(importedObject.Value, context.ResourceAddress.Combine(1));
     }
 }
