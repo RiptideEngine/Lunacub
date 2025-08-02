@@ -41,7 +41,7 @@ internal static class Program {
             Libraries = {
                 new(1, new MemorySourceProvider {
                     Sources = {
-                        ["PrimaryResource"] = MemorySourceProvider.AsUtf8("""{"Value":16}""", DateTime.MinValue),
+                        ["PrimaryResource"] = MemorySourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
                     },
                 }) {
                     Registry = {
@@ -54,17 +54,7 @@ internal static class Program {
             },
         };
 
-        var result = env.BuildResources();
-
-        foreach ((var libraryId, var libraryResults) in result.EnvironmentResults) {
-            foreach ((var resourceId, var resourceResult) in libraryResults) {
-                if (resourceResult.IsSuccess) {
-                    _logger.LogInformation("Resource {rid} of library {lid} build status: {status}.", resourceId, libraryId, resourceResult.Status);
-                } else {
-                    _logger.LogError(resourceResult.Exception?.SourceException, "Resource {rid} of library {lib} build status: {status}.", resourceId, libraryId, resourceResult.Status);
-                }
-            }
-        }
+        env.BuildResources();
     }
     
     private static async Task ImportResource(string resourceDirectory) {

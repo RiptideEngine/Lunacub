@@ -7,9 +7,9 @@ public sealed class EmittableResourceDeserializer : Deserializer<EmittableResour
         using var reader = new BinaryReader(dataStream, Encoding.UTF8, true);
 
         int value = reader.ReadInt32();
-        ResourceID generatedId = reader.ReadResourceID();
+        var generatedResourceAddress = reader.ReadResourceAddress();
         
-        context.RequestReference(1, new(generatedId));
+        context.RequestReference(1, new(generatedResourceAddress));
         
         return Task.FromResult(new EmittableResource {
             Value = value,

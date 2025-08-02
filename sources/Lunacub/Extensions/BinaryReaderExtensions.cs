@@ -11,7 +11,9 @@ public static class BinaryReaderExtensions {
     public static Matrix4x4 ReadMatrix4x4(this BinaryReader reader) => reader.ReadReinterpret<Matrix4x4>();
     public static Plane ReadPlane(this BinaryReader reader) => reader.ReadReinterpret<Plane>();
     public static Guid ReadGuid(this BinaryReader reader) => reader.ReadReinterpret<Guid>();
+    public static LibraryID ReadLibraryID(this BinaryReader reader) => reader.ReadReinterpret<LibraryID>();
     public static ResourceID ReadResourceID(this BinaryReader reader) => reader.ReadReinterpret<ResourceID>();
+    public static ResourceAddress ReadResourceAddress(this BinaryReader reader) => reader.ReadReinterpret<ResourceAddress>();
 
     public static T ReadReinterpret<T>(this BinaryReader reader) where T : unmanaged {
         unsafe {

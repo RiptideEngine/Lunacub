@@ -11,10 +11,10 @@ public sealed class EmittableResourceDTO : ContentRepresentation {
 
 public sealed class ProcessedEmittableResourceDTO : ContentRepresentation {
     public int Value;
-    public ResourceID GeneratedId;
+    public ResourceAddress GeneratedAddress;
 
-    public ProcessedEmittableResourceDTO(int value, ResourceID generatedId) {
+    public ProcessedEmittableResourceDTO(int value, ResourceAddress generatedId) {
         Value = value;
-        GeneratedId = generatedId;
+        GeneratedAddress = generatedId;
     }
 }

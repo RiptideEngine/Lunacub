@@ -11,7 +11,9 @@ public static class BinaryWriterExtensions {
     public static void Write(this BinaryWriter writer, Matrix4x4 matrix) => writer.WriteReinterpret(matrix);
     public static void Write(this BinaryWriter writer, Plane plane) => writer.WriteReinterpret(plane);
     public static void Write(this BinaryWriter writer, Guid guid) => writer.WriteReinterpret(guid);
-    public static void Write(this BinaryWriter writer, ResourceID rid) => writer.WriteReinterpret(rid);
+    public static void Write(this BinaryWriter writer, LibraryID libraryId) => writer.WriteReinterpret(libraryId);
+    public static void Write(this BinaryWriter writer, ResourceID resourceId) => writer.WriteReinterpret(resourceId);
+    public static void Write(this BinaryWriter writer, ResourceAddress address) => writer.WriteReinterpret(address);
     
     public static void WriteReinterpret<T>(this BinaryWriter writer, T value) where T : unmanaged {
         unsafe {

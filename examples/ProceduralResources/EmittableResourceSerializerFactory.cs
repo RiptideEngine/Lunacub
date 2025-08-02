@@ -15,7 +15,7 @@ public sealed partial class EmittableResourceSerializerFactory : SerializerFacto
         public override void SerializeObject(Stream outputStream) {
             using BinaryWriter writer = new(outputStream, Encoding.UTF8, true);
             writer.Write(SerializingObject.Value);
-            writer.Write(SerializingObject.GeneratedId);
+            writer.Write(SerializingObject.GeneratedAddress);
         }
     }
 }
