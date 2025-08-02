@@ -34,7 +34,7 @@ public readonly struct ProcessingContext {
     /// <summary>
     /// Gets the procedural resources container generated during processing stage.
     /// </summary>
-    public Dictionary<ProceduralResourceID, BuildingProceduralResource> ProceduralResources { get; }
+    public ProceduralResourceCollection ProceduralResources { get; }
     
     /// <summary>
     /// Gets the <see cref="ILogger"/> instance used for debugging and reporting.
@@ -52,7 +52,7 @@ public readonly struct ProcessingContext {
         ResourceAddress = resourceAddress;
         Options = options;
         Dependencies = dependencies;
-        ProceduralResources = [];
+        ProceduralResources = new(resourceAddress.LibraryId);
         Logger = logger;
     }
 }

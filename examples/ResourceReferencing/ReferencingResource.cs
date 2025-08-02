@@ -5,5 +5,5 @@ public sealed class ReferencingResource {
 }
 
 public sealed class ReferencingResourceDTO : ContentRepresentation {
-    public ResourceID ReferenceId { get; set; }
+    public ResourceAddress Reference { get; set; }
 }

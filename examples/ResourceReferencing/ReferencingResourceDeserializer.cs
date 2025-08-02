@@ -7,9 +7,9 @@ public class ReferencingResourceDeserializer : Deserializer<ReferencingResource>
     protected override Task<ReferencingResource> DeserializeAsync(Stream dataStream, Stream optionStream, DeserializationContext context, CancellationToken cancellationToken) {
         using var reader = new BinaryReader(dataStream, Encoding.UTF8, true);
 
-        ResourceID referenceId = reader.ReadResourceID();
+        ResourceAddress referenceAddress = reader.ReadResourceAddress();
         
-        context.RequestReference(1, new(referenceId));
+        context.RequestReference(1, new(referenceAddress));
         
         return Task.FromResult(new ReferencingResource());
     }

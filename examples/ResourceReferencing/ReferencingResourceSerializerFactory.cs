@@ -15,7 +15,7 @@ public class ReferencingResourceSerializerFactory : SerializerFactory<Referencin
 
         public override void SerializeObject(Stream outputStream) {
             using BinaryWriter writer = new(outputStream, Encoding.UTF8, true);
-            writer.Write(SerializingObject.ReferenceId);
+            writer.Write(SerializingObject.Reference);
         }
     }
 }

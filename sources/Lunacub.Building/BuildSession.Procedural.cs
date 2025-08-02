@@ -146,7 +146,7 @@ partial class BuildSession {
                         }
                     }
                     
-                    _session.AppendProceduralResources(resourceAddress, processingContext.ProceduralResources, next);
+                    _session.AppendProceduralResources(resourceAddress.LibraryId, processingContext.ProceduralResources, next);
                 }
                 
                 _session.SetResult(resourceAddress, new(BuildStatus.Success));

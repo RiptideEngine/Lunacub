@@ -42,7 +42,7 @@ internal static class Program {
                 new EmittableResourceSerializerFactory(),
             },
             Libraries = {
-                new(1, new MemorySourceProvider() {
+                new(1, new MemorySourceProvider {
                     Sources = {
                         ["Resource"] = MemorySourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
                     },

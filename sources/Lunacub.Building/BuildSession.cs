@@ -131,17 +131,12 @@ internal sealed partial class BuildSession {
     }
 
     private void AppendProceduralResources(
-        ResourceAddress address,
-        IReadOnlyDictionary<ProceduralResourceID, BuildingProceduralResource> proceduralResources,
+        LibraryID libraryId,
+        ProceduralResourceCollection proceduralResources,
         Dictionary<ResourceAddress, BuildingProceduralResource> receiver
     ) {
-        foreach ((var proceduralId, var proceduralResource) in proceduralResources) {
-            ResourceID hashedId = address.ResourceId.Combine(proceduralId);
-    
-            Debug.Assert(!_environment.Libraries.ContainsResource(hashedId), "ResourceID collided.");
-            receiver.Add(address with {
-                ResourceId = hashedId,
-            }, proceduralResource);
+        foreach ((var resourceId, var resource) in proceduralResources) {
+            receiver.Add(new(libraryId, resourceId), resource);
         }
     }
     

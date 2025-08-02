@@ -5,12 +5,12 @@ namespace Caxivitual.Lunacub.Examples.ProceduralResources;
 [AutoTimestampVersion("yyyMMddHHmmss")]
 public sealed partial class EmittableResourceProcessor : Processor<EmittableResourceDTO, ProcessedEmittableResourceDTO> {
     protected override ProcessedEmittableResourceDTO Process(EmittableResourceDTO importedObject, ProcessingContext context) {
-        context.ProceduralResources.Add(1, new() {
+        context.ProceduralResources.Add(new() {
             Object = new SimpleResourceDTO {
                 Value = importedObject.Value,
-            },
-        });
+            }, 
+        }, out var address);
 
-        return new(importedObject.Value, context.ResourceAddress.ResourceId.Combine(1));
+        return new(importedObject.Value, address);
     }
 }

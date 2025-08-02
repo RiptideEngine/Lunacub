@@ -229,7 +229,7 @@ partial class BuildSession {
                     }
                 }
                 
-                AppendProceduralResources(address, processingContext.ProceduralResources, _proceduralResources);
+                AppendProceduralResources(address.LibraryId, processingContext.ProceduralResources, _proceduralResources);
                 dependencyIds = validDependencyIds;
             }
 
