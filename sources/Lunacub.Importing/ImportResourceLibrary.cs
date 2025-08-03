@@ -15,6 +15,6 @@ public sealed class ImportResourceLibrary : ResourceLibrary {
     public Stream? CreateResourceStream(ResourceID resourceId) {
         if (!Registry.ContainsKey(resourceId)) return null;
         
-        return _provider.CreateStream(new(Id, resourceId));
+        return _provider.CreateStream(resourceId);
     }
 }

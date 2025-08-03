@@ -1,4 +1,5 @@
 ﻿using Caxivitual.Lunacub.Building.Attributes;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace Caxivitual.Lunacub.Examples.ProceduralResources;

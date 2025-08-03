@@ -3,7 +3,7 @@
 namespace Caxivitual.Lunacub;
 
 public static class ResourceRegistry {
-    public readonly record struct Element(string Name, ImmutableArray<string> Tags) : IResourceRegistryElement {
+    public readonly record struct Element(string? Name, ImmutableArray<string> Tags) : IResourceRegistryElement {
         public bool Equals(Element other) {
             return Name == other.Name && Tags.SequenceEqual(other.Tags);
         }
@@ -22,7 +22,7 @@ public static class ResourceRegistry {
         }
     }
 
-    public readonly record struct Element<TOption>(string Name, ImmutableArray<string> Tags, TOption Option) : IResourceRegistryElement {
+    public readonly record struct Element<TOption>(string? Name, ImmutableArray<string> Tags, TOption Option) : IResourceRegistryElement {
         public bool Equals(Element<TOption> other) {
             return Name == other.Name && Tags.SequenceEqual(other.Tags) && EqualityComparer<TOption>.Default.Equals(Option, other.Option);
         }

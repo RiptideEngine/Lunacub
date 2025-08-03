@@ -38,13 +38,18 @@ public class ResourceRegistry<TElement>
             throw new ArgumentException(message, nameof(resourceId));
         }
         
-        if (_nameMap.TryGetValue(element.Name, out ResourceID nameId)) {
-            string message = string.Format(ExceptionMessages.ResourceNameAlreadyRegistered, element.Name, nameId.ToString());
-            throw new ArgumentException(message, nameof(element));
+        if (!string.IsNullOrEmpty(element.Name)) {
+            ref var nameReference = ref CollectionsMarshal.GetValueRefOrAddDefault(_nameMap, element.Name, out bool exists);
+            
+            if (exists) {
+                string message = string.Format(ExceptionMessages.ResourceNameAlreadyRegistered, element.Name, nameReference.ToString());
+                throw new ArgumentException(message, nameof(element));
+            }
+
+            nameReference = resourceId;
         }
         
         _resources.Add(resourceId, element);
-        _nameMap.Add(element.Name, resourceId);
     }
 
     void ICollection<KeyValuePair<ResourceID, TElement>>.Add(KeyValuePair<ResourceID, TElement> item) {
@@ -57,21 +62,28 @@ public class ResourceRegistry<TElement>
             throw new ArgumentException(message, nameof(resourceId));
         }
         
-        if (_nameMap.TryGetValue(element.Name, out ResourceID nameId)) {
-            string message = string.Format(ExceptionMessages.ResourceNameAlreadyRegistered, element.Name, nameId.ToString());
-            throw new ArgumentException(message, nameof(element));
+        if (!string.IsNullOrEmpty(element.Name)) {
+            ref var nameReference = ref CollectionsMarshal.GetValueRefOrAddDefault(_nameMap, element.Name, out bool exists);
+            
+            if (exists) {
+                string message = string.Format(ExceptionMessages.ResourceNameAlreadyRegistered, element.Name, nameReference.ToString());
+                throw new ArgumentException(message, nameof(item));
+            }
+
+            nameReference = resourceId;
         }
-        
+
         _resources.Add(resourceId, element);
-        _nameMap.Add(element.Name, resourceId);
     }
 
     public bool Remove(ResourceID resourceId) => Remove(resourceId, out _);
     
     public bool Remove(ResourceID resourceId, [NotNullWhen(true)] out TElement? output) {
         if (_resources.Remove(resourceId, out output)) {
-            bool removal = _nameMap.Remove(output.Name);
-            Debug.Assert(removal);
+            if (!string.IsNullOrEmpty(output.Name)) {
+                bool removal = _nameMap.Remove(output.Name);
+                Debug.Assert(removal);
+            }
 
             return true;
         }
@@ -97,8 +109,10 @@ public class ResourceRegistry<TElement>
 
     bool ICollection<KeyValuePair<ResourceID, TElement>>.Remove(KeyValuePair<ResourceID, TElement> item) {
         if (((ICollection<KeyValuePair<ResourceID, TElement>>)_resources).Remove(item)) {
-            bool removal = _nameMap.Remove(item.Value.Name);
-            Debug.Assert(removal);
+            if (!string.IsNullOrEmpty(item.Value.Name)) {
+                bool removal = _nameMap.Remove(item.Value.Name);
+                Debug.Assert(removal);
+            }
 
             return true;
         }
@@ -148,20 +162,25 @@ public class ResourceRegistry<TElement>
         set {
             ValidateElement(value);
             
-            if (_nameMap.TryGetValue(value.Name, out ResourceID nameId)) {
-                string message = string.Format(ExceptionMessages.ResourceNameAlreadyRegistered, value.Name, nameId.ToString());
-                throw new ArgumentException(message, nameof(value));
+            if (!string.IsNullOrEmpty(value.Name)) {
+                if (_nameMap.TryGetValue(value.Name, out ResourceID nameId)) {
+                    string message = string.Format(ExceptionMessages.ResourceNameAlreadyRegistered, value.Name, nameId.ToString());
+                    throw new ArgumentException(message, nameof(value));
+                }
             }
             
             ref var elementReference = ref CollectionsMarshal.GetValueRefOrAddDefault(_resources, resourceId, out bool exists);
             
-            if (exists) {
-                bool removal = _nameMap.Remove(elementReference!.Name);
+            if (exists && !string.IsNullOrEmpty(elementReference!.Name)) {
+                bool removal = _nameMap.Remove(elementReference.Name);
                 Debug.Assert(removal);
             }
             
             elementReference = value;
-            _nameMap.Add(value.Name, resourceId);
+
+            if (!string.IsNullOrEmpty(value.Name)) {
+                _nameMap.Add(value.Name, resourceId);
+            }
         }
     }
 
@@ -172,10 +191,6 @@ public class ResourceRegistry<TElement>
     [StackTraceHidden]
     protected virtual void ValidateElement(TElement element) {
         ArgumentNullException.ThrowIfNull(element);
-        
-        if (string.IsNullOrEmpty(element.Name)) {
-            throw new ArgumentException(ExceptionMessages.DisallowNullOrEmptyResourceName, nameof(element));
-        }
         
         for (int i = 0, e = element.Tags.Length; i < e; i++) {
             var tag = element.Tags[i];

@@ -1,5 +1,3 @@
-﻿using Caxivitual.Lunacub.Exceptions;
+﻿namespace Caxivitual.Lunacub.Importing;
 
-namespace Caxivitual.Lunacub.Importing;
-
-public abstract class ImportSourceProvider : SourceProvider<ResourceAddress>;
+public abstract class ImportSourceProvider : SourceProvider<ResourceID>;

@@ -3,6 +3,6 @@
 namespace Caxivitual.Lunacub;
 
 public interface IResourceRegistryElement {
-    string Name { get; }
+    string? Name { get; }
     ImmutableArray<string> Tags { get; }
 }

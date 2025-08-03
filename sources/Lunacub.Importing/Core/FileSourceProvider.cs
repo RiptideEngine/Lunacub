@@ -11,16 +11,12 @@ public sealed class FileSourceProvider : ImportSourceProvider {
         RootDirectory = Path.GetFullPath(rootDirectory);
         
         if (!Directory.Exists(RootDirectory)) {
-            throw new DirectoryNotFoundException($"Resource directory '{RootDirectory}' not found.");
+            throw new DirectoryNotFoundException($"Resource library directory '{RootDirectory}' not found.");
         }
     }
 
-    protected override Stream? CreateStreamCore(ResourceAddress resourceAddress) {
-        string path = Path.Combine(
-            RootDirectory,
-            resourceAddress.LibraryId.ToString(),
-            $"{resourceAddress.ResourceId}{CompilingConstants.CompiledResourceExtension}"
-        );
+    protected override Stream? CreateStreamCore(ResourceID id) {
+        string path = Path.Combine(RootDirectory, $"{id:X}{CompilingConstants.CompiledResourceExtension}");
         
         return File.Exists(path) ? File.OpenRead(path) : null;
     }

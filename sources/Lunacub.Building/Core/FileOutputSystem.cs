@@ -33,7 +33,7 @@ public class FileOutputSystem : OutputSystem {
             foreach (var reportFilePath in Directory.EnumerateFiles(libraryDirectoryPath, searchPattern, SearchOption.TopDirectoryOnly)) {
                 ReadOnlySpan<char> idPart = Path.GetFileNameWithoutExtension(reportFilePath.AsSpan());
                 
-                if (!ResourceID.TryParse(idPart, NumberStyles.Integer, null, out ResourceID resourceId)) {
+                if (!ResourceID.TryParse(idPart, NumberStyles.HexNumber, null, out ResourceID resourceId)) {
                     continue;
                 }
                 
@@ -61,7 +61,7 @@ public class FileOutputSystem : OutputSystem {
             Directory.CreateDirectory(libraryInfoPath);
 
             foreach ((var resourceId, var incrementalInfo) in libraryIncrementalInfos) {
-                string resourceInfoPath = Path.Combine(libraryInfoPath, $"{resourceId}{CompilingConstants.ReportExtension}");
+                string resourceInfoPath = Path.Combine(libraryInfoPath, $"{resourceId:X}{CompilingConstants.ReportExtension}");
 
                 using FileStream stream = File.OpenWrite(resourceInfoPath);
 
@@ -100,7 +100,7 @@ public class FileOutputSystem : OutputSystem {
     }
 
     private string GetCompiledResourcePath(ResourceAddress address) {
-        return Path.Combine(ResourceOutputDirectory, address.LibraryId.ToString(), $"{address.ResourceId}{CompilingConstants.CompiledResourceExtension}");
+        return Path.Combine(ResourceOutputDirectory, address.LibraryId.ToString(), $"{address.ResourceId:X}{CompilingConstants.CompiledResourceExtension}");
     }
 
     private string GetLibraryRegistryPath(LibraryID libraryId) {

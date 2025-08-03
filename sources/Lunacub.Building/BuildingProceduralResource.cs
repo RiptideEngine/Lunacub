@@ -1,6 +1,4 @@
-﻿using System.Collections.Frozen;
-
-namespace Caxivitual.Lunacub.Building;
+﻿namespace Caxivitual.Lunacub.Building;
 
 [DebuggerDisplay("{ToString(),nq}")]
 public readonly struct BuildingProceduralResource : IEquatable<BuildingProceduralResource> {
@@ -23,7 +21,7 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     /// <summary>
     /// Get the tags of the resource.
     /// </summary>
-    public IReadOnlyCollection<string> Tags { get; init; }
+    public ImmutableArray<string> Tags { get; init; }
     
     /// <summary>
     /// Gets the importing option object that can be used for building resource.
@@ -44,7 +42,7 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     public BuildingProceduralResource(
         ContentRepresentation obj,
         string? processorName,
-        IReadOnlyCollection<string> tags,
+        ImmutableArray<string> tags,
         IImportOptions? options
     ) {
         Object = obj;

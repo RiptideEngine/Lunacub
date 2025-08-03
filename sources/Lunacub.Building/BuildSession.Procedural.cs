@@ -150,6 +150,7 @@ partial class BuildSession {
                 }
                 
                 _session.SetResult(resourceAddress, new(BuildStatus.Success));
+                _session.AddOutputResourceRegistry(resourceAddress, new(null, resource.Tags));
             } finally {
                 _session.ReleaseDependencies(resource.DependencyAddresses);
             }

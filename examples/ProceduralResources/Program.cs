@@ -3,6 +3,8 @@ using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.IO;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
 using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
 
@@ -44,7 +46,7 @@ internal static class Program {
             Libraries = {
                 new(1, new MemorySourceProvider {
                     Sources = {
-                        ["Resource"] = MemorySourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
+                        ["Resource"] = MemorySourceProvider.AsUtf8("""{"Value":16}""", DateTime.MinValue),
                     },
                 }) {
                     Registry = {
@@ -55,12 +57,22 @@ internal static class Program {
                     },
                 },
             },
+            Logger = _logger,
         };
         
         env.BuildResources();
     }
     
     private static async Task ImportResource(string resourceDirectory) {
+        string libraryDirectory = Path.Combine(resourceDirectory, "1");
+        ImportResourceLibrary library = new(1, new FileSourceProvider(libraryDirectory));
+
+        using (var registryStream = File.OpenRead(Path.Combine(libraryDirectory, "__registry"))) {
+            foreach ((var resourceId, var element) in JsonSerializer.Deserialize<ResourceRegistry<ResourceRegistry.Element>>(registryStream)!) {
+                library.Registry.Add(resourceId, element);
+            }
+        }
+        
         using ImportEnvironment importEnvironment = new ImportEnvironment {
             Deserializers = {
                 [nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer(),
@@ -68,13 +80,11 @@ internal static class Program {
             },
             Logger = _logger,
             Libraries = {
-                new(1, new FileSourceProvider(resourceDirectory)) {
-                    Registry = {
-                        [1] = new("Resource", []),
-                    },
-                },
+                library,
             },
         };
+        
+        GC.KeepAlive(library);
         
         ResourceHandle<EmittableResource> handle = (await importEnvironment.Import(new(1, 1))).Convert<EmittableResource>();
         

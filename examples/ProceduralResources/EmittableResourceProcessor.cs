@@ -10,7 +10,7 @@ public sealed partial class EmittableResourceProcessor : Processor<EmittableReso
                 Value = importedObject.Value,
             }, 
         }, out var address);
-
+        
         return new(importedObject.Value, address);
     }
 }
