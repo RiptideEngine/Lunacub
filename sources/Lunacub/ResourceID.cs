@@ -17,17 +17,21 @@ public readonly struct ResourceID :
     ISpanParsable<ResourceID>,
     IUtf8SpanParsable<ResourceID>
 {
+    // Prevent using UInt128 due to it's alignment.    
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _lower;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _upper;
+
     /// <summary>
-    /// The underlying 128-bit unsigned integer value of <see cref="ResourceID"/>.
+    /// Gets the 128-bit unsigned integer that is reinterpreted from the id.
     /// </summary>
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] public UInt128 Value { get; }
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)] public UInt128 Value => Unsafe.BitCast<ResourceID, UInt128>(this);
     
     /// <summary>
     /// Creates a new instance of <see cref="ResourceID"/> with the specified 128-bit unsigned integer value.
     /// </summary>
     /// <param name="value">The specified 128-bit unsigned integer value to create <see cref="ResourceID"/> from.</param>
     public ResourceID(UInt128 value) {
-        Value = value;
+        this = Unsafe.BitCast<UInt128, ResourceID>(value);
     }
 
     /// <summary>
@@ -295,6 +299,7 @@ public readonly struct ResourceID :
     public static bool operator !=(ResourceID left, UInt128 right) => left.Value != right;
     
     public static implicit operator ResourceID(uint value) => new(value);
+    public static implicit operator ResourceID(ulong value) => new(value);
     public static implicit operator ResourceID(UInt128 value) => new(value);
     public static implicit operator UInt128(ResourceID value) => value.Value;
 

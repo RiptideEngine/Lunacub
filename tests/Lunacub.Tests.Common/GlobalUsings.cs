@@ -7,5 +7,3 @@ global using Caxivitual.Lunacub.Compilation;
 global using Caxivitual.Lunacub.Extensions;
 global using Caxivitual.Lunacub.Building;
 global using Caxivitual.Lunacub.Importing;
-
-global using System.IO.Abstractions.TestingHelpers;

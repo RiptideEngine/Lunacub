@@ -71,7 +71,7 @@ internal static class Program {
             },
             Logger = _logger,
             Libraries = {
-                new(1, new FileSourceProvider(resourceDirectory)) {
+                new(1, new FileSourceProvider(Path.Combine(resourceDirectory, "1"))) {
                     Registry = {
                         [1] = new("Resource", []),
                         [2] = new("Reference", []),

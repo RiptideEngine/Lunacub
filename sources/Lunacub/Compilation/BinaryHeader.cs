@@ -72,53 +72,63 @@ public readonly struct BinaryHeader {
                 ArrayPool<KeyValuePair<uint, uint>>.Shared.Return(rentedArray);
             }
         }
+
+        static unsafe void ValidateChunkInformations(
+            Stream stream,
+            ReadOnlySpan<KeyValuePair<uint, uint>> chunkPositions,
+            ImmutableArray<ChunkInformation>.Builder chunkInfoBuilder)
+        {
+            Span<uint> buffer = stackalloc uint[2];
+            
+            foreach ((uint chunkTag, uint position) in chunkPositions) {
+                ReadOnlySpan<byte> chunkTagBytes = new ReadOnlySpan<byte>(&chunkTag, sizeof(uint));
+
+                if (position >= stream.Length) {
+                    string chunkName = Encoding.ASCII.GetString(chunkTagBytes);
+                    string message = string.Format(ExceptionMessages.ChunkPositionSurpassedStreamLength, chunkName);
+                    
+                    throw new CorruptedBinaryException(message);
+                }
+                
+                stream.Seek(position, SeekOrigin.Begin);
+
+                if (stream.Read(MemoryMarshal.AsBytes(buffer)) < 8) {
+                    string chunkName = Encoding.ASCII.GetString(chunkTagBytes);
+                    string message = string.Format(ExceptionMessages.FailedToReadChunkHeader, chunkName);
+                    
+                    throw new CorruptedBinaryException(message);
+                }
+
+                uint validatingChunk = buffer[0];
+                
+                if (validatingChunk != chunkTag) {
+                    string chunkName = Encoding.ASCII.GetString(chunkTagBytes);
+                    string message = string.Format(ExceptionMessages.ExpectedChunkAtPosition, chunkName, position);
+                    
+                    throw new CorruptedBinaryException(message);
+                }
+                
+                uint contentLength = buffer[1];
+                
+                if (stream.Position + contentLength > stream.Length) {
+                    string chunkName = Encoding.ASCII.GetString(chunkTagBytes);
+                    string message = string.Format(ExceptionMessages.ChunkContentLengthOverflow, chunkName);
+                    
+                    throw new CorruptedBinaryException(message);
+                }
+                
+                chunkInfoBuilder.Add(new(chunkTag, contentLength, stream.Position));
+            }
+        }
     }
 
-    private static unsafe void ValidateChunkInformations(
-        Stream stream,
-        ReadOnlySpan<KeyValuePair<uint, uint>> chunkPositions,
-        ImmutableArray<ChunkInformation>.Builder chunkInfoBuilder)
-    {
-        Span<uint> buffer = stackalloc uint[2];
-        
-        foreach ((uint chunkTag, uint position) in chunkPositions) {
-            ReadOnlySpan<byte> chunkTagBytes = new ReadOnlySpan<byte>(&chunkTag, sizeof(uint));
-
-            if (position >= stream.Length) {
-                string chunkName = Encoding.ASCII.GetString(chunkTagBytes);
-                string message = string.Format(ExceptionMessages.ChunkPositionSurpassedStreamLength, chunkName);
+    public static BinaryHeader Extract(ReadOnlySpan<byte> bytes) {
+        unsafe {
+            fixed (byte* ptr = bytes) {
+                using UnmanagedMemoryStream stream = new(ptr, bytes.Length);
                 
-                throw new CorruptedBinaryException(message);
+                return Extract(stream);
             }
-            
-            stream.Seek(position, SeekOrigin.Begin);
-
-            if (stream.Read(MemoryMarshal.AsBytes(buffer)) < 8) {
-                string chunkName = Encoding.ASCII.GetString(chunkTagBytes);
-                string message = string.Format(ExceptionMessages.FailedToReadChunkHeader, chunkName);
-                
-                throw new CorruptedBinaryException(message);
-            }
-
-            uint validatingChunk = buffer[0];
-            
-            if (validatingChunk != chunkTag) {
-                string chunkName = Encoding.ASCII.GetString(chunkTagBytes);
-                string message = string.Format(ExceptionMessages.ExpectedChunkAtPosition, chunkName, position);
-                
-                throw new CorruptedBinaryException(message);
-            }
-            
-            uint contentLength = buffer[1];
-            
-            if (stream.Position + contentLength > stream.Length) {
-                string chunkName = Encoding.ASCII.GetString(chunkTagBytes);
-                string message = string.Format(ExceptionMessages.ChunkContentLengthOverflow, chunkName);
-                
-                throw new CorruptedBinaryException(message);
-            }
-            
-            chunkInfoBuilder.Add(new(chunkTag, contentLength, stream.Position));
         }
     }
 }

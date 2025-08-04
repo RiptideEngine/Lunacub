@@ -6,32 +6,32 @@ namespace Caxivitual.Lunacub.Tests;
 public class SourceProviderTests {
     [Fact]
     public void ReturnsNullStream_ShouldNotThrowException() {
-        SourceProvider provider = new NullReturnSourceProvider();
+        var provider = new NullReturnSourceProvider();
         new Func<Stream?>(() => provider.CreateStream(string.Empty)).Should().NotThrow().Which.Should().BeNull();
     }
 
     [Fact]
     public void ReturnsUnreadableStream_ShouldThrowException() {
-        SourceProvider provider = new ConfigurableStreamSourceProvider(false, true, true);
+        var provider = new ConfigurableStreamSourceProvider(false, true, true);
         new Func<Stream?>(() => provider.CreateStream(string.Empty))
             .Should().Throw<InvalidResourceStreamException>().WithMessage("*readable*");
     }
     
     [Fact]
     public void ReturnsUnseekableStream_ShouldThrowException() {
-        SourceProvider provider = new ConfigurableStreamSourceProvider(true, false, true);
+        var provider = new ConfigurableStreamSourceProvider(true, false, true);
         new Func<Stream?>(() => provider.CreateStream(string.Empty))
             .Should().Throw<InvalidResourceStreamException>().WithMessage("*seekable*");
     }
 
     [Fact]
     public void ReturnsWritableStream_ShouldThrowException() {
-        SourceProvider provider = new ConfigurableStreamSourceProvider(true, true, true);
+        var provider = new ConfigurableStreamSourceProvider(true, true, true);
         new Func<Stream?>(() => provider.CreateStream(string.Empty))
             .Should().Throw<InvalidResourceStreamException>().WithMessage("*not*writable*");
     }
     
-    private sealed class NullReturnSourceProvider : SourceProvider {
+    private sealed class NullReturnSourceProvider : SourceProvider<string> {
         protected override Stream? CreateStreamCore(string address) {
             return null;
         }
@@ -60,7 +60,7 @@ public class SourceProviderTests {
         public override void Write(byte[] buffer, int offset, int count) { }
     }
 
-    private sealed class ConfigurableStreamSourceProvider(bool readable, bool seekable, bool writable) : SourceProvider {
+    private sealed class ConfigurableStreamSourceProvider(bool readable, bool seekable, bool writable) : SourceProvider<string> {
         protected override Stream? CreateStreamCore(string address) {
             return new ConfigurableStream(readable, seekable, writable);
         }

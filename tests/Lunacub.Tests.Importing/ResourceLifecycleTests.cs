@@ -65,7 +65,7 @@ public class ResourceLifecycleTests : IDisposable {
 
     [Fact]
     public void ReleaseByID_NullID_ReturnsNullStatus() {
-        new Func<ReleaseStatus>(() => _importEnvironment.Release(ResourceID.Null)).Should().NotThrow().Which.Should().Be(ReleaseStatus.Null);
+        new Func<ReleaseStatus>(() => _importEnvironment.Release(default)).Should().NotThrow().Which.Should().Be(ReleaseStatus.Null);
     }
     
     [Fact]

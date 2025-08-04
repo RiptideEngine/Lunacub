@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-namespace Caxivitual.Lunacub.Tests.Common;
+﻿namespace Caxivitual.Lunacub.Tests.Common;
 
 public sealed class ReferencingResource : IDisposable {
     public ReferencingResource? Reference { get; set; }
@@ -14,7 +12,7 @@ public sealed class ReferencingResource : IDisposable {
 }
 
 public sealed class ReferencingResourceDTO : ContentRepresentation {
-    public ResourceID Reference { get; set; }
+    public ResourceAddress ReferenceAddress { get; set; }
     public int Value { get; set; }
 }
 
@@ -40,7 +38,7 @@ public sealed class ReferencingResourceSerializerFactory : SerializerFactory<Ref
             
             using var writer = new BinaryWriter(outputStream, Encoding.UTF8, leaveOpen: true);
         
-            writer.Write(serializing.Reference);
+            writer.Write(serializing.ReferenceAddress);
             writer.Write(serializing.Value);
         }
     }
@@ -50,7 +48,7 @@ public sealed class ReferencingResourceDeserializer : Deserializer<ReferencingRe
     protected override Task<ReferencingResource> DeserializeAsync(Stream dataStream, Stream optionsStream, DeserializationContext context, CancellationToken cancellationToken) {
         using var reader = new BinaryReader(dataStream, Encoding.UTF8, true);
         
-        context.RequestingReferences.Add(1, new(reader.ReadResourceID()));
+        context.RequestingReferences.Add(1, new(reader.ReadResourceAddress()));
 
         return Task.FromResult(new ReferencingResource { Value = reader.ReadInt32() });
     }

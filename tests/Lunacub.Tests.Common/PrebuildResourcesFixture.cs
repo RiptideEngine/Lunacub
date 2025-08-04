@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using BuildMemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
 using ImportMemorySourceProvider = Caxivitual.Lunacub.Importing.Core.MemorySourceProvider;
 
@@ -47,13 +48,13 @@ public sealed class PrebuildResourcesFixture {
         };
         
         var buildSourceProvider = new BuildMemorySourceProvider();
-        var buildLibrary = new BuildResourceLibrary(buildSourceProvider);
+        var buildLibrary = new BuildResourceLibrary(1, buildSourceProvider);
 
         AppendBuildingResources(buildSourceProvider, buildLibrary);
 
         _buildOutput = new();
         
-        using BuildEnvironment buildEnv = new BuildEnvironment(_buildOutput) {
+        using BuildEnvironment buildEnv = new BuildEnvironment(_buildOutput, new()) {
             Libraries = {
                 buildLibrary,
             },
@@ -72,15 +73,6 @@ public sealed class PrebuildResourcesFixture {
         }
 
         buildEnv.BuildResources();
-        
-        // Create Import Environment
-        var importSourceProvider = new ImportMemorySourceProvider();
-        var importLibrary = new ImportResourceLibrary(importSourceProvider);
-
-        foreach ((var resourceId, var registryElement) in _buildOutput.OutputRegistry) {
-            importSourceProvider.Resources.Add(resourceId, _buildOutput.OutputResources[resourceId].Item1);
-            importLibrary.Registry.Add(resourceId, registryElement);
-        }
     }
 
     private static void AppendBuildingResources(BuildMemorySourceProvider sourceProvider, BuildResourceLibrary library) {
@@ -106,17 +98,17 @@ public sealed class PrebuildResourcesFixture {
 
         static void AppendReferencingResources(BuildMemorySourceProvider sourceProvider, BuildResourceLibrary library) {
             // No reference.
-            AppendReferencingResource(ReferencingResourceNoReference, $"{nameof(ReferencingResource)}_NoReference", 1, ResourceID.Null);
+            AppendReferencingResource(ReferencingResourceNoReference, $"{nameof(ReferencingResource)}_NoReference", 1, default);
             
             // 2 objects chain.
             AppendReferencingResource(ReferencingResource2ObjectsChainA, $"{nameof(ReferencingResource)}_2ObjectsChainA", 1, ReferencingResource2ObjectsChainB);
-            AppendReferencingResource(ReferencingResource2ObjectsChainB, $"{nameof(ReferencingResource)}_2ObjectsChainB", 2, ResourceID.Null);
+            AppendReferencingResource(ReferencingResource2ObjectsChainB, $"{nameof(ReferencingResource)}_2ObjectsChainB", 2, default);
             
             // 4 objects chain
             AppendReferencingResource(ReferencingResource4ObjectsChainA, $"{nameof(ReferencingResource)}_4ObjectsChainA", 1, ReferencingResource4ObjectsChainB);
             AppendReferencingResource(ReferencingResource4ObjectsChainB, $"{nameof(ReferencingResource)}_4ObjectsChainB", 2, ReferencingResource4ObjectsChainC);
             AppendReferencingResource(ReferencingResource4ObjectsChainC, $"{nameof(ReferencingResource)}_4ObjectsChainC", 3, ReferencingResource4ObjectsChainD);
-            AppendReferencingResource(ReferencingResource4ObjectsChainD, $"{nameof(ReferencingResource)}_4ObjectsChainD", 4, ResourceID.Null);
+            AppendReferencingResource(ReferencingResource4ObjectsChainD, $"{nameof(ReferencingResource)}_4ObjectsChainD", 4, default);
             
             // Self reference
             AppendReferencingResource(ReferencingResourceSelfReference, $"{nameof(ReferencingResource)}_SelfReference", 1, ReferencingResourceSelfReference);
@@ -134,8 +126,26 @@ public sealed class PrebuildResourcesFixture {
             return;
 
             void AppendReferencingResource(ResourceID id, string name, int value, ResourceID reference) {
+                using MemoryStream stream = new MemoryStream();
+                using Utf8JsonWriter writer = new(stream);
+                
+                writer.WriteStartObject();
+                {
+                    writer.WritePropertyName("ReferenceAddress");
+                    writer.WriteStartObject();
+                    {
+                        writer.WriteNumber("LibraryId", 1);
+                        writer.WritePropertyName("ResourceId");
+                        writer.WriteRawValue(reference.ToString());
+                    }
+                    writer.WriteEndObject();
+                    
+                    writer.WriteNumber("Value", value);
+                }
+                writer.WriteEndObject();
+                
                 sourceProvider.Sources
-                    .Add(name, BuildMemorySourceProvider.AsUtf8($$"""{"Value":{{value}},"Reference":{{reference}}}""", DateTime.MinValue));
+                    .Add(name, new(ImmutableCollectionsMarshal.AsImmutableArray(stream.ToArray()), DateTime.MinValue));
             
                 library.Registry.Add(id, new(name, [], new() {
                     Addresses = new(name),
@@ -177,10 +187,13 @@ public sealed class PrebuildResourcesFixture {
 
     public ImportEnvironment CreateImportEnvironment() {
         var importSourceProvider = new ImportMemorySourceProvider();
-        var importLibrary = new ImportResourceLibrary(importSourceProvider);
+        var importLibrary = new ImportResourceLibrary(1, importSourceProvider);
 
-        foreach ((var resourceId, var registryElement) in _buildOutput.OutputRegistry) {
-            importSourceProvider.Resources.Add(resourceId, _buildOutput.OutputResources[resourceId].Item1);
+        foreach ((var resourceId, var compiledBinary) in _buildOutput.Outputs[1].CompiledResources) {
+            importSourceProvider.Resources.Add(resourceId, compiledBinary.Item1);
+        }
+
+        foreach ((var resourceId, var registryElement) in _buildOutput.Outputs[1].Registry) {
             importLibrary.Registry.Add(resourceId, registryElement);
         }
         

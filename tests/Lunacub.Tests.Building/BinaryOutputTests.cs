@@ -1,23 +1,27 @@
 ﻿// ReSharper disable AccessToDisposedClosure
 
 using Caxivitual.Lunacub.Extensions;
+using Microsoft.IO;
 using Newtonsoft.Json;
+using System.Buffers.Binary;
+using System.Collections.Immutable;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Caxivitual.Lunacub.Tests.Building;
 
-public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDisposable {
+public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClassFixture<MemoryStreamManagerFixture>, IDisposable {
+    private readonly MemoryOutputSystem _buildOutput;
     private readonly BuildEnvironment _environment;
 
-    public BinaryOutputTests(ComponentsFixture componentsFixture) {
-        _environment = new(new MockOutputSystem());
+    public BinaryOutputTests(ComponentsFixture componentsFixture, MemoryStreamManagerFixture memoryStreamFixture) {
+        _environment = new(_buildOutput = new(), memoryStreamFixture.Manager);
         
         componentsFixture.ApplyComponents(_environment);
     }
     
     [Fact]
     public void BuildSimpleResource_OutputCorrectBinary() {
-        _environment.Libraries.Add(new(new MemorySourceProvider {
+        _environment.Libraries.Add(new(1, new MemorySourceProvider {
             Sources = {
                 ["Resource"] = MemorySourceProvider.AsUtf8("""{"Value":255}""", DateTime.MinValue),
             },
@@ -30,28 +34,30 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
             },
         });
         
-        new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.ResourceResults.Should().ContainSingle();
+        var result = new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow()
+            .Which.EnvironmentResults.Should().ContainSingle()
+            .Which.Value.Should().ContainSingle()
+            .Which;
 
-        MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
-        using Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 1)).Should().NotThrow().Which;
-        BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(stream)).Should().NotThrow().Which;
+        result.Key.Should().Be((ResourceID)1);
+        result.Value.Status.Should().Be(BuildStatus.Success);
+        result.Value.Exception.Should().BeNull();
+
+        ImmutableArray<byte> compiledBinary = new Func<ImmutableArray<byte>>(() => _buildOutput.Outputs[1].CompiledResources[1].Item1).Should().NotThrow().Which;
+        BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
 
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
         dataChunkInfo.Length.Should().Be(4);
-        
-        stream.Seek(dataChunkInfo.ContentOffset, SeekOrigin.Begin);
 
-        using BinaryReader br = new(stream);
-
-        br.ReadInt32().Should().Be(255);
+        compiledBinary.Slice((int)dataChunkInfo.ContentOffset, 4).Should().Equal(BitConverter.GetBytes(255));
     }
     
     [Fact]
     public unsafe void BuildReferenceResource_OutputCorrectBinary() {
-        _environment.Libraries.Add(new(new MemorySourceProvider {
+        _environment.Libraries.Add(new(1, new MemorySourceProvider {
             Sources = {
-                ["Resource"] = MemorySourceProvider.AsUtf8("""{"Reference":2,"Value":50}""", DateTime.MinValue),
-                ["Reference"] = MemorySourceProvider.AsUtf8("""{"Reference":1,"Value":100}""", DateTime.MinValue),
+                ["Resource"] = MemorySourceProvider.AsUtf8("""{"ReferenceAddress":{"LibraryId":1,"ResourceId":2},"Value":50}""", DateTime.MinValue),
+                ["Reference"] = MemorySourceProvider.AsUtf8("""{"Value":100}""", DateTime.MinValue),
             },
         }) {
             Registry = {
@@ -66,42 +72,38 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
             },
         });
 
-        new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.ResourceResults.Should().HaveCount(2);
+        new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow()
+            .Which.EnvironmentResults.Should().ContainSingle()
+            .Which.Value.Should().HaveCount(2);
 
-        MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
+        ImmutableArray<byte> compiledBinary = new Func<ImmutableArray<byte>>(() => _buildOutput.Outputs[1].CompiledResources[1].Item1).Should().NotThrow().Which;
+        BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
 
-        using (Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 1)).Should().NotThrow().Which) {
-            BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(stream)).Should().NotThrow().Which;
-            
-            layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
-            dataChunkInfo.Length.Should().Be((uint)(sizeof(ResourceID) + sizeof(int)));
+        layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
+        dataChunkInfo.Length.Should().Be((uint)(sizeof(ResourceAddress) + sizeof(int)));
 
-            stream.Seek(dataChunkInfo.ContentOffset, SeekOrigin.Begin);
+        compiledBinary.Slice((int)dataChunkInfo.ContentOffset, sizeof(ResourceAddress) + sizeof(int)).Should().Equal([
+            ..BitConverter.GetBytes(new LibraryID(1).Value),
+            ..BitConverter.GetBytes(new ResourceID(2).Value),
+            ..BitConverter.GetBytes(50),
+        ]);
 
-            using (BinaryReader br = new(stream)) {
-                br.ReadResourceID().Should().Be(new ResourceID(2));
-                br.ReadInt32().Should().Be(50);
-            }
-        }
-        
-        using (Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 2)).Should().NotThrow().Which) {
-            BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(stream)).Should().NotThrow().Which;
-            
-            layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
-            dataChunkInfo.Length.Should().Be((uint)(sizeof(ResourceID) + sizeof(int)));
+        compiledBinary = new Func<ImmutableArray<byte>>(() => _buildOutput.Outputs[1].CompiledResources[2].Item1).Should().NotThrow().Which;
+        layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
 
-            stream.Seek(dataChunkInfo.ContentOffset, SeekOrigin.Begin);
+        layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out dataChunkInfo).Should().BeTrue();
+        dataChunkInfo.Length.Should().Be((uint)(sizeof(ResourceAddress) + sizeof(int)));
 
-            using (BinaryReader br = new(stream)) {
-                br.ReadResourceID().Should().Be(new ResourceID(1));
-                br.ReadInt32().Should().Be(100);
-            }
-        }
+        compiledBinary.Slice((int)dataChunkInfo.ContentOffset, sizeof(ResourceAddress) + sizeof(int)).Should().Equal([
+            ..BitConverter.GetBytes(new LibraryID(0).Value),
+            ..BitConverter.GetBytes(new ResourceID(0).Value),
+            ..BitConverter.GetBytes(100),
+        ]);
     }
     
     [Fact]
     public void BuildConfigurableResource_Json_OutputCorrectBinary() {
-        _environment.Libraries.Add(new(new MemorySourceProvider {
+        _environment.Libraries.Add(new(1, new MemorySourceProvider {
             Sources = {
                 ["Resource"] = MemorySourceProvider.AsUtf8("[1,2,3,4,5]", DateTime.MinValue),
             },
@@ -114,26 +116,27 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
             },
         });
         
-        new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.ResourceResults.Should().ContainSingle();
+        var result = new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow()
+            .Which.EnvironmentResults.Should().ContainSingle()
+            .Which.Value.Should().ContainSingle()
+            .Which;
 
-        MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
-        using (Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 1)).Should().NotThrow().Which) {
-            BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(stream)).Should().NotThrow().Which;
+        result.Key.Should().Be((ResourceID)1);
+        result.Value.Status.Should().Be(BuildStatus.Success);
+        result.Value.Exception.Should().BeNull();
+    
+        ImmutableArray<byte> compiledBinary = new Func<ImmutableArray<byte>>(() => _buildOutput.Outputs[1].CompiledResources[1].Item1).Should().NotThrow().Which;
+        BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
 
-            layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
-            dataChunkInfo.Length.Should().Be(11);
+        layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
+        dataChunkInfo.Length.Should().Be(11);
 
-            byte[] buffer = new byte[dataChunkInfo.Length];
-            stream.Seek(dataChunkInfo.ContentOffset, SeekOrigin.Begin);
-            stream.ReadExactly(buffer);
-
-            JsonSerializer.Deserialize<int[]>(buffer).Should().Equal(1, 2, 3, 4, 5);
-        }
+        compiledBinary.Slice((int)dataChunkInfo.ContentOffset, 11).Should().Equal("[1,2,3,4,5]"u8.ToArray());
     }
     
     [Fact]
     public void BuildConfigurableResource_Binary_OutputCorrectBinary() {
-        _environment.Libraries.Add(new(new MemorySourceProvider {
+        _environment.Libraries.Add(new(1, new MemorySourceProvider {
             Sources = {
                 ["Resource"] = MemorySourceProvider.AsUtf8("[1,2,3,4,5]", DateTime.MinValue),
             },
@@ -146,29 +149,28 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IDispo
             },
         });
         
-        new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.ResourceResults.Should().ContainSingle();
+        var result = new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow()
+            .Which.EnvironmentResults.Should().ContainSingle()
+            .Which.Value.Should().ContainSingle()
+            .Which;
 
-        MockFileSystem fs = ((MockOutputSystem)_environment.Output).FileSystem;
-        using (Stream stream = new Func<Stream>(() => GetResourceBinaryStream(fs, 1)).Should().NotThrow().Which) {
-            BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(stream)).Should().NotThrow().Which;
+        result.Key.Should().Be((ResourceID)1);
+        result.Value.Status.Should().Be(BuildStatus.Success);
+        result.Value.Exception.Should().BeNull();
+    
+        ImmutableArray<byte> compiledBinary = new Func<ImmutableArray<byte>>(() => _buildOutput.Outputs[1].CompiledResources[1].Item1).Should().NotThrow().Which;
+        BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
 
-            layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
-            dataChunkInfo.Length.Should().Be(20);
+        layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
+        dataChunkInfo.Length.Should().Be(20);
 
-            stream.Seek(dataChunkInfo.ContentOffset, SeekOrigin.Begin);
-            
-            using BinaryReader br = new(stream);
-            
-            br.ReadInt32().Should().Be(1);
-            br.ReadInt32().Should().Be(2);
-            br.ReadInt32().Should().Be(3);
-            br.ReadInt32().Should().Be(4);
-            br.ReadInt32().Should().Be(5);
-        }
-    }
-
-    private static Stream GetResourceBinaryStream(MockFileSystem fs, ResourceID rid) {
-        return fs.File.OpenRead(fs.Path.Combine(MockOutputSystem.ResourceOutputDirectory, $"{rid}{CompilingConstants.CompiledResourceExtension}"));
+        compiledBinary.Slice((int)dataChunkInfo.ContentOffset, 20).Should().Equal([
+            ..BitConverter.GetBytes(1),
+            ..BitConverter.GetBytes(2),
+            ..BitConverter.GetBytes(3),
+            ..BitConverter.GetBytes(4),
+            ..BitConverter.GetBytes(5),
+        ]);
     }
 
     public void Dispose() {

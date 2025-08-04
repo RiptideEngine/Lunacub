@@ -102,7 +102,7 @@ public class FileOutputSystem : OutputSystem {
     }
 
     private string GetCompiledResourcePath(ResourceAddress address) {
-        return Path.Combine(ResourceOutputDirectory, address.LibraryId.ToString(), $"{address.ResourceId:X}{CompilingConstants.CompiledResourceExtension}");
+        return Path.Combine(ResourceOutputDirectory, address.LibraryId.ToString("X"), $"{address.ResourceId:X}{CompilingConstants.CompiledResourceExtension}");
     }
 
     private string GetLibraryRegistryPath(LibraryID libraryId) {

@@ -48,7 +48,7 @@
 //     
 //     [Fact]
 //     public void RequestReference_NonGeneric_IgnoreNullResourceID() {
-//         new Action(() => _context.RequestReference(new(10), ResourceID.Null, typeof(object))).Should().NotThrow();
+//         new Action(() => _context.RequestReference(new(10), default, typeof(object))).Should().NotThrow();
 //         
 //         _context.RequestingReferences.Should().BeEmpty();
 //     }
@@ -71,7 +71,7 @@
 //     
 //     [Fact]
 //     public void RequestReference_Generic_IgnoreNullResourceID() {
-//         new Action(() => _context.RequestReference<object>(new(10), ResourceID.Null)).Should().NotThrow();
+//         new Action(() => _context.RequestReference<object>(new(10), default)).Should().NotThrow();
 //         
 //         _context.RequestingReferences.Should().BeEmpty();
 //     }

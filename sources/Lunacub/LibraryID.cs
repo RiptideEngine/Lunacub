@@ -22,11 +22,11 @@ public readonly struct LibraryID :
     /// valid resource library identifier.
     /// </summary>
     public static LibraryID Null => default;
-    
+
     /// <summary>
     /// The underlying 64-bit unsigned integer value of <see cref="LibraryID"/>.
     /// </summary>
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] public ulong Value { get; }
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)] public readonly ulong Value;
     
     /// <summary>
     /// Creates a new instance of <see cref="LibraryID"/> with the specified 64-bit unsigned integer value.

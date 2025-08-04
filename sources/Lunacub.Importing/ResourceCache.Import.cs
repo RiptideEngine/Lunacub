@@ -33,7 +33,7 @@
 //     }
 //
 //     private async Task<ResourceContainer?> GetOrCreateResourceContainer(ResourceID resourceId) {
-//         if (resourceId == ResourceID.Null) return null;
+//         if (resourceId == default) return null;
 //         
 //         if (!_environment.Libraries.ContainsResource(resourceId)) {
 //             Log.UnregisteredResource(_environment.Logger, resourceId);

@@ -23,7 +23,7 @@ public class ResourceRegistryOfTTests {
     
     [Fact]
     public void Add_NullId_ShouldThrowArgumentExceptionReportIdAlreadyRegistered() {
-        new Action(() => _registry.Add(ResourceID.Null, new("A", []))).Should().Throw<ArgumentException>().WithMessage("*null*");
+        new Action(() => _registry.Add(default, new("A", []))).Should().Throw<ArgumentException>().WithMessage("*null*");
     }
 
     [Fact]
@@ -97,7 +97,7 @@ public class ResourceRegistryOfTTests {
         ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
         
         new Action(() => {
-            registry.Add(KeyValuePair.Create<ResourceID, ResourceRegistry.Element>(ResourceID.Null, new("A", [])));
+            registry.Add(KeyValuePair.Create<ResourceID, ResourceRegistry.Element>(default, new("A", [])));
         }).Should().Throw<ArgumentException>().WithMessage("*null*");
     }
 
@@ -646,6 +646,6 @@ public class ResourceRegistryOfTTests {
 
     [Fact]
     public void SetIndexer_NullResourceId_ShouldThrowArgumentException() {
-        new Action(() => _registry[ResourceID.Null] = default).Should().Throw<ArgumentException>().WithMessage("*null*");
+        new Action(() => _registry[default] = default).Should().Throw<ArgumentException>().WithMessage("*null*");
     }
 }

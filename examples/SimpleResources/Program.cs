@@ -3,6 +3,8 @@ using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
@@ -61,7 +63,7 @@ internal static class Program {
         using ImportEnvironment importEnvironment = new ImportEnvironment();
         importEnvironment.Deserializers[nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer();
         importEnvironment.Logger = _logger;
-        importEnvironment.Libraries.Add(new(1, new FileSourceProvider(resourceDirectory)) {
+        importEnvironment.Libraries.Add(new(1, new FileSourceProvider(Path.Combine(resourceDirectory, "1"))) {
             Registry = {
                 [1] = new("Resource", []),
             },
