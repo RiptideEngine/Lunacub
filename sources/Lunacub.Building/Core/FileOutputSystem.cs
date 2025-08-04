@@ -49,9 +49,7 @@ public class FileOutputSystem : OutputSystem {
     public override void CollectProceduralSchematic(EnvironmentProceduralSchematic receiver) {
         string filePath = ProceduralSchematicFilePath;
 
-        if (!File.Exists(filePath)) {
-            return;
-        }
+        if (!File.Exists(filePath)) return;
         
         using var stream = File.OpenRead(filePath);
 

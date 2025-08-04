@@ -5,7 +5,7 @@ namespace Caxivitual.Lunacub.Examples.MergeDependency;
 
 [AutoTimestampVersion("yyyMMddHHmmss")]
 public sealed partial class MergingResourceImporter : Importer<MergingResourceDTO> {
-    public override IReadOnlyCollection<ResourceID> ExtractDependencies(SourceStreams sourceStream) {
+    public override IReadOnlyCollection<ResourceAddress> ExtractDependencies(SourceStreams sourceStream) {
         return JsonSerializer.Deserialize<MergingResourceDTO>(sourceStream.PrimaryStream!)!.Dependencies;
     }
 

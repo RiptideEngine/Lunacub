@@ -11,8 +11,6 @@ namespace Caxivitual.Lunacub.Building;
 [JsonConverter(typeof(IncrementalInfoConverter))]
 [ExcludeFromCodeCoverage]
 public readonly struct IncrementalInfo {
-    // TODO: Add addresses.
-    
     /// <summary>
     /// Represents the last write time of the source resource data.
     /// </summary>

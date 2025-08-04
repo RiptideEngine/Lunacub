@@ -1,5 +1,8 @@
 ﻿// ReSharper disable VariableHidesOuterVariable
 
+// TODO:
+// 04-08-2025: Using ProceduralSchematic, detect if the compiled resource file missing to trigger compilation of that resource.
+               
 using Caxivitual.Lunacub.Building.Collections;
 
 namespace Caxivitual.Lunacub.Building;
@@ -76,23 +79,23 @@ internal sealed partial class BuildSession {
             // Enumerate through the resource which got cached, convert the old procedural schematic into the registry element
             // and add it to the registry.
 
-            bool getSuccessful = Results.TryGetValue(libraryId, out var libraryResults);
-            Debug.Assert(getSuccessful);
-            
-            getSuccessful = _environment.ProceduralSchematic.TryGetValue(libraryId, out var libraryProceduralSchematic);
-            Debug.Assert(getSuccessful);
-
-            foreach ((var resourceId, var result) in libraryResults!) {
-                if (result.Status != BuildStatus.Cached) continue;
-                
-                getSuccessful = libraryProceduralSchematic!.TryGetValue(resourceId, out var resourceProceduralSchematic);
+            // If the library got procedural schematic.
+            if (_environment.ProceduralSchematic.TryGetValue(libraryId, out var libraryProceduralSchematic)) {
+                bool getSuccessful = Results.TryGetValue(libraryId, out var libraryResults);
                 Debug.Assert(getSuccessful);
-                
-                foreach ((var proceduralResourceId, var tags) in resourceProceduralSchematic!) {
-                    registry.Add(proceduralResourceId, new(null, tags));
+
+                foreach ((var resourceId, var result) in libraryResults!) {
+                    if (result.Status != BuildStatus.Cached) continue;
+
+                    getSuccessful = libraryProceduralSchematic!.TryGetValue(resourceId, out var resourceProceduralSchematic);
+                    Debug.Assert(getSuccessful);
+
+                    foreach ((var proceduralResourceId, var tags) in resourceProceduralSchematic!) {
+                        registry.Add(proceduralResourceId, new(null, tags));
+                    }
                 }
             }
-            
+
             // Output the registry.
             _environment.Output.OutputLibraryRegistry(registry, libraryId);
         }

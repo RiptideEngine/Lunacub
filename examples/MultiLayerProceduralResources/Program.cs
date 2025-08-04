@@ -1,6 +1,8 @@
 ﻿using Caxivitual.Lunacub.Building.Core;
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
+using Microsoft.IO;
+using System.Text.Json;
 using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
 using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
 
@@ -10,6 +12,8 @@ internal static class Program {
     private static readonly ILogger _logger = LoggerFactory.Create(builder => {
         builder.AddConsole();
     }).CreateLogger("Program");
+
+    private static readonly RecyclableMemoryStreamManager _memoryStreamManager = new();
     
     private static async Task Main(string[] args) {
         string reportDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Outputs", "Reports");
@@ -25,7 +29,7 @@ internal static class Program {
     private static void BuildResources(string reportDirectory, string outputDirectory) {
         _logger.LogInformation("Building resources...");
 
-        using BuildEnvironment env = new(new FileOutputSystem(reportDirectory, outputDirectory)) {
+        using BuildEnvironment env = new(new FileOutputSystem(reportDirectory, outputDirectory), _memoryStreamManager) {
             Importers = {
                 [nameof(EmittingResourceImporter)] = new EmittingResourceImporter(),
             },
@@ -36,7 +40,7 @@ internal static class Program {
                 new EmittingResourceSerializerFactory(),
             },
             Libraries = {
-                new(new MemorySourceProvider {
+                new(1, new MemorySourceProvider {
                     Sources = {
                         ["Resource"] = MemorySourceProvider.AsUtf8("""{"Value":1,"Count":5}""", DateTime.MinValue),
                     },
@@ -51,33 +55,30 @@ internal static class Program {
             },
         };
 
-        var result = env.BuildResources();
-
-        foreach ((var rid, var resourceResult) in result.ResourceResults) {
-            if (resourceResult.IsSuccess) {
-                _logger.LogInformation("Resource {rid} build status: {status}.", rid, resourceResult.Status);
-            } else {
-                _logger.LogError(resourceResult.Exception?.SourceException, "Resource {rid} build status: {status}.", rid, resourceResult.Status);
-            }
-        }
+        env.BuildResources();
     }
     
     private static async Task ImportResource(string resourceDirectory) {
+        string libraryDirectory = Path.Combine(resourceDirectory, "1");
+        ImportResourceLibrary library = new(1, new FileSourceProvider(libraryDirectory));
+
+        using (var registryStream = File.OpenRead(Path.Combine(libraryDirectory, "__registry"))) {
+            foreach ((var resourceId, var element) in JsonSerializer.Deserialize<ResourceRegistry<ResourceRegistry.Element>>(registryStream)!) {
+                library.Registry.Add(resourceId, element);
+            }
+        }
+        
         using ImportEnvironment importEnvironment = new ImportEnvironment {
             Deserializers = {
                 [nameof(EmittingResourceDeserializer)] = new EmittingResourceDeserializer(),
             },
             Logger = _logger,
             Libraries = {
-                new(new FileSourceProvider(resourceDirectory)) {
-                    Registry = {
-                        [1] = new("Resource", []),
-                    }
-                },
-            }
+                library,
+            },
         };
         
-        ResourceHandle<EmittingResource> handle = (await importEnvironment.Import(1)).Convert<EmittingResource>();
+        ResourceHandle<EmittingResource> handle = (await importEnvironment.Import(new(1, 1))).Convert<EmittingResource>();
         
         _logger.LogInformation("Imported: {value}.", handle.Value);
     }

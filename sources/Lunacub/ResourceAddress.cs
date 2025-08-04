@@ -1,8 +1,12 @@
-﻿namespace Caxivitual.Lunacub;
+﻿using Caxivitual.Lunacub.Serialization;
+using System.Text.Json.Serialization;
+
+namespace Caxivitual.Lunacub;
 
 /// <summary>
 /// Represents an address of a specific resource in a specific library.
 /// </summary>
+[JsonConverter(typeof(ResourceAddressConverter))]
 public readonly struct ResourceAddress : IEquatable<ResourceAddress> {
     /// <summary>
     /// Represents a default or null value of the <see cref="ResourceAddress"/>, used to signify the absence of a

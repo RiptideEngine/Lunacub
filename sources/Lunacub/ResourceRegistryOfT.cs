@@ -28,8 +28,6 @@ public class ResourceRegistry<TElement>
 
     internal IReadOnlyDictionary<string, ResourceID> NameMap => _nameMap;
     
-    // TODO: Probably adding Notifications.
-
     public void Add(ResourceID resourceId, TElement element) {
         ValidateElement(element);
 
