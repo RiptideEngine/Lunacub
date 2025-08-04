@@ -21,53 +21,57 @@ public class FileOutputSystem : OutputSystem {
     }
 
     public override void CollectIncrementalInfos(EnvironmentIncrementalInfos receiver) {
-        const string searchPattern = $"*{CompilingConstants.ReportExtension}";
+        string filePath = IncrementalInfoFilePath;
 
-        foreach (var libraryDirectoryPath in Directory.EnumerateDirectories(IncrementalInfoDirectory, "*", SearchOption.TopDirectoryOnly)) {
-            ReadOnlySpan<char> libraryDirectoryName = Path.GetFileName(libraryDirectoryPath.AsSpan());
+        if (!File.Exists(filePath)) return;
+        
+        using var stream = File.OpenRead(filePath);
 
-            if (!LibraryID.TryParse(libraryDirectoryName, null, out LibraryID libraryId)) continue;
-
-            LibraryIncrementalInfos libraryIncrementalInfos = [];
+        try {
+            if (JsonSerializer.Deserialize<EnvironmentIncrementalInfos>(stream) is not { } infos) return;
             
-            foreach (var reportFilePath in Directory.EnumerateFiles(libraryDirectoryPath, searchPattern, SearchOption.TopDirectoryOnly)) {
-                ReadOnlySpan<char> idPart = Path.GetFileNameWithoutExtension(reportFilePath.AsSpan());
-                
-                if (!ResourceID.TryParse(idPart, NumberStyles.HexNumber, null, out ResourceID resourceId)) {
-                    continue;
-                }
-                
-                try {
-                    using FileStream reportFile = File.OpenRead(reportFilePath);
-    
-                    libraryIncrementalInfos.Add(resourceId, JsonSerializer.Deserialize<IncrementalInfo>(reportFile));
-                } catch (Exception) {
-                    // Ignore any failed attempt to deserialize report.
-                }
+            foreach ((var libraryId, var libraryIncrementalInfo) in infos) {
+                receiver.Add(libraryId, libraryIncrementalInfo);
             }
-            
-            receiver.Add(libraryId, libraryIncrementalInfos);
+        } catch {
+            // Ignored.
         }
     }
 
     public override void FlushIncrementalInfos(EnvironmentIncrementalInfos incrementalInfos) {
-        foreach ((var libraryId, var libraryIncrementalInfos) in incrementalInfos) {
-            string libraryInfoPath = Path.Combine(IncrementalInfoDirectory, libraryId.ToString());
+        using var stream = File.OpenWrite(IncrementalInfoFilePath);
+        stream.SetLength(0);
+        stream.Flush();
+        
+        JsonSerializer.Serialize(stream, incrementalInfos);
+    }
 
-            if (Directory.Exists(libraryInfoPath)) {
-                Directory.Delete(libraryInfoPath, recursive: true);
-            }
+    public override void CollectProceduralSchematic(EnvironmentProceduralSchematic receiver) {
+        string filePath = ProceduralSchematicFilePath;
 
-            Directory.CreateDirectory(libraryInfoPath);
-
-            foreach ((var resourceId, var incrementalInfo) in libraryIncrementalInfos) {
-                string resourceInfoPath = Path.Combine(libraryInfoPath, $"{resourceId:X}{CompilingConstants.ReportExtension}");
-
-                using FileStream stream = File.OpenWrite(resourceInfoPath);
-
-                JsonSerializer.Serialize(stream, incrementalInfo);
-            }
+        if (!File.Exists(filePath)) {
+            return;
         }
+        
+        using var stream = File.OpenRead(filePath);
+
+        try {
+            if (JsonSerializer.Deserialize<EnvironmentProceduralSchematic>(stream) is not { } infos) return;
+            
+            foreach ((var libraryId, var libraryIncrementalInfo) in infos) {
+                receiver.Add(libraryId, libraryIncrementalInfo);
+            }
+        } catch {
+            // Ignored.
+        }
+    }
+
+    public override void FlushProceduralSchematic(EnvironmentProceduralSchematic schematic) {
+        using var stream = File.OpenWrite(ProceduralSchematicFilePath);
+        stream.SetLength(0);
+        stream.Flush();
+        
+        JsonSerializer.Serialize(stream, schematic);
     }
 
     public override DateTime? GetResourceLastBuildTime(ResourceAddress address) {
@@ -106,4 +110,7 @@ public class FileOutputSystem : OutputSystem {
     private string GetLibraryRegistryPath(LibraryID libraryId) {
         return Path.Combine(ResourceOutputDirectory, libraryId.ToString(), "__registry");
     }
+
+    private string IncrementalInfoFilePath => Path.Combine(IncrementalInfoDirectory, "incinfos.json");
+    private string ProceduralSchematicFilePath => Path.Combine(IncrementalInfoDirectory, "procschema.json");
 }

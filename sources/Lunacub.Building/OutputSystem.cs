@@ -19,6 +19,14 @@ public abstract class OutputSystem {
     /// The container that contains all the <see cref="IncrementalInfo"/> generated from building sessions.
     /// </param>
     public abstract void FlushIncrementalInfos(EnvironmentIncrementalInfos incrementalInfos);
+
+    public abstract void CollectProceduralSchematic(EnvironmentProceduralSchematic receiver);
+
+    /// <summary>
+    /// Flushes the procedural schematic to a persistent storage.
+    /// </summary>
+    /// <param name="schematic">The schematic of procedural resources generated at build time.</param>
+    public abstract void FlushProceduralSchematic(EnvironmentProceduralSchematic schematic);
     
     /// <summary>
     /// Gets the last build time of a resource.

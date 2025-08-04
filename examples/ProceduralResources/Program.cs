@@ -1,4 +1,5 @@
-﻿using Caxivitual.Lunacub.Building.Core;
+﻿using Caxivitual.Lunacub.Building.Collections;
+using Caxivitual.Lunacub.Building.Core;
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.IO;
@@ -84,7 +85,7 @@ internal static class Program {
             },
         };
         
-        GC.KeepAlive(library);
+        // TODO: Fix caching procedural resource make registry disappear
         
         ResourceHandle<EmittableResource> handle = (await importEnvironment.Import(new(1, 1))).Convert<EmittableResource>();
         

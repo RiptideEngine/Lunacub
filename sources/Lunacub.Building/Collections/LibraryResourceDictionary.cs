@@ -1,7 +1,7 @@
 ﻿namespace Caxivitual.Lunacub.Building.Collections;
 
 public class LibraryResourceDictionary<T> : IDictionary<ResourceID, T>, IReadOnlyDictionary<ResourceID, T> {
-    private readonly Dictionary<ResourceID, T> _dict = [];
+    protected readonly Dictionary<ResourceID, T> _dict = [];
     
     public int Count => _dict.Count;
 
@@ -20,6 +20,8 @@ public class LibraryResourceDictionary<T> : IDictionary<ResourceID, T>, IReadOnl
     }
     
     public bool Remove(ResourceID key) => _dict.Remove(key);
+
+    public bool Remove(ResourceID key, [NotNullWhen(true)] out T? value) => _dict.Remove(key, out value);
 
     bool ICollection<KeyValuePair<ResourceID, T>>.Remove(KeyValuePair<ResourceID, T> item) {
         return ((ICollection<KeyValuePair<ResourceID, T>>)_dict).Remove(item);

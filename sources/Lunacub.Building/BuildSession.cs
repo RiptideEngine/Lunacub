@@ -9,16 +9,19 @@ internal sealed partial class BuildSession {
 
     public EnvironmentLibraryDictionary<ResourceResultDictionary> Results { get; }
     
-    private readonly Dictionary<LibraryID, ResourceRegistry<ResourceRegistry.Element>> _outputRegistries;
-    
     private readonly Dictionary<ResourceAddress, EnvironmentResourceVertex> _graph;
-    private readonly Dictionary<ResourceAddress, BuildingProceduralResource> _proceduralResources;
+    
+    private readonly Dictionary<LibraryID, ResourceRegistry<ResourceRegistry.Element>> _outputRegistries;
+    private readonly EnvironmentProceduralSchematic _overrideProceduralSchematic;
+    
+    private readonly Dictionary<ResourceAddress, ProceduralResourceRequest> _proceduralResources;
     
     public BuildSession(BuildEnvironment environment) {
         _environment = environment;
         _graph = new(_environment.Libraries.Sum(x => x.Registry.Count));
         Results = new();
         _outputRegistries = [];
+        _overrideProceduralSchematic = new();
 
         _proceduralResources = [];
     }
@@ -27,6 +30,7 @@ internal sealed partial class BuildSession {
         Results.Clear();
         _outputRegistries.Clear();
         
+        // This is where the fun begin.
         BuildEnvironmentResources();
         
         Debug.Assert(
@@ -40,10 +44,61 @@ internal sealed partial class BuildSession {
             _graph.Values.All(x => x.ImportOutput == null || IsDisposed(x.ImportOutput)),
             "Resource leaked after building procedural resources."
         );
-
+        // Welp, fun is over.
+        
+        // Post-compilation incremental info processing and flushing.
+        
+        // Merge our procedural schematic to environment.
+        
+        GC.KeepAlive(_environment.ProceduralSchematic);
+        
+        // The override procedural schematic only contains successfully build resource, it doesn't contains cached resources.
+        foreach ((var libraryId, var overrideLibraryProceduralSchematic) in _overrideProceduralSchematic) {
+            if (_environment.ProceduralSchematic.TryGetValue(libraryId, out var envLibraryProceduralSchematic)) {
+                envLibraryProceduralSchematic.Clear();
+                
+                foreach ((var resourceId, var overrideSchematic) in overrideLibraryProceduralSchematic) {
+                    envLibraryProceduralSchematic.Add(resourceId, overrideSchematic);
+                }
+            } else {
+                // Newly built library?
+                _environment.ProceduralSchematic.Add(libraryId, overrideLibraryProceduralSchematic);
+            }
+        }
+        
+        // When the resource is cached, the registry does not contains our procedural generated resource.
+        // This is where the procedural schematic came into used.
+        
+        GC.KeepAlive(_environment.ProceduralSchematic);
+        
         foreach ((LibraryID libraryId, ResourceRegistry<ResourceRegistry.Element> registry) in _outputRegistries) {
+            // How this processing works:
+            // Enumerate through the resource which got cached, convert the old procedural schematic into the registry element
+            // and add it to the registry.
+
+            bool getSuccessful = Results.TryGetValue(libraryId, out var libraryResults);
+            Debug.Assert(getSuccessful);
+            
+            getSuccessful = _environment.ProceduralSchematic.TryGetValue(libraryId, out var libraryProceduralSchematic);
+            Debug.Assert(getSuccessful);
+
+            foreach ((var resourceId, var result) in libraryResults!) {
+                if (result.Status != BuildStatus.Cached) continue;
+                
+                getSuccessful = libraryProceduralSchematic!.TryGetValue(resourceId, out var resourceProceduralSchematic);
+                Debug.Assert(getSuccessful);
+                
+                foreach ((var proceduralResourceId, var tags) in resourceProceduralSchematic!) {
+                    registry.Add(proceduralResourceId, new(null, tags));
+                }
+            }
+            
+            // Output the registry.
             _environment.Output.OutputLibraryRegistry(registry, libraryId);
         }
+        
+        _environment.FlushProceduralSchematic();
+        _environment.FlushIncrementalInfos();
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_disposed")]
@@ -65,6 +120,16 @@ internal sealed partial class BuildSession {
         }
         
         registry!.Add(address.ResourceId, element);
+    }
+
+    private void AddOverrideProceduralSchematicEdge(ResourceAddress sourceResourceAddress, ProceduralResourceSchematicInfo info) {
+        if (_overrideProceduralSchematic.TryGetValue(sourceResourceAddress.LibraryId, out var librarySchematic)) {
+            librarySchematic.Add(sourceResourceAddress.ResourceId, info);
+        } else {
+            librarySchematic = [];
+            librarySchematic.Add(sourceResourceAddress.ResourceId, info);
+            _overrideProceduralSchematic.Add(sourceResourceAddress.LibraryId, librarySchematic);
+        }
     }
 
     private void SetResult(ResourceAddress address, ResourceBuildingResult result) {
@@ -131,12 +196,12 @@ internal sealed partial class BuildSession {
     }
 
     private void AppendProceduralResources(
-        LibraryID libraryId,
+        ResourceAddress sourceResourceAddress,
         ProceduralResourceCollection proceduralResources,
-        Dictionary<ResourceAddress, BuildingProceduralResource> receiver
+        Dictionary<ResourceAddress, ProceduralResourceRequest> receiver
     ) {
         foreach ((var resourceId, var resource) in proceduralResources) {
-            receiver.Add(new(libraryId, resourceId), resource);
+            receiver.Add(new(sourceResourceAddress.LibraryId, resourceId), new(sourceResourceAddress.ResourceId, resource));
         }
     }
     
@@ -238,4 +303,6 @@ internal sealed partial class BuildSession {
             ImportOutput = null;
         }
     }
+
+    private readonly record struct ProceduralResourceRequest(ResourceID SourceResourceId, BuildingProceduralResource Resource);
 }

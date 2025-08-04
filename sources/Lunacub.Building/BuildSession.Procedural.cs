@@ -1,7 +1,5 @@
 ﻿// ReSharper disable VariableHidesOuterVariable
 
-using System.Collections.Frozen;
-
 namespace Caxivitual.Lunacub.Building;
 
 partial class BuildSession {
@@ -13,12 +11,12 @@ partial class BuildSession {
 
     private sealed class ProceduralResourceBuild {
         private readonly BuildSession _session;
-        private readonly Dictionary<ResourceAddress, BuildingProceduralResource> _current;
+        private readonly Dictionary<ResourceAddress, ProceduralResourceRequest> _current;
         private readonly ProceduralResourceBuild? _previous;
 
         public ProceduralResourceBuild(
             BuildSession session,
-            Dictionary<ResourceAddress, BuildingProceduralResource> current,
+            Dictionary<ResourceAddress, ProceduralResourceRequest> current,
             ProceduralResourceBuild? previous
         ) {
             _session = session;
@@ -31,11 +29,11 @@ partial class BuildSession {
 
             ValidateProceduralResources();
 
-            Dictionary<ResourceAddress, BuildingProceduralResource> next = [];
+            Dictionary<ResourceAddress, ProceduralResourceRequest> next = [];
 
             // Assign the reference count to environment resources.
             foreach ((_, var proceduralResource) in _current) {
-                foreach (var dependencyId in proceduralResource.DependencyAddresses) {
+                foreach (var dependencyId in proceduralResource.Resource.DependencyAddresses) {
                     if (_session._graph.TryGetValue(dependencyId, out var environmentResourceVertex)) {
                         environmentResourceVertex.ReferenceCount++;
                     }
@@ -52,7 +50,7 @@ partial class BuildSession {
                 return new ProceduralResourceBuild(_session, next, this).Build();
             } finally {
                 foreach ((_, var proceduralResource) in _current) {
-                    proceduralResource.Object.Dispose();
+                    proceduralResource.Resource.Object.Dispose();
                 }
             }
         }
@@ -81,7 +79,7 @@ partial class BuildSession {
                     throw new InvalidOperationException($"Circular dependency detected: {string.Join(" -> ", path.Reverse())}.");
                 }
 
-                foreach (var dependencyID in _current[address].DependencyAddresses) {
+                foreach (var dependencyID in _current[address].Resource.DependencyAddresses) {
                     if (!_current.ContainsKey(address)) continue;
 
                     Visit(dependencyID, temporaryMarks, permanentMarks, path);
@@ -94,12 +92,14 @@ partial class BuildSession {
 
         private void BuildProceduralResource(
             ResourceAddress resourceAddress,
-            BuildingProceduralResource resource,
-            Dictionary<ResourceAddress, BuildingProceduralResource> next
+            ProceduralResourceRequest resourceRequest,
+            Dictionary<ResourceAddress, ProceduralResourceRequest> next
         ) {
             if (_session.TryGetResult(resourceAddress, out _)) return;
 
             BuildEnvironment environment = _session._environment;
+
+            (ResourceID sourceResourceId, BuildingProceduralResource resource) = resourceRequest;
 
             try {
                 string? processorName = resource.ProcessorName;
@@ -146,11 +146,13 @@ partial class BuildSession {
                         }
                     }
                     
-                    _session.AppendProceduralResources(resourceAddress.LibraryId, processingContext.ProceduralResources, next);
+                    _session.AppendProceduralResources(resourceAddress, processingContext.ProceduralResources, next);
                 }
                 
                 _session.SetResult(resourceAddress, new(BuildStatus.Success));
                 _session.AddOutputResourceRegistry(resourceAddress, new(null, resource.Tags));
+                
+                _session.AddOverrideProceduralSchematicEdge(new(resourceAddress.LibraryId, sourceResourceId), new(resourceAddress.ResourceId, resource.Tags));
             } finally {
                 _session.ReleaseDependencies(resource.DependencyAddresses);
             }
@@ -213,7 +215,7 @@ partial class BuildSession {
         }
 
         private ContentRepresentation? RecursivelyTryGetProceduralResource(ResourceAddress resourceAddress) {
-            if (_current.TryGetValue(resourceAddress, out BuildingProceduralResource resource)) return resource.Object;
+            if (_current.TryGetValue(resourceAddress, out ProceduralResourceRequest request)) return request.Resource.Object;
             
             return _previous?.RecursivelyTryGetProceduralResource(resourceAddress);
         }

@@ -8,6 +8,7 @@ public sealed class MemoryOutputSystem : OutputSystem {
     public Dictionary<LibraryID, LibraryOutput> Outputs { get; } = [];
 
     public EnvironmentIncrementalInfos IncrementalInfos { get; } = [];
+    public EnvironmentProceduralSchematic ProceduralSchematic { get; } = [];
     
     public override void CollectIncrementalInfos(EnvironmentIncrementalInfos receiver) {
         foreach ((var libraryId, var libraryIncrementalInfos) in IncrementalInfos) {
@@ -38,6 +39,32 @@ public sealed class MemoryOutputSystem : OutputSystem {
             
                 IncrementalInfos.Add(libraryId, receiverLibraryIncrementalInfos);
             }
+        }
+    }
+
+    public override void CollectProceduralSchematic(EnvironmentProceduralSchematic receiver) {
+        foreach ((var libraryId, var librarySchematic) in ProceduralSchematic) {
+            LibraryProceduralSchematic receiverLibrarySchematic = [];
+            
+            foreach ((var resourceId, var resourceSchematic) in librarySchematic) {
+                receiverLibrarySchematic.Add(resourceId, resourceSchematic);
+            }
+            
+            receiver.Add(libraryId, receiverLibrarySchematic);
+        }
+    }
+
+    public override void FlushProceduralSchematic(EnvironmentProceduralSchematic schematic) {
+        ProceduralSchematic.Clear();
+
+        foreach ((var libraryId, var librarySchematic) in schematic) {
+            LibraryProceduralSchematic receiverLibrarySchematic = [];
+            
+            foreach ((var resourceId, var resourceSchematic) in librarySchematic) {
+                receiverLibrarySchematic.Add(resourceId, resourceSchematic);
+            }
+            
+            ProceduralSchematic.Add(libraryId, receiverLibrarySchematic);
         }
     }
 

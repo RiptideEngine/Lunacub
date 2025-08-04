@@ -1,8 +1,6 @@
-﻿using Caxivitual.Lunacub.Building.Exceptions;
+﻿// ReSharper disable VariableHidesOuterVariable
+
 using Caxivitual.Lunacub.Exceptions;
-using Microsoft.Extensions.Logging;
-using System.Collections.Frozen;
-// ReSharper disable VariableHidesOuterVariable
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -122,13 +120,13 @@ partial class BuildSession {
     }
     
     private void BuildEnvironmentResource(
-        ResourceAddress address,
+        ResourceAddress resourceAddress,
         EnvironmentResourceVertex resourceVertex,
         out ResourceBuildingResult outputResult
     ) {
-        if (TryGetResult(address, out outputResult)) return;
+        if (TryGetResult(resourceAddress, out outputResult)) return;
         
-        Debug.Assert(resourceVertex.Library.Id == address.LibraryId);
+        Debug.Assert(resourceVertex.Library.Id == resourceAddress.LibraryId);
         
         bool dependencyRebuilt = false;
         foreach (var dependencyId in resourceVertex.DependencyResourceAddresses) {
@@ -151,24 +149,24 @@ partial class BuildSession {
             Processor? processor = null;
 
             if (!string.IsNullOrEmpty(processorName) && !_environment.Processors.TryGetValue(processorName, out processor)) {
-                SetResult(address, outputResult = new(BuildStatus.UnknownProcessor));
+                SetResult(resourceAddress, outputResult = new(BuildStatus.UnknownProcessor));
                 return;
             }
 
             SourceLastWriteTimes lastWriteTimes;
 
             try {
-                lastWriteTimes = resourceVertex.Library.GetSourceLastWriteTimes(address.ResourceId);
+                lastWriteTimes = resourceVertex.Library.GetSourceLastWriteTimes(resourceAddress.ResourceId);
             } catch (Exception e) {
-                SetResult(address, outputResult = new(BuildStatus.GetSourceLastWriteTimesFailed, ExceptionDispatchInfo.Capture(e)));
+                SetResult(resourceAddress, outputResult = new(BuildStatus.GetSourceLastWriteTimesFailed, ExceptionDispatchInfo.Capture(e)));
                 return;
             }
             
             if (!dependencyRebuilt) {
-                if (IsResourceCacheable(address, lastWriteTimes, options, resourceVertex.DependencyResourceAddresses, out var previousIncrementalInfo)) {
+                if (IsResourceCacheable(resourceAddress, lastWriteTimes, options, resourceVertex.DependencyResourceAddresses, out var previousIncrementalInfo)) {
                     if (new ComponentVersions(importer.Version, processor?.Version) == previousIncrementalInfo.ComponentVersions) {
-                        SetResult(address, outputResult = new(BuildStatus.Cached));
-                        AddOutputResourceRegistry(address, new(registryElement.Name, registryElement.Tags));
+                        SetResult(resourceAddress, outputResult = new(BuildStatus.Cached));
+                        AddOutputResourceRegistry(resourceAddress, new(registryElement.Name, registryElement.Tags));
                         return;
                     }
                 }
@@ -176,7 +174,7 @@ partial class BuildSession {
             
             // Import if haven't.
             if (resourceVertex.ImportOutput == null) {
-                if (!Import(address, resourceVertex.Library, importer, options.Options, out var importOutput, out outputResult)) {
+                if (!Import(resourceAddress, resourceVertex.Library, importer, options.Options, out var importOutput, out outputResult)) {
                     return;
                 }
                 
@@ -187,16 +185,16 @@ partial class BuildSession {
             
             if (processor == null) {
                 try {
-                    SerializeProcessedObject(resourceVertex.ImportOutput, address, options.Options, registryElement.Tags);
+                    SerializeProcessedObject(resourceVertex.ImportOutput, resourceAddress, options.Options, registryElement.Tags);
                 } catch (Exception e) {
-                    SetResult(address, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
+                    SetResult(resourceAddress, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
                     return;
                 }
                 
                 dependencyIds = FrozenSet<ResourceAddress>.Empty;
             } else {
                 if (!processor.CanProcess(resourceVertex.ImportOutput)) {
-                    SetResult(address, outputResult = new(BuildStatus.Unprocessable));
+                    SetResult(resourceAddress, outputResult = new(BuildStatus.Unprocessable));
                     return;
                 }
 
@@ -211,17 +209,17 @@ partial class BuildSession {
                 ProcessingContext processingContext;
                 
                 try {
-                    processingContext = new(_environment, address, options.Options, dependencies, _environment.Logger);
+                    processingContext = new(_environment, resourceAddress, options.Options, dependencies, _environment.Logger);
                     processed = processor.Process(resourceVertex.ImportOutput, processingContext);
                 } catch (Exception e) {
-                    SetResult(address, outputResult = new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
+                    SetResult(resourceAddress, outputResult = new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
                     return;
                 }
 
                 try {
-                    SerializeProcessedObject(processed, address, options.Options, registryElement.Tags);
+                    SerializeProcessedObject(processed, resourceAddress, options.Options, registryElement.Tags);
                 } catch (Exception e) {
-                    SetResult(address, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
+                    SetResult(resourceAddress, outputResult = new(BuildStatus.SerializationFailed, ExceptionDispatchInfo.Capture(e)));
                     return;
                 } finally {
                     if (!ReferenceEquals(resourceVertex.ImportOutput, processed)) {
@@ -229,13 +227,13 @@ partial class BuildSession {
                     }
                 }
                 
-                AppendProceduralResources(address.LibraryId, processingContext.ProceduralResources, _proceduralResources);
+                AppendProceduralResources(resourceAddress, processingContext.ProceduralResources, _proceduralResources);
                 dependencyIds = validDependencyIds;
             }
 
-            SetResult(address, outputResult = new(BuildStatus.Success));
-            _environment.IncrementalInfos.SetIncrementalInfo(address, new(lastWriteTimes, options, dependencyIds, new(importer.Version, processor?.Version)));
-            AddOutputResourceRegistry(address, new(registryElement.Name, registryElement.Tags));
+            SetResult(resourceAddress, outputResult = new(BuildStatus.Success));
+            _environment.IncrementalInfos.SetIncrementalInfo(resourceAddress, new(lastWriteTimes, options, dependencyIds, new(importer.Version, processor?.Version)));
+            AddOutputResourceRegistry(resourceAddress, new(registryElement.Name, registryElement.Tags));
         } finally {
             ReleaseDependencies(resourceVertex.DependencyResourceAddresses);
             resourceVertex.Release();
