@@ -344,7 +344,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         
         return new(references, waitContainers);
         
-        ResourceCache.ElementContainer BeginReferenceImport(ResourceAddress resourceAddress, string resourceName) {
+        ResourceCache.ElementContainer BeginReferenceImport(ResourceAddress resourceAddress, string? resourceName) {
             Debug.Assert(_environment.Libraries.ContainsResource(resourceAddress));
             
             Log.BeginImport(_environment.Logger, resourceAddress.LibraryId, resourceAddress.ResourceId);

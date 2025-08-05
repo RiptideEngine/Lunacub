@@ -127,23 +127,23 @@ public sealed class PrebuildResourcesFixture {
 
             void AppendReferencingResource(ResourceID id, string name, int value, ResourceID reference) {
                 using MemoryStream stream = new MemoryStream();
-                using Utf8JsonWriter writer = new(stream);
-                
-                writer.WriteStartObject();
-                {
-                    writer.WritePropertyName("ReferenceAddress");
+                using (Utf8JsonWriter writer = new(stream)) {
                     writer.WriteStartObject();
                     {
-                        writer.WriteNumber("LibraryId", 1);
-                        writer.WritePropertyName("ResourceId");
-                        writer.WriteRawValue(reference.ToString());
+                        writer.WritePropertyName("ReferenceAddress");
+                        writer.WriteStartObject();
+                        {
+                            writer.WriteNumber("LibraryId", 1);
+                            writer.WritePropertyName("ResourceId");
+                            writer.WriteRawValue(reference.ToString());
+                        }
+                        writer.WriteEndObject();
+
+                        writer.WriteNumber("Value", value);
                     }
                     writer.WriteEndObject();
-                    
-                    writer.WriteNumber("Value", value);
                 }
-                writer.WriteEndObject();
-                
+
                 sourceProvider.Sources
                     .Add(name, new(ImmutableCollectionsMarshal.AsImmutableArray(stream.ToArray()), DateTime.MinValue));
             

@@ -60,6 +60,15 @@ namespace Caxivitual.Lunacub.Building {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Trying to insert library with id of {0} but library with same id has already been registered..
+        /// </summary>
+        internal static string DuplicateLibraryId {
+            get {
+                return ResourceManager.GetString("DuplicateLibraryId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Key cannot be empty or consist of only whitespace characters..
         /// </summary>
         internal static string EmptyOrWhitespaceKey {

@@ -17,9 +17,9 @@ public class ImportFailureTests : IDisposable {
     
     [Fact]
     public async Task FailureImport_UnregisteredResource_ReturnsCorrectStates() {
-        _importEnvironment.Libraries.Add(new(new Lunacub.Importing.Core.MemorySourceProvider()));
+        _importEnvironment.Libraries.Add(new(2, new Lunacub.Importing.Core.MemorySourceProvider()));
 
-        var operation = _importEnvironment.Import(PrebuildResourcesFixture.UnregisteredResourceID);
+        var operation = _importEnvironment.Import(new(2, PrebuildResourcesFixture.UnregisteredResourceID));
         await new Func<Task<ResourceHandle>>(() => operation.Task).Should().ThrowAsync<ArgumentException>().WithMessage("*unregistered*");
 
         operation.Status.Should().Be(ImportingStatus.Failed);
@@ -29,13 +29,13 @@ public class ImportFailureTests : IDisposable {
     
     [Fact]
     public async Task FailureImport_NullResourceStream_ReturnsCorrectStates() {
-        _importEnvironment.Libraries.Add(new(new NullStreamSourceProvider()) {
+        _importEnvironment.Libraries.Add(new(2, new NullStreamSourceProvider()) {
             Registry = {
                 [UInt128.MaxValue - 1] = new("Resource", []),
             },
         });
 
-        var operation = _importEnvironment.Import(UInt128.MaxValue - 1);
+        var operation = _importEnvironment.Import(new(2, UInt128.MaxValue - 1));
         await new Func<Task<ResourceHandle>>(() => operation.Task).Should().ThrowAsync<InvalidOperationException>().WithMessage("*null*stream*");
         
         operation.Status.Should().Be(ImportingStatus.Failed);

@@ -9,5 +9,3 @@ global using FluentAssertions;
 global using FluentAssertions.Extensions;
 
 global using Xunit.v3;
-
-global using System.IO.Abstractions.TestingHelpers;

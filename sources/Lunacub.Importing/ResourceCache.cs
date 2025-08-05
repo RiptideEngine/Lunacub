@@ -197,7 +197,7 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     [StructLayout(LayoutKind.Auto)]
     public sealed class ElementContainer {
         public readonly ResourceAddress Address;
-        public readonly string ResourceName;
+        public readonly string? ResourceName;
 
         public uint ReferenceCount;
         
@@ -213,7 +213,7 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
 
         private readonly Lock _lock;
 
-        public ElementContainer(ResourceAddress address, string resourceName) {
+        public ElementContainer(ResourceAddress address, string? resourceName) {
             Address = address;
             ResourceName = resourceName;
             ReferenceResourceAddresses = FrozenSet<ResourceAddress>.Empty;

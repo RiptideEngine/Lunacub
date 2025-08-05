@@ -1,28 +1,6 @@
-﻿using System.Collections.ObjectModel;
+﻿namespace Caxivitual.Lunacub.Importing.Collections;
 
-namespace Caxivitual.Lunacub.Importing.Collections;
-
-public sealed class ResourceLibraryCollection : Collection<ImportResourceLibrary> {
-    public bool Contains(LibraryID libraryId) {
-        foreach (var library in this) {
-            if (library.Id == libraryId) return true;
-        }
-
-        return false;
-    }
-    
-    public bool Contains(LibraryID libraryId, [NotNullWhen(true)] out ImportResourceLibrary? output) {
-        foreach (var library in this) {
-            if (library.Id == libraryId) {
-                output = library;
-                return true;
-            }
-        }
-
-        output = null;
-        return false;
-    }
-
+public sealed class ResourceLibraryCollection : ResourceLibraryCollection<ImportResourceLibrary> {
     public bool ContainsResource(LibraryID libraryId, ResourceID resourceId) {
         foreach (var library in this) {
             if (library.Id == libraryId) {
@@ -103,22 +81,6 @@ public sealed class ResourceLibraryCollection : Collection<ImportResourceLibrary
     public Stream? CreateResourceStream(ResourceAddress address) {
         return CreateResourceStream(address.LibraryId, address.ResourceId);
     }
-    
-    protected override void InsertItem(int index, ImportResourceLibrary item) {
-        ValidateLibrary(item);
-        
-        base.InsertItem(index, item);
-    }
 
-    protected override void SetItem(int index, ImportResourceLibrary item) {
-        ValidateLibrary(item);
-        
-        base.SetItem(index, item);
-    }
-
-    private void ValidateLibrary(ImportResourceLibrary item) {
-        ArgumentNullException.ThrowIfNull(item);
-        
-        // TODO: Validate ID, name collision.
-    }
+    // TODO: Validate name collision.
 }

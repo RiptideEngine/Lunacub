@@ -17,45 +17,45 @@ public class ImportOutputTests : IDisposable {
     
     [Fact]
     public async Task ImportSimpleResource_ReturnsCorrectObject() {
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.SimpleResourceStart).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(new(1, PrebuildResourcesFixture.SimpleResourceStart)).Task)
             .Should()
             .NotThrowAsync())
             .Which;
     
-        handle.Address.Should().Be(PrebuildResourcesFixture.SimpleResourceStart);
+        handle.Address.Should().Be(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart));
         handle.Value.Should().BeOfType<SimpleResource>().Which.Value.Should().Be(1);
     }
     
     [Fact]
     public async Task ImportConfigurableResource_WithBinaryOption_ReturnsCorrectObject() {
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.ConfigurableResourceBinary).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(new(1, PrebuildResourcesFixture.ConfigurableResourceBinary)).Task)
             .Should()
             .NotThrowAsync())
             .Which;
     
-        handle.Address.Should().Be(PrebuildResourcesFixture.ConfigurableResourceBinary);
+        handle.Address.Should().Be(new ResourceAddress(1, PrebuildResourcesFixture.ConfigurableResourceBinary));
         handle.Value.Should().BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
     }
     
     [Fact]
     public async Task ImportConfigurableResource_WithJsonOption_ReturnsCorrectObject() {
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.ConfigurableResourceJson).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(new(1, PrebuildResourcesFixture.ConfigurableResourceJson)).Task)
             .Should()
             .NotThrowAsync())
             .Which;
     
-        handle.Address.Should().Be(PrebuildResourcesFixture.ConfigurableResourceJson);
+        handle.Address.Should().Be(new ResourceAddress(1, PrebuildResourcesFixture.ConfigurableResourceJson));
         handle.Value.Should().BeOfType<ConfigurableResource>().Which.Array.Should().Equal(0, 1, 2, 3, 4);
     }
     
     [Fact]
     public async Task ImportReferencingResource_UnregisteredReference_ReturnsCorrectObjects() {
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.ReferencingResourceReferenceUnregistered).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(new(1, PrebuildResourcesFixture.ReferencingResourceReferenceUnregistered)).Task)
             .Should()
             .NotThrowAsync())
             .Which;
         
-        handle.Address.Should().Be(PrebuildResourcesFixture.ReferencingResourceReferenceUnregistered);
+        handle.Address.Should().Be(new ResourceAddress(1, PrebuildResourcesFixture.ReferencingResourceReferenceUnregistered));
 
         var resource = handle.Value.Should().BeOfType<ReferencingResource>().Which;
         resource.Value.Should().Be(1);
@@ -64,12 +64,12 @@ public class ImportOutputTests : IDisposable {
     
     [Fact]
     public async Task ImportReferencingResource_2ObjectsChain_ReturnsCorrectObjects() {
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.ReferencingResource2ObjectsChainA).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(new(1, PrebuildResourcesFixture.ReferencingResource2ObjectsChainA)).Task)
             .Should()
             .NotThrowAsync())
             .Which;
         
-        handle.Address.Should().Be(PrebuildResourcesFixture.ReferencingResource2ObjectsChainA);
+        handle.Address.Should().Be(new ResourceAddress(1, PrebuildResourcesFixture.ReferencingResource2ObjectsChainA));
         var resource1 = handle.Value.Should().BeOfType<ReferencingResource>().Which;
         resource1.Value.Should().Be(1);
     
@@ -81,12 +81,12 @@ public class ImportOutputTests : IDisposable {
     
     [Fact]
     public async Task ImportReferencingResource_4ObjectsChain_ReturnsCorrectObjects() {
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.ReferencingResource4ObjectsChainA).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(new(1, PrebuildResourcesFixture.ReferencingResource4ObjectsChainA)).Task)
             .Should()
             .NotThrowAsync())
             .Which;
         
-        handle.Address.Should().Be(PrebuildResourcesFixture.ReferencingResource4ObjectsChainA);
+        handle.Address.Should().Be(new ResourceAddress(1, PrebuildResourcesFixture.ReferencingResource4ObjectsChainA));
         var resource1 = handle.Value.Should().BeOfType<ReferencingResource>().Which;
         resource1.Value.Should().Be(1);
         
@@ -108,16 +108,16 @@ public class ImportOutputTests : IDisposable {
 
     [Fact]
     public async Task ImportReferencingResource_MismatchReferenceType_ReleasesMismatchResource() {
-        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(PrebuildResourcesFixture.ReferencingResourceMismatchReferenceType).Task)
+        var handle = (await new Func<Task<ResourceHandle>>(() => _importEnvironment.Import(new(1, PrebuildResourcesFixture.ReferencingResourceMismatchReferenceType)).Task)
             .Should()
             .NotThrowAsync())
             .Which;
         
-        handle.Address.Should().Be(PrebuildResourcesFixture.ReferencingResourceMismatchReferenceType);
+        handle.Address.Should().Be(new ResourceAddress(1, PrebuildResourcesFixture.ReferencingResourceMismatchReferenceType));
         var resource1 = handle.Value.Should().BeOfType<ReferencingResource>().Which;
         resource1.Value.Should().Be(1);
         resource1.Reference.Should().BeNull();
         
-        _importEnvironment.GetResourceContainer(PrebuildResourcesFixture.SimpleResourceStart).Should().BeNull();
+        _importEnvironment.GetResourceContainer(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart)).Should().BeNull();
     }
 }

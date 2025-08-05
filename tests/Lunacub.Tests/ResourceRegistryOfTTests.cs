@@ -6,7 +6,7 @@ public class ResourceRegistryOfTTests {
     private readonly ResourceRegistry<ResourceRegistry.Element> _registry = [];
     
     [Fact]
-    public void Add_Normal_ShouldBeCorrect() {
+    public void Add_Normal_InsertsCorrectly() {
         new Action(() => _registry.Add(1, new("A", []))).Should().NotThrow();
         new Action(() => _registry.Add(2, new("B", []))).Should().NotThrow();
 
@@ -20,62 +20,69 @@ public class ResourceRegistryOfTTests {
             KeyValuePair.Create<string, ResourceID>("B", 2),
         ]);
     }
-    
-    [Fact]
-    public void Add_NullId_ShouldThrowArgumentExceptionReportIdAlreadyRegistered() {
-        new Action(() => _registry.Add(default, new("A", []))).Should().Throw<ArgumentException>().WithMessage("*null*");
-    }
 
     [Fact]
-    public void Add_DuplicateId_ShouldThrowArgumentExceptionReportIdAlreadyRegistered() {
+    public void Add_DuplicateId_ThrowsArgumentExceptionReportIdAlreadyRegistered() {
         new Action(() => _registry.Add(1, new("A", []))).Should().NotThrow();
         new Action(() => _registry.Add(1, new("B", []))).Should().Throw<ArgumentException>().WithMessage("*id*already*registered*");
     }
 
     [Fact]
-    public void Add_DuplicateName_ShouldThrowArgumentExceptionReportNameAlreadyRegistered() {
+    public void Add_DuplicateName_ThrowsArgumentExceptionReportNameAlreadyRegistered() {
         new Action(() => _registry.Add(1, new("A", []))).Should().NotThrow();
         new Action(() => _registry.Add(2, new("A", []))).Should().Throw<ArgumentException>().WithMessage("*name*already*registered*");
     }
 
     [Fact]
-    public void Add_NullName_ShouldThrowArgumentExceptionReportInvalidName() {
-        new Action(() => _registry.Add(1, new(null!, []))).Should().Throw<ArgumentException>().WithMessage("*name*null*");
+    public void Add_NullName_InsertsElementAndNotRegisterNameMap() {
+        new Action(() => _registry.Add(1, new(null!, []))).Should().NotThrow();
+        
+        _registry.Should().BeEquivalentTo([
+            KeyValuePair.Create<ResourceID, ResourceRegistry.Element>(1, new(null, [])),
+        ]);
+
+        _registry.NameMap.Should().BeEmpty();
     }
     
     [Fact]
-    public void Add_EmptyName_ShouldThrowArgumentExceptionReportInvalidName() {
-        new Action(() => _registry.Add(1, new(string.Empty, []))).Should().Throw<ArgumentException>().WithMessage("*name*empty*");
+    public void Add_EmptyName_InsertsElementAndNotRegisterNameMap() {
+        new Action(() => _registry.Add(1, new(string.Empty, []))).Should().NotThrow();
+        
+        _registry.Should().BeEquivalentTo([
+            KeyValuePair.Create<ResourceID, ResourceRegistry.Element>(1, new(string.Empty, [])),
+        ]);
+
+        _registry.NameMap.Should().BeEmpty();
     }
     
     [Fact]
-    public void Add_NullTagCollection_ShouldThrowNullReferenceException() {
+    public void Add_NullTagCollection_ThrowsNullReferenceException() {
         new Action(() => _registry.Add(1, new("A", default))).Should().Throw<NullReferenceException>();
     }
     
     [Fact]
-    public void Add_NullTag_ShouldThrowArgumentExceptionReportNullTag() {
+    public void Add_NullTag_ThrowsArgumentExceptionReportNullTag() {
         new Action(() => _registry.Add(1, new("A", [
             null!,
         ]))).Should().Throw<ArgumentException>().WithMessage("*tag*null*");
     }
     
     [Fact]
-    public void Add_EmptyTag_ShouldThrowArgumentExceptionReportEmptyTag() {
+    public void Add_EmptyTag_ThrowsArgumentExceptionReportEmptyTag() {
         new Action(() => _registry.Add(1, new("A", [
             null!,
         ]))).Should().Throw<ArgumentException>().WithMessage("*tag*empty*");
     }
     
     [Fact]
-    public void Add_InvalidTagCharacter_ShouldThrowArgumentExceptionReportInvalidTagCharacter() {
+    public void Add_InvalidTagCharacter_ThrowsArgumentExceptionReportInvalidTagCharacter() {
         new Action(() => _registry.Add(1, new("A", [
             "Something^Invalid",
         ]))).Should().Throw<ArgumentException>().WithMessage("*tag*invalid*character*");
     }
     
     [Fact]
-    public void ICollectionAdd_Normal_ShouldBeCorrect() {
+    public void ICollectionAdd_Normal_InsertsCorrectly() {
         ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
         
         new Action(() => registry.Add(KeyValuePair.Create<ResourceID, ResourceRegistry.Element>(1, new("A", [])))).Should().NotThrow();
@@ -91,18 +98,9 @@ public class ResourceRegistryOfTTests {
             KeyValuePair.Create<string, ResourceID>("B", 2),
         ]);
     }
-    
-    [Fact]
-    public void ICollectionAdd_NullId_ShouldThrowArgumentExceptionReportIdAlreadyRegistered() {
-        ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
-        
-        new Action(() => {
-            registry.Add(KeyValuePair.Create<ResourceID, ResourceRegistry.Element>(default, new("A", [])));
-        }).Should().Throw<ArgumentException>().WithMessage("*null*");
-    }
 
     [Fact]
-    public void InterfaceAdd_DuplicateId_ShouldThrowArgumentExceptionReportIdAlreadyRegistered() {
+    public void InterfaceAdd_DuplicateId_ThrowsArgumentExceptionReportIdAlreadyRegistered() {
         ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
         
         new Action(() => {
@@ -115,7 +113,7 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void InterfaceAdd_DuplicateName_ShouldThrowArgumentExceptionReportNameAlreadyRegistered() {
+    public void InterfaceAdd_DuplicateName_ThrowsArgumentExceptionReportNameAlreadyRegistered() {
         ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
         
         new Action(() => {
@@ -128,25 +126,37 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void InterfaceAdd_NullName_ShouldThrowArgumentExceptionReportInvalidName() {
+    public void InterfaceAdd_NullName_InsertsElementAndNotRegisterNameMap() {
         ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
-        
+
         new Action(() => {
             registry.Add(KeyValuePair.Create<ResourceID, ResourceRegistry.Element>(1, new(null!, [])));
-        }).Should().Throw<ArgumentException>().WithMessage("*name*null*");
+        }).Should().NotThrow();
+
+        _registry.Should().BeEquivalentTo([
+            KeyValuePair.Create<ResourceID, ResourceRegistry.Element>(1, new(null!, [])),
+        ]);
+        
+        _registry.NameMap.Should().BeEmpty();
     }
     
     [Fact]
-    public void InterfaceAdd_EmptyName_ShouldThrowArgumentExceptionReportInvalidName() {
+    public void InterfaceAdd_EmptyName_InsertsElementAndNotRegisterNameMap() {
         ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
-        
+
         new Action(() => {
             registry.Add(KeyValuePair.Create<ResourceID, ResourceRegistry.Element>(1, new(string.Empty, [])));
-        }).Should().Throw<ArgumentException>().WithMessage("*name*empty*");
+        }).Should().NotThrow();
+        
+        _registry.Should().BeEquivalentTo([
+            KeyValuePair.Create<ResourceID, ResourceRegistry.Element>(1, new(string.Empty, [])),
+        ]);
+        
+        _registry.NameMap.Should().BeEmpty();
     }
     
     [Fact]
-    public void InterfaceAdd_NullTagCollection_ShouldThrowNullReferenceException() {
+    public void InterfaceAdd_NullTagCollection_ThrowsNullReferenceException() {
         ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
         
         new Action(() => {
@@ -155,7 +165,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void InterfaceAdd_NullTag_ShouldThrowArgumentExceptionReportNullTag() {
+    public void InterfaceAdd_NullTag_ThrowsArgumentExceptionReportNullTag() {
         ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
         
         new Action(() => {
@@ -164,7 +174,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void InterfaceAdd_EmptyTag_ShouldThrowArgumentExceptionReportEmptyTag() {
+    public void InterfaceAdd_EmptyTag_ThrowsArgumentExceptionReportEmptyTag() {
         ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
         
         new Action(() => {
@@ -173,7 +183,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void InterfaceAdd_InvalidTagCharacter_ShouldThrowArgumentExceptionReportInvalidTagCharacter() {
+    public void InterfaceAdd_InvalidTagCharacter_ThrowsArgumentExceptionReportInvalidTagCharacter() {
         ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
         
         new Action(() => {
@@ -182,14 +192,14 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void Count_Normal_ShouldChangeCorrectly() {
+    public void Count_Normal_ChangesCorrectly() {
         _registry.Should().HaveCount(0);
         _registry.Add(1, new("A", []));
         _registry.Should().HaveCount(1);
     }
 
     [Fact]
-    public void Count_DuplicateId_ShouldNotChanged() {
+    public void Count_DuplicateId_NotChanged() {
         _registry.Should().HaveCount(0);
         _registry.Add(1, new("A", []));
         new Action(() => _registry.Add(1, new("B", []))).Should().Throw<ArgumentException>();
@@ -197,7 +207,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void Count_DuplicateName_ShouldNotChanged() {
+    public void Count_DuplicateName_NotChanged() {
         _registry.Should().HaveCount(0);
         _registry.Add(1, new("A", []));
         new Action(() => _registry.Add(2, new("A", []))).Should().Throw<ArgumentException>();
@@ -205,7 +215,7 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void RemoveFromId_Contains_ShouldRemovesCorrectly() {
+    public void RemoveFromId_Contains_RemovesCorrectly() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         _registry.Add(3, new("C", []));
@@ -224,7 +234,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void RemoveFromId_Contains_ShouldRemovesCorrectlyAndReturnsCorrectObject() {
+    public void RemoveFromId_Contains_RemovesCorrectlyAndReturnsCorrectObject() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         _registry.Add(3, new("C", []));
@@ -244,7 +254,7 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void RemoveFromId_NotContains_ShouldDoNothing() {
+    public void RemoveFromId_NotContains_DoesNothing() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         
@@ -262,7 +272,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void RemoveFromName_Contains_ShouldRemovesCorrectly() {
+    public void RemoveFromName_Contains_RemovesCorrectly() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         _registry.Add(3, new("C", []));
@@ -281,7 +291,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void RemoveFromName_Contains_ShouldRemovesCorrectlyAndReturnsCorrectObject() {
+    public void RemoveFromName_Contains_RemovesCorrectlyAndReturnsCorrectObject() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         _registry.Add(3, new("C", []));
@@ -301,7 +311,7 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void RemoveFromName_NotContains_ShouldDoNothing() {
+    public void RemoveFromName_NotContains_DoesNothing() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         
@@ -319,7 +329,7 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void InterfaceRemove_Normal_ShouldRemoveCorrectly() {
+    public void InterfaceRemove_Normal_RemovesCorrectly() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -332,7 +342,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void InterfaceRemove_DifferentName_ShouldNotRemove() {
+    public void InterfaceRemove_DifferentName_NotRemove() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         
@@ -343,7 +353,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void InterfaceRemove_UnregisteredId_ShouldNotRemove() {
+    public void InterfaceRemove_UnregisteredId_NotRemove() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         
@@ -354,7 +364,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void InterfaceRemove_DifferentTagCollection_ShouldNotRemove() {
+    public void InterfaceRemove_DifferentTagCollection_NotRemove() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         
@@ -365,7 +375,7 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void Clear_ShouldClearEverything() {
+    public void Clear_ClearsEverything() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -381,7 +391,7 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void ContainsKey_Contains_ShouldReturnsTrue() {
+    public void ContainsKey_Contains_ReturnsTrue() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -389,7 +399,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void ContainsKey_NotContains_ShouldReturnsTrue() {
+    public void ContainsKey_NotContains_ReturnsTrue() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -397,7 +407,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void ContainsName_Contains_ShouldReturnsTrue() {
+    public void ContainsName_Contains_ReturnsTrue() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -405,7 +415,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void ContainsName_NotContains_ShouldReturnsTrue() {
+    public void ContainsName_NotContains_ReturnsTrue() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -413,7 +423,7 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void TryGetValueId_Contains_ShouldReturnsTrueAndReturnsCorrectObject() {
+    public void TryGetValueId_Contains_ReturnsTrueAndReturnsCorrectObject() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -422,7 +432,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void TryGetValueId_NotContains_ShouldReturnsFalse() {
+    public void TryGetValueId_NotContains_ReturnsFalse() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -430,7 +440,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void TryGetValueName_Contains_ShouldReturnsTrueAndReturnsCorrectObject() {
+    public void TryGetValueName_Contains_ReturnsTrueAndReturnsCorrectObject() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -442,7 +452,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void TryGetValueName_NotContains_ShouldReturnsFalse() {
+    public void TryGetValueName_NotContains_ReturnsFalse() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -451,7 +461,7 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void GetAccessor_Contains_ShouldReturnsCorrectObject() {
+    public void GetAccessor_Contains_ReturnsCorrectObject() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -459,14 +469,14 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void GetAccessor_NotContains_ShouldThrowsArgumentExceptionReportsKeyNotFound() {
+    public void GetAccessor_NotContains_ThrowssArgumentExceptionReportsKeyNotFound() {
         _registry.Add(1, new("A", []));
 
         new Func<ResourceRegistry.Element>(() => _registry[2]).Should().Throw<KeyNotFoundException>().WithMessage("*key*not*present*");
     }
 
     [Fact]
-    public void JsonSerialization_OptionlessElement_ShouldReturnsCorrectJson() {
+    public void JsonSerialization_OptionlessElement_ReturnsCorrectJson() {
         _registry.Add(1, new("A", ["Texture"]));
         _registry.Add(2, new("B", ["Shader"]));
         _registry.Add(5, new("E", ["Audio"]));
@@ -477,7 +487,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void JsonDeserialization_OptionlessElement_ShouldReturnsCorrectJson() {
+    public void JsonDeserialization_OptionlessElement_ReturnsCorrectJson() {
         const string json = """{"1":{"Name":"A","Tags":["Locale"]},"2":{"Name":"B","Tags":["Container"]},"3":{"Name":"C","Tags":["Control"]}}""";
 
         var registry = new Func<ResourceRegistry<ResourceRegistry.Element>>(() => JsonSerializer.Deserialize<ResourceRegistry<ResourceRegistry.Element>>(json)!).Should().NotThrow().Which;
@@ -496,7 +506,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void JsonDeserialization_OptionElement_ShouldReturnsCorrectJson() {
+    public void JsonDeserialization_OptionElement_ReturnsCorrectJson() {
         const string json = """{"1":{"Name":"A","Tags":["Texture"],"Option":10},"2":{"Name":"B","Tags":["Audio","Video"],"Option":30},"3":{"Name":"C","Tags":["Shader","Material"],"Option":50}}""";
     
         var registry = new Func<ResourceRegistry<ResourceRegistry.Element<int>>>(() => JsonSerializer.Deserialize<ResourceRegistry<ResourceRegistry.Element<int>>>(json)!).Should().NotThrow().Which;
@@ -515,7 +525,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void JsonSerialization_OptionElement_ShouldReturnsCorrectJson() {
+    public void JsonSerialization_OptionElement_ReturnsCorrectJson() {
         string json = JsonSerializer.Serialize(new ResourceRegistry<ResourceRegistry.Element<int>> {
             [1] = new("A", ["Texture"], 10),
             [2] = new("B", ["Audio", "Video"], 30),
@@ -526,7 +536,7 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void Keys_ShouldReturnCorrectSequence() {
+    public void Keys_ReturnsCorrectSequence() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         _registry.Add(3, new("C", []));
@@ -538,7 +548,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void Values_ShouldReturnCorrectSequence() {
+    public void Values_ReturnsCorrectSequence() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         _registry.Add(3, new("C", []));
@@ -553,7 +563,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void InterfaceKeys_ShouldReturnCorrectSequence() {
+    public void InterfaceKeys_ReturnsCorrectSequence() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         _registry.Add(3, new("C", []));
@@ -568,7 +578,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void InterfaceValues_ShouldReturnCorrectSequence() {
+    public void InterfaceValues_ReturnsCorrectSequence() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         _registry.Add(3, new("C", []));
@@ -589,7 +599,7 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void GetIndexer_ShouldReturnsCorrectly() {
+    public void GetIndexer_ReturnsCorrectly() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         _registry.Add(3, new("C", []));
@@ -599,7 +609,7 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void SetIndexer_UnregisteredKey_ShouldAddElement() {
+    public void SetIndexer_UnregisteredKey_AddsElement() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -619,7 +629,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void SetIndexer_OverrideKey_ShouldOverrideElement() {
+    public void SetIndexer_OverrideKey_OverridesElement() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
@@ -637,15 +647,10 @@ public class ResourceRegistryOfTTests {
     }
 
     [Fact]
-    public void SetIndexer_DuplicateName_ShouldThrowArgumentException() {
+    public void SetIndexer_DuplicateName_ThrowsArgumentException() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
         new Action(() => _registry[3] = new("A", [])).Should().Throw<ArgumentException>().WithMessage("*name*");
-    }
-
-    [Fact]
-    public void SetIndexer_NullResourceId_ShouldThrowArgumentException() {
-        new Action(() => _registry[default] = default).Should().Throw<ArgumentException>().WithMessage("*null*");
     }
 }

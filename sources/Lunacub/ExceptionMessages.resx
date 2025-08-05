@@ -57,4 +57,7 @@
     <data name="LibraryIDMustBeNotNull" xml:space="preserve">
         <value>Creating resource library with id of 0 is invalid.</value>
     </data>
+    <data name="DuplicateLibraryId" xml:space="preserve">
+        <value>Trying to insert library with id of {0} but library with same id has already been registered.</value>
+    </data>
 </root>

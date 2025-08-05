@@ -53,8 +53,6 @@ internal sealed partial class BuildSession {
         
         // Merge our procedural schematic to environment.
         
-        GC.KeepAlive(_environment.ProceduralSchematic);
-        
         // The override procedural schematic only contains successfully build resource, it doesn't contains cached resources.
         foreach ((var libraryId, var overrideLibraryProceduralSchematic) in _overrideProceduralSchematic) {
             if (_environment.ProceduralSchematic.TryGetValue(libraryId, out var envLibraryProceduralSchematic)) {
@@ -71,8 +69,6 @@ internal sealed partial class BuildSession {
         
         // When the resource is cached, the registry does not contains our procedural generated resource.
         // This is where the procedural schematic came into used.
-        
-        GC.KeepAlive(_environment.ProceduralSchematic);
         
         foreach ((LibraryID libraryId, ResourceRegistry<ResourceRegistry.Element> registry) in _outputRegistries) {
             // How this processing works:

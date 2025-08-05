@@ -34,4 +34,7 @@
     <data name="SourceAddressOutsideRootDirectory" xml:space="preserve">
         <value>Concatenated source path '{0}' lies outside root directory '{1}'</value>
     </data>
+    <data name="DuplicateLibraryId" xml:space="preserve">
+        <value>Trying to insert library with id of {0} but library with same id has already been registered.</value>
+    </data>
 </root>
