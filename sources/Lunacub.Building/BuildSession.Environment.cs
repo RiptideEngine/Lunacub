@@ -6,6 +6,7 @@ namespace Caxivitual.Lunacub.Building;
 
 partial class BuildSession {
     private void BuildEnvironmentResources() {
+        // TODO: Parallel this foreach
         foreach ((LibraryID libraryId, (BuildResourceLibrary library, Dictionary<ResourceID, EnvironmentResourceVertex> vertices)) in _graph) {
             foreach ((var resourceId, var element) in library.Registry) {
                 BuildingResource resource = element.Option;

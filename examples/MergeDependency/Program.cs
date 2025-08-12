@@ -11,6 +11,7 @@ namespace Caxivitual.Lunacub.Examples.MergeDependency;
 internal static class Program {
     private static readonly ILogger _logger = LoggerFactory.Create(builder => {
         builder.AddConsole();
+        builder.SetMinimumLevel(LogLevel.Debug);
     }).CreateLogger("Program");
 
     private static readonly RecyclableMemoryStreamManager _memoryStreamManager = new();
