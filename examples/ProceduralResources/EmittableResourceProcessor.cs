@@ -8,7 +8,7 @@ public sealed partial class EmittableResourceProcessor : Processor<EmittableReso
         context.ProceduralResources.Add(new() {
             Object = new SimpleResourceDTO {
                 Value = importedObject.Value,
-            }, 
+            },
         }, out var address);
         
         return new(importedObject.Value, address);

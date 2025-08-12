@@ -28,28 +28,37 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     /// </summary>
     public IImportOptions? Options { get; init; }
 
+    /// <summary>
+    /// Gets the delegate that handle disposal of the procedural resource.
+    /// </summary>
+    public Action<object>? Disposer { get; init; }
+
     public BuildingProceduralResource() {
         Tags = [];
         Options = null;
+        Disposer = null;
         DependencyAddresses = FrozenSet<ResourceAddress>.Empty;
+        Disposer = null;
     }
 
     [SetsRequiredMembers]
-    public BuildingProceduralResource(object obj, string? processorName) :
-        this(obj, processorName, [], null) { }
+    public BuildingProceduralResource(object obj, string? processorName, Action<object>? disposer = null) :
+        this(obj, processorName, [], null, disposer) { }
 
     [SetsRequiredMembers]
     public BuildingProceduralResource(
         object obj,
         string? processorName,
         ImmutableArray<string> tags,
-        IImportOptions? options
+        IImportOptions? options,
+        Action<object>? disposer
     ) {
         Object = obj;
         DependencyAddresses = FrozenSet<ResourceAddress>.Empty;
         ProcessorName = processorName;
         Tags = tags;
         Options = options;
+        Disposer = disposer;
     }
     
     public bool Equals(BuildingProceduralResource other) {

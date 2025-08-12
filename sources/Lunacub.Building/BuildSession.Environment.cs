@@ -236,7 +236,7 @@ partial class BuildSession {
                     return;
                 } finally {
                     if (!ReferenceEquals(resourceVertex.ImportOutput, processed)) {
-                        (processed as IDisposable)?.Dispose();
+                        processor.Dispose(processed, new(_environment.Logger));
                     }
                 }
                 

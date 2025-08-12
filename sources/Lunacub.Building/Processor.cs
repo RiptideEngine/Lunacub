@@ -12,6 +12,7 @@ public abstract class Processor {
     internal abstract bool CanProcess(object input);
 
     internal abstract object Process(object importedObject, ProcessingContext context);
+    internal virtual void Dispose(object processed, DisposingContext context) { }
 }
 
 /// <inheritdoc cref="Processor"/>
@@ -27,9 +28,15 @@ public abstract class Processor<TInput, TOutput> : Processor {
     internal override sealed object Process(object importedObject, ProcessingContext context) {
         Debug.Assert(importedObject.GetType().IsAssignableTo(typeof(TInput)));
 
-        return Process((TInput)importedObject, context);
+        return Process((TInput)importedObject, context)!;
+    }
+
+    internal override void Dispose(object processed, DisposingContext context) {
+        Dispose((TOutput)processed, context);
     }
 
     protected virtual bool CanProcess(TInput content) => true;
+    
     protected abstract TOutput Process(TInput importedObject, ProcessingContext context);
+    protected virtual void Dispose(TOutput processed, DisposingContext context) { }
 }

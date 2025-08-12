@@ -14,7 +14,7 @@ public abstract class Importer {
     }
     
     internal abstract object ImportObject(SourceStreams sourceStreams, ImportingContext context);
-    internal virtual void DisposeObject(object obj, DisposingContext context) { }
+    internal virtual void Dispose(object obj, DisposingContext context) { }
 }
 
 /// <inheritdoc cref="Importer"/>
@@ -24,7 +24,7 @@ public abstract class Importer<T> : Importer {
         return Import(sourceStreams, context)!;
     }
 
-    internal override void DisposeObject(object obj, DisposingContext context) {
+    internal override void Dispose(object obj, DisposingContext context) {
         Dispose((T)obj, context);
     }
 

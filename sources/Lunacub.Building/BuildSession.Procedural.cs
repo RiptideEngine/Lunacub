@@ -50,7 +50,7 @@ partial class BuildSession {
                 return new ProceduralResourceBuild(_session, next, this).Build();
             } finally {
                 foreach ((_, var proceduralResource) in _current) {
-                    (proceduralResource.Resource.Object as IDisposable)?.Dispose();
+                    proceduralResource.Resource.Disposer?.Invoke(proceduralResource.Resource.Object);
                 }
             }
         }
@@ -142,7 +142,7 @@ partial class BuildSession {
                         return;
                     } finally {
                         if (!ReferenceEquals(resource.Object, processed)) {
-                            (processed as IDisposable)?.Dispose();
+                            processor.Dispose(processed, new(_session._environment.Logger));
                         }
                     }
                     

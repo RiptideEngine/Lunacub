@@ -339,7 +339,7 @@ internal sealed partial class BuildSession {
             
             Debug.Assert(ReferenceCount == 0);
             
-            Importer.DisposeObject(ImportOutput, context);
+            Importer.Dispose(ImportOutput, context);
             ImportOutput = null;
         }
     }
