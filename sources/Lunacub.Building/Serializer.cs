@@ -1,15 +1,15 @@
 ﻿namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
-/// Provides the base class that handles the serialization process of a resource in form of a <see cref="ContentRepresentation"/>
+/// Provides the base class that handles the serialization process of a resource in form of a <see cref="object"/>
 /// from previous processing step.
 /// </summary>
-/// <seealso cref="ContentRepresentation"/>
+/// <seealso cref="object"/>
 public abstract class Serializer {
     /// <summary>
     /// Gets the object that is being serialized.
     /// </summary>
-    public ContentRepresentation SerializingObject { get; }
+    public object SerializingObject { get; }
     
     /// <summary>
     /// Gets the context associates with the serialization process.
@@ -21,13 +21,13 @@ public abstract class Serializer {
     /// </summary>
     public abstract string DeserializerName { get; }
 
-    protected Serializer(ContentRepresentation serializingObject, SerializationContext context) {
+    protected Serializer(object serializingObject, SerializationContext context) {
         SerializingObject = serializingObject;
         Context = context;
     }
     
     /// <summary>
-    /// Serializes the <see cref="ContentRepresentation"/> into a stream.
+    /// Serializes the <see cref="object"/> into a stream.
     /// </summary>
     /// <param name="outputStream">Output stream to receive the serialized data of <see cref="SerializingObject"/>.</param>
     public abstract void SerializeObject(Stream outputStream);
@@ -41,15 +41,15 @@ public abstract class Serializer {
 
 /// <summary>
 /// Provides the base class that handles the serialization process of a resource in form of type <typeparamref name="T"/> extends
-/// <see cref="ContentRepresentation"/> from previous processing step.
+/// <see cref="object"/> from previous processing step.
 /// </summary>
-/// <typeparam name="T">The type extends <see cref="ContentRepresentation"/>.</typeparam>
-public abstract class Serializer<T> : Serializer where T : ContentRepresentation {
+/// <typeparam name="T">The type extends <see cref="object"/>.</typeparam>
+public abstract class Serializer<T> : Serializer {
     /// <summary>
     /// Gets the object that is being serialized.
     /// </summary>
     public new T SerializingObject => (T)base.SerializingObject;
     
-    protected Serializer(ContentRepresentation serializingObject, SerializationContext context) : base(serializingObject, context) {
+    protected Serializer(object serializingObject, SerializationContext context) : base(serializingObject, context) {
     }
 }

@@ -4,7 +4,7 @@ public sealed class SimpleResource {
     public int Value { get; set; }
 }
 
-public sealed class SimpleResourceDTO : ContentRepresentation {
+public sealed class SimpleResourceDTO {
     public int Value { get; set; }
 }
 
@@ -15,14 +15,14 @@ public sealed class SimpleResourceImporter : Importer<SimpleResourceDTO> {
 }
 
 public sealed class SimpleResourceSerializerFactory : SerializerFactory<SimpleResourceDTO> {
-    protected override Serializer<SimpleResourceDTO> CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
+    protected override Serializer<SimpleResourceDTO> CreateSerializer(object serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
     }
 
     private sealed class SerializerCore : Serializer<SimpleResourceDTO> {
         public override string DeserializerName => nameof(SimpleResourceDeserializer);
         
-        public SerializerCore(ContentRepresentation serializingObject, SerializationContext context) : base(serializingObject, context) { }
+        public SerializerCore(object serializingObject, SerializationContext context) : base(serializingObject, context) { }
 
         public override void SerializeObject(Stream outputStream) {
             using var writer = new BinaryWriter(outputStream, Encoding.UTF8, leaveOpen: true);

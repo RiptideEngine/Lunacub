@@ -12,7 +12,7 @@ internal sealed partial class BuildSession {
 
     public EnvironmentLibraryDictionary<ResourceResultDictionary> Results { get; }
     
-    private readonly Dictionary<ResourceAddress, EnvironmentResourceVertex> _graph;
+    private readonly FrozenDictionary<LibraryID, LibraryGraphVertices> _graph;
     
     private readonly Dictionary<LibraryID, ResourceRegistry<ResourceRegistry.Element>> _outputRegistries;
     private readonly EnvironmentProceduralSchematic _overrideProceduralSchematic;
@@ -21,7 +21,11 @@ internal sealed partial class BuildSession {
     
     public BuildSession(BuildEnvironment environment) {
         _environment = environment;
-        _graph = new(_environment.Libraries.Sum(x => x.Registry.Count));
+        _graph = _environment.Libraries.Select(x => {
+            Dictionary<ResourceID, EnvironmentResourceVertex> vertices = new(x.Registry.Count);
+            
+            return KeyValuePair.Create<LibraryID, LibraryGraphVertices>(x.Id, new(x, vertices));
+        }).ToFrozenDictionary();
         Results = new();
         _outputRegistries = [];
         _overrideProceduralSchematic = new();
@@ -37,14 +41,14 @@ internal sealed partial class BuildSession {
         BuildEnvironmentResources();
         
         Debug.Assert(
-            _graph.Values.All(x => x.ImportOutput == null || IsDisposed(x.ImportOutput)), 
+            _graph.Values.SelectMany(x => x.Vertices.Values).All(x => x.ImportOutput == null), 
             "Resource leaked after building environment resources."
         );
         
         BuildProceduralResources();
         
         Debug.Assert(
-            _graph.Values.All(x => x.ImportOutput == null || IsDisposed(x.ImportOutput)),
+            _graph.Values.SelectMany(x => x.Vertices.Values).All(x => x.ImportOutput == null),
             "Resource leaked after building procedural resources."
         );
         // Welp, fun is over.
@@ -83,7 +87,7 @@ internal sealed partial class BuildSession {
                 foreach ((var resourceId, var result) in libraryResults!) {
                     if (result.Status != BuildStatus.Cached) continue;
 
-                    getSuccessful = libraryProceduralSchematic!.TryGetValue(resourceId, out var resourceProceduralSchematic);
+                    getSuccessful = libraryProceduralSchematic.TryGetValue(resourceId, out var resourceProceduralSchematic);
                     Debug.Assert(getSuccessful);
 
                     foreach ((var proceduralResourceId, var tags) in resourceProceduralSchematic!) {
@@ -100,14 +104,18 @@ internal sealed partial class BuildSession {
         _environment.FlushIncrementalInfos();
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_disposed")]
-    private static extern ref bool IsDisposed(ContentRepresentation contentRepresentation);
-
     private void ReleaseDependencies(IReadOnlyCollection<ResourceAddress> dependencyAddresses) {
         foreach (var dependencyAddress in dependencyAddresses) {
-            if (!_graph.TryGetValue(dependencyAddress, out EnvironmentResourceVertex? resourceVertex)) continue;
-            
-            resourceVertex.Release();
+            if (!_graph.TryGetValue(dependencyAddress.LibraryId, out var libraryVertices)) continue;
+            if (!libraryVertices.Vertices.TryGetValue(dependencyAddress.ResourceId, out EnvironmentResourceVertex? vertex)) continue;
+
+            ReleaseVertexOutput(vertex);
+        }
+    }
+
+    private void ReleaseVertexOutput(EnvironmentResourceVertex vertex) {
+        if (vertex.DecrementReference() == 0) {
+            vertex.DisposeImportedObject(new(_environment.Logger));
         }
     }
 
@@ -143,6 +151,30 @@ internal sealed partial class BuildSession {
         }
     }
     
+    private bool TryGetVertex(ResourceAddress address, [NotNullWhen(true)] out BuildResourceLibrary? library, [NotNullWhen(true)] out EnvironmentResourceVertex? vertex) {
+        if (_graph.TryGetValue(address.LibraryId, out var libraryVertices) &&
+            libraryVertices.Vertices.TryGetValue(address.ResourceId, out vertex)
+           ) {
+            library = libraryVertices.Library;
+            return true;
+        }
+
+        library = null;
+        vertex = null;
+        return false;
+    }
+
+    private bool TryGetVertex(ResourceAddress address, [NotNullWhen(true)] out EnvironmentResourceVertex? vertex) {
+        if (_graph.TryGetValue(address.LibraryId, out var libraryVertices) &&
+            libraryVertices.Vertices.TryGetValue(address.ResourceId, out vertex)
+        ) {
+            return true;
+        }
+
+        vertex = null;
+        return false;
+    }
+    
     private bool TryGetResult(LibraryID libraryId, ResourceID resourceId, out ResourceBuildingResult result) {
         if (!Results.TryGetValue(libraryId, out var libraryResults)) {
             result = default;
@@ -174,7 +206,7 @@ internal sealed partial class BuildSession {
     }
 
     private void SerializeProcessedObject(
-        ContentRepresentation processed,
+        object processed,
         ResourceAddress address,
         IImportOptions? options,
         IReadOnlyCollection<string> tags
@@ -265,43 +297,54 @@ internal sealed partial class BuildSession {
     }
 
     private sealed class EnvironmentResourceVertex {
-        public readonly BuildResourceLibrary Library;
-        
         /// <summary>
         /// Gets the Id of the dependency resources, the collection is unsanitied, thus it can reference unregistered resource
         /// id, or self-referencing.
         /// </summary>
         public IReadOnlySet<ResourceAddress> DependencyResourceAddresses;
         public readonly ResourceRegistry.Element<BuildingResource> RegistryElement;
+        public readonly Importer Importer;
         
-        public ContentRepresentation? ImportOutput { get; private set; }
+        public object? ImportOutput { get; private set; }
         
         public int ReferenceCount;
 
         public EnvironmentResourceVertex(
-            BuildResourceLibrary library,
+            Importer importer,
             IReadOnlySet<ResourceAddress> dependencyResourceAddresses,
             ResourceRegistry.Element<BuildingResource> registryElement
         ) {
-            Library = library;
+            Importer = importer;
             DependencyResourceAddresses = dependencyResourceAddresses;
             RegistryElement = registryElement;
         }
 
         [MemberNotNull(nameof(ImportOutput))]
-        public void SetImportResult(ContentRepresentation importOutput) {
+        public void SetImportResult(object importOutput) {
             // Debug.Assert(ReferenceCount > 0);
             
             ImportOutput = importOutput;
         }
-        
-        public void Release() {
-            if (--ReferenceCount != 0) return;
 
-            ImportOutput?.Dispose();
+        public void IncrementReference() {
+            Interlocked.Increment(ref ReferenceCount);
+        }
+        
+        public int DecrementReference() {
+            return Interlocked.Decrement(ref ReferenceCount);
+        }
+
+        public void DisposeImportedObject(DisposingContext context) {
+            if (ImportOutput == null) return;
+            
+            Debug.Assert(ReferenceCount == 0);
+            
+            Importer.DisposeObject(ImportOutput, context);
             ImportOutput = null;
         }
     }
 
     private readonly record struct ProceduralResourceRequest(ResourceID SourceResourceId, BuildingProceduralResource Resource);
+
+    private readonly record struct LibraryGraphVertices(BuildResourceLibrary Library, Dictionary<ResourceID, EnvironmentResourceVertex> Vertices);
 }

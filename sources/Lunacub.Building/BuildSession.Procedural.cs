@@ -33,10 +33,10 @@ partial class BuildSession {
 
             // Assign the reference count to environment resources.
             foreach ((_, var proceduralResource) in _current) {
-                foreach (var dependencyId in proceduralResource.Resource.DependencyAddresses) {
-                    if (_session._graph.TryGetValue(dependencyId, out var environmentResourceVertex)) {
-                        environmentResourceVertex.ReferenceCount++;
-                    }
+                foreach (var dependencyAddress in proceduralResource.Resource.DependencyAddresses) {
+                    if (!_session.TryGetVertex(dependencyAddress, out var dependencyVertex)) continue;
+                    
+                    dependencyVertex.IncrementReference();
                 }
             }
 
@@ -50,7 +50,7 @@ partial class BuildSession {
                 return new ProceduralResourceBuild(_session, next, this).Build();
             } finally {
                 foreach ((_, var proceduralResource) in _current) {
-                    proceduralResource.Resource.Object.Dispose();
+                    (proceduralResource.Resource.Object as IDisposable)?.Dispose();
                 }
             }
         }
@@ -124,7 +124,7 @@ partial class BuildSession {
                     
                     CollectDependencies(resource.DependencyAddresses, out var dependencies);
                     
-                    ContentRepresentation processed;
+                    object processed;
                     ProcessingContext processingContext;
                     
                     try {
@@ -142,7 +142,7 @@ partial class BuildSession {
                         return;
                     } finally {
                         if (!ReferenceEquals(resource.Object, processed)) {
-                            processed.Dispose();
+                            (processed as IDisposable)?.Dispose();
                         }
                     }
                     
@@ -160,17 +160,17 @@ partial class BuildSession {
         
         private void CollectDependencies(
             IReadOnlySet<ResourceAddress> dependencyIds,
-            out IReadOnlyDictionary<ResourceAddress, ContentRepresentation> collectedDependencies
+            out IReadOnlyDictionary<ResourceAddress, object> collectedDependencies
         ) {
             if (dependencyIds.Count == 0) {
-                collectedDependencies = FrozenDictionary<ResourceAddress, ContentRepresentation>.Empty;
+                collectedDependencies = FrozenDictionary<ResourceAddress, object>.Empty;
                 return;
             }
             
-            Dictionary<ResourceAddress, ContentRepresentation> dependencyCollection = [];
+            Dictionary<ResourceAddress, object> dependencyCollection = [];
 
             foreach (var dependencyAddress in dependencyIds) {
-                if (_session._graph.TryGetValue(dependencyAddress, out EnvironmentResourceVertex? dependencyVertex)) {
+                if (_session.TryGetVertex(dependencyAddress, out var dependencyResourceLibrary, out var dependencyVertex)) {
                     if (dependencyVertex.ImportOutput is { } dependencyImportOutput) {
                         dependencyCollection.Add(dependencyAddress, dependencyImportOutput);
                     } else {
@@ -195,7 +195,7 @@ partial class BuildSession {
 
                             if (_session.Import(
                                 dependencyAddress,
-                                dependencyVertex.Library,
+                                dependencyResourceLibrary,
                                 _session._environment.Importers[options.ImporterName],
                                 options.Options,
                                 out var imported,
@@ -214,7 +214,7 @@ partial class BuildSession {
             collectedDependencies = dependencyCollection;
         }
 
-        private ContentRepresentation? RecursivelyTryGetProceduralResource(ResourceAddress resourceAddress) {
+        private object? RecursivelyTryGetProceduralResource(ResourceAddress resourceAddress) {
             if (_current.TryGetValue(resourceAddress, out ProceduralResourceRequest request)) return request.Resource.Object;
             
             return _previous?.RecursivelyTryGetProceduralResource(resourceAddress);

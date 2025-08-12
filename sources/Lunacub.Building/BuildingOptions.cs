@@ -8,13 +8,13 @@ namespace Caxivitual.Lunacub.Building;
 [JsonConverter(typeof(BuildingOptionsConverter))]
 public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
     /// <summary>
-    /// Gets the name of <see cref="Importer"/> used to import resource data into a <see cref="ContentRepresentation"/>.
+    /// Gets the name of <see cref="Importer"/> used to import resource data into a <see cref="object"/>.
     /// </summary>
     public required string ImporterName { get; init; }
     
     /// <summary>
-    /// Gets the name of <see cref="Processor"/> used to convert the <see cref="ContentRepresentation"/> after the
-    /// importing stage into another <see cref="ContentRepresentation"/>.
+    /// Gets the name of <see cref="Processor"/> used to convert the <see cref="object"/> after the
+    /// importing stage into another <see cref="object"/>.
     /// </summary>
     public string? ProcessorName { get; init; }
     
@@ -40,7 +40,7 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
     /// </param>
     /// <param name="processorName">
     ///     The processor name in <see cref="BuildEnvironment.Processors"/> used to process resource from a
-    ///     <see cref="ContentRepresentation"/> to another.
+    ///     <see cref="object"/> to another.
     /// </param>
     [SetsRequiredMembers]
     public BuildingOptions(string importerName, string? processorName = null) : this(importerName, processorName, null) { }
@@ -54,7 +54,7 @@ public readonly struct BuildingOptions : IEquatable<BuildingOptions> {
     /// </param>
     /// <param name="processorName">
     ///     The processor name in <see cref="BuildEnvironment.Processors"/> used to process resource from a
-    ///     <see cref="ContentRepresentation"/> to another.
+    ///     <see cref="object"/> to another.
     /// </param>
     /// <param name="options">
     ///     The importing option object that can be used to finely tune the resource building process.

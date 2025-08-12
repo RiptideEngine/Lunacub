@@ -3,9 +3,9 @@
 [DebuggerDisplay("{ToString(),nq}")]
 public readonly struct BuildingProceduralResource : IEquatable<BuildingProceduralResource> {
     /// <summary>
-    /// Gets the building resource as an instance of <see cref="ContentRepresentation"/>.
+    /// Gets the building resource as an instance of <see cref="object"/>.
     /// </summary>
-    public required ContentRepresentation Object { get; init; }
+    public required object Object { get; init; }
     
     /// <summary>
     /// Gets the dependency ids of the resource.
@@ -13,8 +13,8 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     public IReadOnlySet<ResourceAddress> DependencyAddresses { get; init; }
     
     /// <summary>
-    /// Gets the name of <see cref="Processor"/> used to convert the <see cref="ContentRepresentation"/> after the
-    /// importing stage into another <see cref="ContentRepresentation"/>.
+    /// Gets the name of <see cref="Processor"/> used to convert the <see cref="object"/> after the
+    /// importing stage into another <see cref="object"/>.
     /// </summary>
     public string? ProcessorName { get; init; }
     
@@ -35,12 +35,12 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     }
 
     [SetsRequiredMembers]
-    public BuildingProceduralResource(ContentRepresentation obj, string? processorName) :
+    public BuildingProceduralResource(object obj, string? processorName) :
         this(obj, processorName, [], null) { }
 
     [SetsRequiredMembers]
     public BuildingProceduralResource(
-        ContentRepresentation obj,
+        object obj,
         string? processorName,
         ImmutableArray<string> tags,
         IImportOptions? options

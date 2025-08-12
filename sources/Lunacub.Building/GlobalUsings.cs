@@ -12,3 +12,5 @@ global using System.Runtime.ExceptionServices;
 global using Caxivitual.Lunacub.Compilation;
 global using System.Collections.Frozen;
 global using System.Collections.Immutable;
+global using Microsoft.Extensions.Logging;
+global using Microsoft.Extensions.Logging.Abstractions;

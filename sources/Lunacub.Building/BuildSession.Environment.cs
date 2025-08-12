@@ -6,19 +6,19 @@ namespace Caxivitual.Lunacub.Building;
 
 partial class BuildSession {
     private void BuildEnvironmentResources() {
-        foreach (var library in _environment.Libraries) {
+        foreach ((LibraryID libraryId, (BuildResourceLibrary library, Dictionary<ResourceID, EnvironmentResourceVertex> vertices)) in _graph) {
             foreach ((var resourceId, var element) in library.Registry) {
                 BuildingResource resource = element.Option;
                 
                 if (!_environment.Importers.TryGetValue(resource.Options.ImporterName, out var importer)) {
-                    SetResult(library.Id, resourceId, new(BuildStatus.UnknownImporter));
+                    SetResult(libraryId, resourceId, new(BuildStatus.UnknownImporter));
                     continue;
                 }
 
                 try {
                     importer.ValidateResource(resource);
                 } catch (Exception e) {
-                    SetResult(library.Id, resourceId, new(BuildStatus.InvalidBuildingResource, ExceptionDispatchInfo.Capture(e)));
+                    SetResult(libraryId, resourceId, new(BuildStatus.InvalidBuildingResource, ExceptionDispatchInfo.Capture(e)));
                     continue;
                 }
 
@@ -30,36 +30,36 @@ partial class BuildSession {
                     using SourceStreams streams = library.CreateSourceStreams(resourceId);
                     
                     if (streams.PrimaryStream == null) {
-                        SetResult(library.Id, resourceId, new(BuildStatus.NullPrimaryResourceStream));
+                        SetResult(libraryId, resourceId, new(BuildStatus.NullPrimaryResourceStream));
                         continue;
                     }
 
                     foreach ((_, var secondaryStream) in streams.SecondaryStreams) {
                         if (secondaryStream == null) {
-                            SetResult(library.Id, resourceId, new(BuildStatus.NullSecondaryResourceStream));
+                            SetResult(libraryId, resourceId, new(BuildStatus.NullSecondaryResourceStream));
                             break;
                         }
                     }
 
-                    if (TryGetResult(library.Id, resourceId, out _)) continue;
+                    if (TryGetResult(libraryId, resourceId, out _)) continue;
                     
                     try {
                         IReadOnlyCollection<ResourceAddress> extractedDependencies = importer.ExtractDependencies(streams);
 
-                        if (extractedDependencies is IReadOnlySet<ResourceAddress> dependencySet && !dependencySet.Contains(new(library.Id, resourceId))) {
+                        if (extractedDependencies is IReadOnlySet<ResourceAddress> dependencySet && !dependencySet.Contains(new(libraryId, resourceId))) {
                             dependencyAddresses = dependencySet;
                         } else {
                             HashSet<ResourceAddress> createdSet = new(extractedDependencies);
-                            createdSet.Remove(new(library.Id, resourceId));
+                            createdSet.Remove(new(libraryId, resourceId));
                             dependencyAddresses = createdSet;
                         }
                     } catch (Exception e) {
-                        SetResult(library.Id, resourceId, new(BuildStatus.ExtractDependenciesFailed, ExceptionDispatchInfo.Capture(e)));
+                        SetResult(libraryId, resourceId, new(BuildStatus.ExtractDependenciesFailed, ExceptionDispatchInfo.Capture(e)));
                         continue;
                     }
                 }
 
-                _graph.Add(new(library.Id, resourceId), new(library, dependencyAddresses, element));
+                vertices.Add(resourceId, new(importer, dependencyAddresses, element));
             }
         }
 
@@ -67,22 +67,29 @@ partial class BuildSession {
         ValidateGraph();
         
         // Assigning reference count for dependencies.
-        foreach ((_, var vertex) in _graph) {
-            foreach (var dependencyAddress in vertex.DependencyResourceAddresses) {
-                if (!_graph.TryGetValue(dependencyAddress, out EnvironmentResourceVertex? dependencyVertex)) continue;
+        Parallel.ForEach(_graph, (kvp, state, index) => {
+            var libraryVertices = kvp.Value;
+            
+            foreach ((_, var vertex) in libraryVertices.Vertices) {
+                foreach (var dependencyAddress in vertex.DependencyResourceAddresses) {
+                    if (!TryGetVertex(dependencyAddress, out var dependencyVertex)) continue;
+                    
+                    dependencyVertex.IncrementReference();
+                }
                 
-                dependencyVertex.ReferenceCount++;
+                vertex.IncrementReference();
             }
-
-            vertex.ReferenceCount++;    // Environment resources need the import output to process and serialize.
-        }
+        });
 
         // Handle the building procedure.
-        foreach ((var resourceAddress, var vertex) in _graph) {
-            BuildEnvironmentResource(resourceAddress, vertex, out _);
+        foreach ((var libraryId, (var library, var libraryVertices)) in _graph) {
+            foreach ((var resourceId, var resourceVertex) in libraryVertices) {
+                BuildEnvironmentResource(new(libraryId, resourceId), library, resourceVertex, out _);
+            }
         }
         
-        Debug.Assert(_graph.Values.All(x => x.ReferenceCount == 0));
+        Debug.Assert(_graph.Values.SelectMany(x => x.Vertices.Values).All(x => x.ReferenceCount == 0));
+        return;
         
         void ValidateGraph() {
             if (_graph.Count == 0) return;
@@ -90,17 +97,21 @@ partial class BuildSession {
             HashSet<ResourceAddress> temporaryMarks = [], permanentMarks = [];
             Stack<ResourceAddress> path = [];
             
-            foreach ((var resourceAddress, _) in _graph) {
-                Visit(resourceAddress, temporaryMarks, permanentMarks, path);
+            foreach ((var libraryId, var libraryVertices) in _graph) {
+                foreach ((var resourceId, var resourceVertex) in libraryVertices.Vertices) {
+                    Visit(new(libraryId, resourceId), resourceVertex, temporaryMarks, permanentMarks, path);
+                }
             }
+            
+            return;
 
             void Visit(
                 ResourceAddress resourceAddress,
+                EnvironmentResourceVertex resourceVertex,
                 HashSet<ResourceAddress> temporaryMarks,
                 HashSet<ResourceAddress> permanentMarks,
                 Stack<ResourceAddress> path
             ) {
-                if (!_graph.ContainsKey(resourceAddress)) return;
                 if (permanentMarks.Contains(resourceAddress)) return;
                 
                 path.Push(resourceAddress);
@@ -109,8 +120,10 @@ partial class BuildSession {
                     throw new InvalidOperationException($"Circular dependency detected: {string.Join(" -> ", path.Reverse())}.");
                 }
                 
-                foreach (var dependencyID in _graph[resourceAddress].DependencyResourceAddresses) {
-                    Visit(dependencyID, temporaryMarks, permanentMarks, path);
+                foreach (var dependencyAddress in resourceVertex.DependencyResourceAddresses) {
+                    if (!TryGetVertex(dependencyAddress, out var dependencyVertex)) continue;
+                    
+                    Visit(dependencyAddress, dependencyVertex, temporaryMarks, permanentMarks, path);
                 }
                 
                 permanentMarks.Add(resourceAddress);
@@ -121,18 +134,17 @@ partial class BuildSession {
     
     private void BuildEnvironmentResource(
         ResourceAddress resourceAddress,
+        BuildResourceLibrary resourceLibrary,
         EnvironmentResourceVertex resourceVertex,
         out ResourceBuildingResult outputResult
     ) {
         if (TryGetResult(resourceAddress, out outputResult)) return;
         
-        Debug.Assert(resourceVertex.Library.Id == resourceAddress.LibraryId);
-        
         bool dependencyRebuilt = false;
-        foreach (var dependencyId in resourceVertex.DependencyResourceAddresses) {
-            if (!_graph.TryGetValue(dependencyId, out var dependencyVertexInfo)) continue;
+        foreach (var dependencyAddress in resourceVertex.DependencyResourceAddresses) {
+            if (!TryGetVertex(dependencyAddress, out var dependencyResourceLibrary, out var dependencyVertex)) continue;
             
-            BuildEnvironmentResource(dependencyId, dependencyVertexInfo, out ResourceBuildingResult dependencyResult);
+            BuildEnvironmentResource(dependencyAddress, dependencyResourceLibrary, dependencyVertex, out ResourceBuildingResult dependencyResult);
 
             if (dependencyResult.Status == BuildStatus.Success) {
                 dependencyRebuilt = true;
@@ -142,8 +154,6 @@ partial class BuildSession {
         try {
             ResourceRegistry.Element<BuildingResource> registryElement = resourceVertex.RegistryElement;
             BuildingOptions options = registryElement.Option.Options;
-
-            Importer importer = _environment.Importers[options.ImporterName];
 
             string? processorName = options.ProcessorName;
             Processor? processor = null;
@@ -156,11 +166,13 @@ partial class BuildSession {
             SourceLastWriteTimes lastWriteTimes;
 
             try {
-                lastWriteTimes = resourceVertex.Library.GetSourceLastWriteTimes(resourceAddress.ResourceId);
+                lastWriteTimes = resourceLibrary.GetSourceLastWriteTimes(resourceAddress.ResourceId);
             } catch (Exception e) {
                 SetResult(resourceAddress, outputResult = new(BuildStatus.GetSourceLastWriteTimesFailed, ExceptionDispatchInfo.Capture(e)));
                 return;
             }
+
+            var importer = resourceVertex.Importer;
             
             if (!dependencyRebuilt) {
                 if (IsResourceCacheable(resourceAddress, lastWriteTimes, options, resourceVertex.DependencyResourceAddresses, out var previousIncrementalInfo)) {
@@ -174,7 +186,7 @@ partial class BuildSession {
             
             // Import if haven't.
             if (resourceVertex.ImportOutput == null) {
-                if (!Import(resourceAddress, resourceVertex.Library, importer, options.Options, out var importOutput, out outputResult)) {
+                if (!Import(resourceAddress, resourceLibrary, importer, options.Options, out var importOutput, out outputResult)) {
                     return;
                 }
                 
@@ -200,12 +212,12 @@ partial class BuildSession {
 
                 CollectDependencies(
                     resourceVertex.DependencyResourceAddresses,
-                    out IReadOnlyDictionary<ResourceAddress, ContentRepresentation> dependencies,
+                    out IReadOnlyDictionary<ResourceAddress, object> dependencies,
                     out IReadOnlySet<ResourceAddress> validDependencyIds
                 );
                 resourceVertex.DependencyResourceAddresses = validDependencyIds;
 
-                ContentRepresentation processed;
+                object processed;
                 ProcessingContext processingContext;
                 
                 try {
@@ -223,7 +235,7 @@ partial class BuildSession {
                     return;
                 } finally {
                     if (!ReferenceEquals(resourceVertex.ImportOutput, processed)) {
-                        processed.Dispose();
+                        (processed as IDisposable)?.Dispose();
                     }
                 }
                 
@@ -236,27 +248,27 @@ partial class BuildSession {
             AddOutputResourceRegistry(resourceAddress, new(registryElement.Name, registryElement.Tags));
         } finally {
             ReleaseDependencies(resourceVertex.DependencyResourceAddresses);
-            resourceVertex.Release();
+            ReleaseVertexOutput(resourceVertex);
         }
 
         return;
 
         void CollectDependencies(
             IReadOnlyCollection<ResourceAddress> dependencyAddresses,
-            out IReadOnlyDictionary<ResourceAddress, ContentRepresentation> collectedDependencies,
+            out IReadOnlyDictionary<ResourceAddress, object> collectedDependencies,
             out IReadOnlySet<ResourceAddress> validDependencies
         ) {
             if (dependencyAddresses.Count == 0) {
-                collectedDependencies = FrozenDictionary<ResourceAddress, ContentRepresentation>.Empty;
+                collectedDependencies = FrozenDictionary<ResourceAddress, object>.Empty;
                 validDependencies = FrozenSet<ResourceAddress>.Empty;
                 return;
             }
         
-            Dictionary<ResourceAddress, ContentRepresentation> dependencyCollection = [];
+            Dictionary<ResourceAddress, object> dependencyCollection = [];
             HashSet<ResourceAddress> validDependencyIds = [];
 
             foreach (var dependencyAddress in dependencyAddresses) {
-                if (!_graph.TryGetValue(dependencyAddress, out EnvironmentResourceVertex? dependencyVertex)) continue;
+                if (!TryGetVertex(dependencyAddress, out var dependencyResourceLibrary, out var dependencyVertex)) continue;
 
                 if (dependencyVertex.ImportOutput is { } dependencyImportOutput) {
                     dependencyCollection.Add(dependencyAddress, dependencyImportOutput);
@@ -282,8 +294,8 @@ partial class BuildSession {
                         
                         BuildingOptions options = dependencyVertex.RegistryElement.Option.Options;
 
-                        Importer importer = _environment.Importers[options.ImporterName];
-                        if (Import(dependencyAddress, dependencyVertex.Library, importer, options.Options, out var imported, out _)) {
+                        Importer importer = dependencyVertex.Importer;
+                        if (Import(dependencyAddress, dependencyResourceLibrary, importer, options.Options, out var imported, out _)) {
                             dependencyVertex.SetImportResult(imported);
                             dependencyCollection.Add(dependencyAddress, imported);
                             validDependencyIds.Add(dependencyAddress);
@@ -302,7 +314,7 @@ partial class BuildSession {
         BuildResourceLibrary library,
         Importer importer,
         IImportOptions? options,
-        [NotNullWhen(true)] out ContentRepresentation? imported,
+        [NotNullWhen(true)] out object? imported,
         out ResourceBuildingResult failureResult
     ) {
         SourceStreams streams;

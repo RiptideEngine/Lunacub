@@ -1,11 +1,7 @@
-﻿using Caxivitual.Lunacub.Building.Collections;
-using Microsoft.Extensions.Logging;
-
-namespace Caxivitual.Lunacub.Building;
+﻿namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
-/// Represents the context used during the importing process, providing access to import options and mechanisms to
-/// request building references.
+/// Represents the context used during the importing process, providing access to import options and other properties.
 /// </summary>
 [ExcludeFromCodeCoverage]
 public readonly struct ImportingContext {

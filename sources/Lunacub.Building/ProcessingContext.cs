@@ -1,6 +1,4 @@
 ﻿using Caxivitual.Lunacub.Building.Collections;
-using Microsoft.Extensions.Logging;
-using System.Collections.Frozen;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -29,7 +27,7 @@ public readonly struct ProcessingContext {
     /// Gets the dependency resources requested from importing stage.
     /// </summary>
     /// <seealso cref="Importer.ExtractDependencies"/>
-    public IReadOnlyDictionary<ResourceAddress, ContentRepresentation> Dependencies { get; }
+    public IReadOnlyDictionary<ResourceAddress, object> Dependencies { get; }
     
     /// <summary>
     /// Gets the procedural resources container generated during processing stage.
@@ -45,7 +43,7 @@ public readonly struct ProcessingContext {
         BuildEnvironment environment,
         ResourceAddress resourceAddress,
         IImportOptions? options,
-        IReadOnlyDictionary<ResourceAddress, ContentRepresentation> dependencies,
+        IReadOnlyDictionary<ResourceAddress, object> dependencies,
         ILogger logger
     ) {
         Environment = environment;

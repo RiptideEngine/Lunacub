@@ -1,6 +1,4 @@
-﻿using System.Collections.Frozen;
-
-namespace Caxivitual.Lunacub.Building;
+﻿namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
 /// Provides the base class that handles the importing process of a resource.
@@ -15,17 +13,22 @@ public abstract class Importer {
         return FrozenSet<ResourceAddress>.Empty;
     }
     
-    internal abstract ContentRepresentation ImportObject(SourceStreams sourceStreams, ImportingContext context);
+    internal abstract object ImportObject(SourceStreams sourceStreams, ImportingContext context);
+    internal virtual void DisposeObject(object obj, DisposingContext context) { }
 }
 
 /// <inheritdoc cref="Importer"/>
-/// <typeparam name="T">
-///     The type of object that the importer will output, must derived from <see cref="ContentRepresentation"/>.
-/// </typeparam>
-public abstract class Importer<T> : Importer where T : ContentRepresentation {
-    internal override sealed ContentRepresentation ImportObject(SourceStreams sourceStreams, ImportingContext context) {
-        return Import(sourceStreams, context);
+/// <typeparam name="T">The type of object that the importer will output.</typeparam>
+public abstract class Importer<T> : Importer {
+    internal override sealed object ImportObject(SourceStreams sourceStreams, ImportingContext context) {
+        return Import(sourceStreams, context)!;
+    }
+
+    internal override void DisposeObject(object obj, DisposingContext context) {
+        Dispose((T)obj, context);
     }
 
     protected abstract T Import(SourceStreams sourceStreams, ImportingContext context);
+
+    protected virtual void Dispose(T obj, DisposingContext context) { }
 }

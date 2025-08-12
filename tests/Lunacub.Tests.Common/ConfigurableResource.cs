@@ -19,7 +19,7 @@ public enum OutputType {
     Binary,
 }
 
-public sealed class ConfigurableResourceDTO : ContentRepresentation {
+public sealed class ConfigurableResourceDTO {
     public ImmutableArray<int> Array { get; }
 
     public ConfigurableResourceDTO(ImmutableArray<int> array) {
@@ -36,14 +36,14 @@ public sealed class ConfigurableResourceImporter : Importer<ConfigurableResource
 }
 
 public sealed class ConfigurableResourceSerializerFactory : SerializerFactory<ConfigurableResourceDTO> {
-    protected override Serializer<ConfigurableResourceDTO> CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
+    protected override Serializer<ConfigurableResourceDTO> CreateSerializer(object serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
     }
 
     private sealed class SerializerCore : Serializer<ConfigurableResourceDTO> {
         public override string DeserializerName => nameof(ConfigurableResourceDeserializer);
 
-        public SerializerCore(ContentRepresentation serializingObject, SerializationContext context) : base(serializingObject, context) {
+        public SerializerCore(object serializingObject, SerializationContext context) : base(serializingObject, context) {
         }
 
         public override void SerializeObject(Stream outputStream) {

@@ -2,7 +2,7 @@
 
 public record SimpleResource(int Value);
 
-public sealed class SimpleResourceDTO : ContentRepresentation {
+public sealed class SimpleResourceDTO {
     public int Value;
 
     public SimpleResourceDTO(int value) {

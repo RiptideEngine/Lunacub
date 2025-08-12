@@ -10,7 +10,7 @@
 //     }
 // }
 //
-// public sealed class TreeReferencingResourceDTO : ContentRepresentation {
+// public sealed class TreeReferencingResourceDTO {
 //     public ResourceID[] References { get; set; }
 //     public int Value { get; set; }
 // }
@@ -24,14 +24,14 @@
 // public sealed class TreeReferencingResourceSerializerFactory : SerializerFactory {
 //     public override bool CanSerialize(Type representationType) => representationType == typeof(TreeReferencingResourceDTO);
 //
-//     protected override Serializer CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
+//     protected override Serializer CreateSerializer(object serializingObject, SerializationContext context) {
 //         return new SerializerCore(serializingObject, context);
 //     }
 //
 //     private sealed class SerializerCore : Serializer {
 //         public override string DeserializerName => nameof(TreeReferencingResourceDeserializer);
 //
-//         public SerializerCore(ContentRepresentation contentRepresentation, SerializationContext context) : base(contentRepresentation, context) {
+//         public SerializerCore(object obj, SerializationContext context) : base(obj, context) {
 //         }
 //
 //         public override void SerializeObject(Stream outputStream) {

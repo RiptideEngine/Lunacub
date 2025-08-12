@@ -5,11 +5,11 @@ public record EmittableResource {
     public SimpleResource? Generated;
 }
 
-public sealed class EmittableResourceDTO : ContentRepresentation {
+public sealed class EmittableResourceDTO {
     public int Value { get; set; }
 }
 
-public sealed class ProcessedEmittableResourceDTO : ContentRepresentation {
+public sealed class ProcessedEmittableResourceDTO {
     public int Value;
     public ResourceAddress GeneratedAddress;
 

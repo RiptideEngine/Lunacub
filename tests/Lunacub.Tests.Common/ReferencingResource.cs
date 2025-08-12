@@ -11,7 +11,7 @@ public sealed class ReferencingResource : IDisposable {
     }
 }
 
-public sealed class ReferencingResourceDTO : ContentRepresentation {
+public sealed class ReferencingResourceDTO {
     public ResourceAddress ReferenceAddress { get; set; }
     public int Value { get; set; }
 }
@@ -23,14 +23,14 @@ public sealed class ReferencingResourceImporter : Importer<ReferencingResourceDT
 }
 
 public sealed class ReferencingResourceSerializerFactory : SerializerFactory<ReferencingResourceDTO> {
-    protected override Serializer<ReferencingResourceDTO> CreateSerializer(ContentRepresentation serializingObject, SerializationContext context) {
+    protected override Serializer<ReferencingResourceDTO> CreateSerializer(object serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
     }
 
     private sealed class SerializerCore : Serializer<ReferencingResourceDTO> {
         public override string DeserializerName => nameof(ReferencingResourceDeserializer);
 
-        public SerializerCore(ContentRepresentation contentRepresentation, SerializationContext context) : base(contentRepresentation, context) {
+        public SerializerCore(object obj, SerializationContext context) : base(obj, context) {
         }
 
         public override void SerializeObject(Stream outputStream) {
