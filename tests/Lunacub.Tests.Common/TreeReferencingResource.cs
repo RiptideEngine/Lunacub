@@ -22,7 +22,7 @@
 // }
 //
 // public sealed class TreeReferencingResourceSerializerFactory : SerializerFactory {
-//     public override bool CanSerialize(Type representationType) => representationType == typeof(TreeReferencingResourceDTO);
+//     public override bool CanSerialize(Type resourceType) => resourceType == typeof(TreeReferencingResourceDTO);
 //
 //     protected override Serializer CreateSerializer(object serializingObject, SerializationContext context) {
 //         return new SerializerCore(serializingObject, context);

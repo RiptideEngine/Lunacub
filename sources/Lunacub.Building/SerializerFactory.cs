@@ -7,12 +7,12 @@ public abstract class SerializerFactory {
     /// <summary>
     /// Determines whether a type of <see cref="object"/> can be serialized by this factory.
     /// </summary>
-    /// <param name="representationType">Type of <see cref="object"/> to check for.</param>
+    /// <param name="resourceType">Type of <see cref="object"/> to check for.</param>
     /// <returns>
     ///     <see langword="true"/> if this factory can returns a suitable <see cref="Serializer"/> to serialize the
     ///     <see cref="object"/>; otherwise, <see langword="false"/>.
     /// </returns>
-    public abstract bool CanSerialize(Type representationType);
+    public abstract bool CanSerialize(Type resourceType);
 
     internal Serializer InternalCreateSerializer(object serializingObject, SerializationContext context) {
         if (CreateUntypedSerializer(serializingObject, context) is not { } serializer) {
@@ -38,8 +38,8 @@ public abstract class SerializerFactory {
 /// </summary>
 /// <typeparam name="T">The type extends <see cref="object"/>.</typeparam>
 public abstract class SerializerFactory<T> : SerializerFactory {
-    public sealed override bool CanSerialize(Type representationType) {
-        return representationType.IsAssignableTo(typeof(T));
+    public sealed override bool CanSerialize(Type resourceType) {
+        return resourceType.IsAssignableTo(typeof(T));
     }
 
     protected sealed override Serializer CreateUntypedSerializer(object serializingObject, SerializationContext context) {
