@@ -43,7 +43,7 @@ public abstract class SerializerFactory<T> : SerializerFactory {
     }
 
     protected sealed override Serializer CreateUntypedSerializer(object serializingObject, SerializationContext context) {
-        return CreateSerializer(serializingObject, context);
+        return CreateSerializer((T)serializingObject, context);
     }
 
     /// <summary>
@@ -54,5 +54,5 @@ public abstract class SerializerFactory<T> : SerializerFactory {
     /// <returns>
     ///     An instance of <see cref="Serializer{T}"/> that suitable for serializing <paramref name="serializingObject"/>.
     /// </returns>
-    protected abstract Serializer<T> CreateSerializer(object serializingObject, SerializationContext context);
+    protected abstract Serializer<T> CreateSerializer(T serializingObject, SerializationContext context);
 }

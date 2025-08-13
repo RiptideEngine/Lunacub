@@ -11,14 +11,14 @@ public sealed class DeferrableResourceImporter : Importer<DeferrableResourceDTO>
 }
 
 public sealed class DeferrableResourceSerializerFactory : SerializerFactory<DeferrableResourceDTO> {
-    protected override Serializer<DeferrableResourceDTO> CreateSerializer(object serializingObject, SerializationContext context) {
+    protected override Serializer<DeferrableResourceDTO> CreateSerializer(DeferrableResourceDTO serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
     }
 
     private sealed class SerializerCore : Serializer<DeferrableResourceDTO> {
         public override string DeserializerName => nameof(DeferrableResourceDeserializer);
         
-        public SerializerCore(object serializingObject, SerializationContext context) : base(serializingObject, context) { }
+        public SerializerCore(DeferrableResourceDTO serializingObject, SerializationContext context) : base(serializingObject, context) { }
 
         public override void SerializeObject(Stream outputStream) {
         }

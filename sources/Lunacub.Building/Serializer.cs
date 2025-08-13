@@ -50,6 +50,6 @@ public abstract class Serializer<T> : Serializer {
     /// </summary>
     public new T SerializingObject => (T)base.SerializingObject;
     
-    protected Serializer(object serializingObject, SerializationContext context) : base(serializingObject, context) {
+    protected Serializer(T serializingObject, SerializationContext context) : base(serializingObject!, context) {
     }
 }

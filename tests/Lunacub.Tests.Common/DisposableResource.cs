@@ -18,14 +18,14 @@ public sealed class DisposableResourceImporter : Importer<DisposableResourceDTO>
 }
 
 public sealed class DisposableResourceSerializerFactory : SerializerFactory<DisposableResourceDTO> {
-    protected override Serializer<DisposableResourceDTO> CreateSerializer(object serializingObject, SerializationContext context) {
+    protected override Serializer<DisposableResourceDTO> CreateSerializer(DisposableResourceDTO serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
     }
 
     private sealed class SerializerCore : Serializer<DisposableResourceDTO> {
         public override string DeserializerName => nameof(DisposableResourceDeserializer);
 
-        public SerializerCore(object obj, SerializationContext context) : base(obj, context) { }
+        public SerializerCore(DisposableResourceDTO obj, SerializationContext context) : base(obj, context) { }
 
         public override void SerializeObject(Stream outputStream) { }
     }

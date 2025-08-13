@@ -23,23 +23,21 @@ public sealed class ReferencingResourceImporter : Importer<ReferencingResourceDT
 }
 
 public sealed class ReferencingResourceSerializerFactory : SerializerFactory<ReferencingResourceDTO> {
-    protected override Serializer<ReferencingResourceDTO> CreateSerializer(object serializingObject, SerializationContext context) {
+    protected override Serializer<ReferencingResourceDTO> CreateSerializer(ReferencingResourceDTO serializingObject, SerializationContext context) {
         return new SerializerCore(serializingObject, context);
     }
 
     private sealed class SerializerCore : Serializer<ReferencingResourceDTO> {
         public override string DeserializerName => nameof(ReferencingResourceDeserializer);
 
-        public SerializerCore(object obj, SerializationContext context) : base(obj, context) {
+        public SerializerCore(ReferencingResourceDTO obj, SerializationContext context) : base(obj, context) {
         }
 
         public override void SerializeObject(Stream outputStream) {
-            ReferencingResourceDTO serializing = SerializingObject;
-            
             using var writer = new BinaryWriter(outputStream, Encoding.UTF8, leaveOpen: true);
         
-            writer.Write(serializing.ReferenceAddress);
-            writer.Write(serializing.Value);
+            writer.Write(SerializingObject.ReferenceAddress);
+            writer.Write(SerializingObject.Value);
         }
     }
 }
