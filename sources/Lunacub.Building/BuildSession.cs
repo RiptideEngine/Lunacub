@@ -314,12 +314,10 @@ internal sealed partial class BuildSession {
 
         public EnvironmentResourceVertex(
             Importer importer,
-            IReadOnlySet<ResourceAddress> dependencyResourceAddresses,
-            ResourceRegistry.Element<BuildingResource> registryElement
+            IReadOnlySet<ResourceAddress> dependencyResourceAddresses
         ) {
             Importer = importer;
             DependencyResourceAddresses = dependencyResourceAddresses;
-            // RegistryElement = registryElement;
         }
 
         [MemberNotNull(nameof(ImportOutput))]

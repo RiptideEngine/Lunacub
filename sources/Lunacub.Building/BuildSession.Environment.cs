@@ -60,7 +60,7 @@ partial class BuildSession {
                     }
                 }
 
-                vertices.Add(resourceId, new(importer, dependencyAddresses, element));
+                vertices.Add(resourceId, new(importer, dependencyAddresses));
             }
         }
 
