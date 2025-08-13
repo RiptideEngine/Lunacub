@@ -302,7 +302,10 @@ internal sealed partial class BuildSession {
         /// id, or self-referencing.
         /// </summary>
         public IReadOnlySet<ResourceAddress> DependencyResourceAddresses;
-        public readonly ResourceRegistry.Element<BuildingResource> RegistryElement;
+        
+        /// <summary>
+        /// Gets the <see cref="Importer"/> associate with the resource.
+        /// </summary>
         public readonly Importer Importer;
         
         public object? ImportOutput { get; private set; }
@@ -316,7 +319,7 @@ internal sealed partial class BuildSession {
         ) {
             Importer = importer;
             DependencyResourceAddresses = dependencyResourceAddresses;
-            RegistryElement = registryElement;
+            // RegistryElement = registryElement;
         }
 
         [MemberNotNull(nameof(ImportOutput))]

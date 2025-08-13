@@ -141,6 +141,8 @@ partial class BuildSession {
     ) {
         if (TryGetResult(resourceAddress, out outputResult)) return;
         
+        Debug.Assert(resourceAddress.LibraryId == resourceLibrary.Id);
+        
         bool dependencyRebuilt = false;
         foreach (var dependencyAddress in resourceVertex.DependencyResourceAddresses) {
             if (!TryGetVertex(dependencyAddress, out var dependencyResourceLibrary, out var dependencyVertex)) continue;
@@ -153,7 +155,8 @@ partial class BuildSession {
         }
 
         try {
-            ResourceRegistry.Element<BuildingResource> registryElement = resourceVertex.RegistryElement;
+            // ResourceRegistry.Element<BuildingResource> registryElement = resourceVertex.RegistryElement;
+            ResourceRegistry.Element<BuildingResource> registryElement = resourceLibrary.Registry[resourceAddress.ResourceId];
             BuildingOptions options = registryElement.Option.Options;
 
             string? processorName = options.ProcessorName;
@@ -293,7 +296,8 @@ partial class BuildSession {
                             default: continue;
                         }
                         
-                        BuildingOptions options = dependencyVertex.RegistryElement.Option.Options;
+                        // BuildingOptions options = dependencyVertex.RegistryElement.Option.Options;
+                        BuildingOptions options = dependencyResourceLibrary.Registry[dependencyAddress.ResourceId].Option.Options;
 
                         Importer importer = dependencyVertex.Importer;
                         if (Import(dependencyAddress, dependencyResourceLibrary, importer, options.Options, out var imported, out _)) {

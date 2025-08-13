@@ -170,6 +170,7 @@ partial class BuildSession {
             Dictionary<ResourceAddress, object> dependencyCollection = [];
 
             foreach (var dependencyAddress in dependencyIds) {
+                // If the dependency is environment's resource.
                 if (_session.TryGetVertex(dependencyAddress, out var dependencyResourceLibrary, out var dependencyVertex)) {
                     if (dependencyVertex.ImportOutput is { } dependencyImportOutput) {
                         dependencyCollection.Add(dependencyAddress, dependencyImportOutput);
@@ -190,8 +191,8 @@ partial class BuildSession {
                     
                                 default: continue;
                             }
-                    
-                            BuildingOptions options = dependencyVertex.RegistryElement.Option.Options;
+
+                            BuildingOptions options = dependencyResourceLibrary.Registry[dependencyAddress.ResourceId].Option.Options;
 
                             if (_session.Import(
                                 dependencyAddress,
