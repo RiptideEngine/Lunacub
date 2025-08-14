@@ -15,8 +15,8 @@ public readonly struct BuildingResource : IEquatable<BuildingResource> {
     public required BuildingOptions Options { get; init; }
         
     [SetsRequiredMembers]
-    public BuildingResource(SourceAddresses address, BuildingOptions options) {
-        Addresses = address;
+    public BuildingResource(SourceAddresses addresses, BuildingOptions options) {
+        Addresses = addresses;
         Options = options;
     }
 

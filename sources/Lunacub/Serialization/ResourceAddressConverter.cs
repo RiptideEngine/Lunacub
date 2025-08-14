@@ -29,6 +29,10 @@ internal sealed class ResourceAddressConverter : JsonConverter<ResourceAddress> 
                 case nameof(ResourceAddress.ResourceId):
                     resourceId = JsonSerializer.Deserialize<ResourceID>(ref reader, options);
                     break;
+                
+                default:
+                    reader.Skip();
+                    break;
             }
         }
             

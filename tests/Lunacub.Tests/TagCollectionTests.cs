@@ -68,7 +68,7 @@ public class TagCollectionTests {
     }
     
     [Fact]
-    public void JsonDeserialization_ReturnsCorectJson() {
+    public void JsonDeserialization_ReturnsCorrectObject() {
         const string json = """["A","B","C","D"]""";
 
         JsonSerializer.Deserialize<TagCollection>(json).Should().Equal("A", "B", "C", "D");

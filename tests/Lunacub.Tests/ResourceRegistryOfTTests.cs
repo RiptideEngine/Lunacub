@@ -457,7 +457,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void JsonDeserialization_OptionlessElement_ReturnsCorrectJson() {
+    public void JsonDeserialization_OptionlessElement_ReturnsCorrectObject() {
         const string json = """{"1":{"Name":"A","Tags":["Locale"]},"2":{"Name":"B","Tags":["Container"]},"3":{"Name":"C","Tags":["Control"]}}""";
 
         var registry = new Func<ResourceRegistry<ResourceRegistry.Element>>(() => JsonSerializer.Deserialize<ResourceRegistry<ResourceRegistry.Element>>(json)!).Should().NotThrow().Which;
@@ -476,7 +476,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void JsonDeserialization_OptionElement_ReturnsCorrectJson() {
+    public void JsonDeserialization_OptionElement_ReturnsCorrectObject() {
         const string json = """{"1":{"Name":"A","Tags":["Texture"],"Option":10},"2":{"Name":"B","Tags":["Audio","Video"],"Option":30},"3":{"Name":"C","Tags":["Shader","Material"],"Option":50}}""";
     
         var registry = new Func<ResourceRegistry<ResourceRegistry.Element<int>>>(() => JsonSerializer.Deserialize<ResourceRegistry<ResourceRegistry.Element<int>>>(json)!).Should().NotThrow().Which;

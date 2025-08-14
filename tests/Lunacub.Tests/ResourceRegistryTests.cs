@@ -63,7 +63,7 @@ public class ResourceRegistryTests {
     }
     
     [Fact]
-    public void JsonDeserialization_NonGenericElement_ReturnsCorrectJson() {
+    public void JsonDeserialization_NonGenericElement_ReturnsCorrectObject() {
         const string json = """{"Name":"Some Resource","Tags":["A","B","C"]}""";
 
         JsonSerializer.Deserialize<ResourceRegistry.Element>(json).Should().Be(new ResourceRegistry.Element {
@@ -80,7 +80,7 @@ public class ResourceRegistryTests {
     }
     
     [Fact]
-    public void JsonDeserialization_GenericElement_ReturnsCorrectJson() {
+    public void JsonDeserialization_GenericElement_ReturnsCorrectObject() {
         const string json = """{"Name":"Some Resource","Tags":["A","B","C"],"Option":25}""";
 
         JsonSerializer.Deserialize<ResourceRegistry.Element<int>>(json).Should().Be(new ResourceRegistry.Element<int> {

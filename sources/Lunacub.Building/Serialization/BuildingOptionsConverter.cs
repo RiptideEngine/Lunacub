@@ -1,6 +1,4 @@
-﻿using System.Collections.Frozen;
-
-namespace Caxivitual.Lunacub.Building.Serialization;
+﻿namespace Caxivitual.Lunacub.Building.Serialization;
 
 internal sealed class BuildingOptionsConverter : JsonConverter<BuildingOptions> {
     public override BuildingOptions Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
@@ -51,8 +49,10 @@ internal sealed class BuildingOptionsConverter : JsonConverter<BuildingOptions> 
             writer.WriteString(nameof(BuildingOptions.ImporterName), value.ImporterName);
             writer.WriteString(nameof(BuildingOptions.ProcessorName), value.ProcessorName);
 
-            writer.WritePropertyName(nameof(BuildingOptions.Options));
-            JsonSerializer.Serialize(writer, value.Options, options);
+            if (value.Options != null) {
+                writer.WritePropertyName(nameof(BuildingOptions.Options));
+                JsonSerializer.Serialize(writer, value.Options, options);
+            }
         }
         writer.WriteEndObject();
     }

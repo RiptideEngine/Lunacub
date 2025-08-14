@@ -1,7 +1,8 @@
-﻿using System.Collections.Frozen;
+﻿using Caxivitual.Lunacub.Building.Serialization;
 
 namespace Caxivitual.Lunacub.Building;
 
+[JsonConverter(typeof(SourceAddressesConverter))]
 public readonly struct SourceAddresses : IEquatable<SourceAddresses> {
     public readonly string Primary;
     public readonly IReadOnlyDictionary<string, string> Secondaries;
@@ -17,6 +18,7 @@ public readonly struct SourceAddresses : IEquatable<SourceAddresses> {
     public bool Equals(SourceAddresses other) {
         if (Primary != other.Primary || Secondaries.Count != other.Secondaries.Count) return false;
         if (ReferenceEquals(Secondaries, other.Secondaries)) return true;
+        if (Secondaries.Count != other.Secondaries.Count) return false;
         
         foreach ((var key, var value) in Secondaries) {
             if (!other.Secondaries.TryGetValue(key, out var value2)) return false;
