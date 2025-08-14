@@ -54,4 +54,39 @@ public class ResourceRegistryTests {
         b.Should().NotBe(c);
         b.Should().NotBe(d);
     }
+
+    [Fact]
+    public void JsonSerialization_NonGenericElement_ReturnsCorrectJson() {
+        ResourceRegistry.Element element = new("Some Resource", ["A", "B", "C"]);
+
+        JsonSerializer.Serialize(element).Should().Be("""{"Name":"Some Resource","Tags":["A","B","C"]}""");
+    }
+    
+    [Fact]
+    public void JsonDeserialization_NonGenericElement_ReturnsCorrectJson() {
+        const string json = """{"Name":"Some Resource","Tags":["A","B","C"]}""";
+
+        JsonSerializer.Deserialize<ResourceRegistry.Element>(json).Should().Be(new ResourceRegistry.Element {
+            Name = "Some Resource",
+            Tags = ["A", "B", "C"],
+        });
+    }
+    
+    [Fact]
+    public void JsonSerialization_GenericElement_ReturnsCorrectJson() {
+        ResourceRegistry.Element<int> element = new("Some Resource", ["A", "B", "C"], 25);
+
+        JsonSerializer.Serialize(element).Should().Be("""{"Name":"Some Resource","Tags":["A","B","C"],"Option":25}""");
+    }
+    
+    [Fact]
+    public void JsonDeserialization_GenericElement_ReturnsCorrectJson() {
+        const string json = """{"Name":"Some Resource","Tags":["A","B","C"],"Option":25}""";
+
+        JsonSerializer.Deserialize<ResourceRegistry.Element<int>>(json).Should().Be(new ResourceRegistry.Element<int> {
+            Name = "Some Resource",
+            Tags = ["A", "B", "C"],
+            Option = 25,
+        });
+    }
 }

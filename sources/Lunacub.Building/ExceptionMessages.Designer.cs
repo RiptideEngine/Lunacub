@@ -60,6 +60,24 @@ namespace Caxivitual.Lunacub.Building {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Build information directory &apos;{0}&apos; does not exist..
+        /// </summary>
+        internal static string BuildInfoDirectoryNotExist {
+            get {
+                return ResourceManager.GetString("BuildInfoDirectoryNotExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Circular resource dependency detected: {0}..
+        /// </summary>
+        internal static string CircularResourceDependency {
+            get {
+                return ResourceManager.GetString("CircularResourceDependency", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Trying to insert library with id of {0} but library with same id has already been registered..
         /// </summary>
         internal static string DuplicateLibraryId {
@@ -83,6 +101,24 @@ namespace Caxivitual.Lunacub.Building {
         internal static string NoSuitableSerializerFactory {
             get {
                 return ResourceManager.GetString("NoSuitableSerializerFactory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Resource output directory &apos;{0}&apos; does not exist..
+        /// </summary>
+        internal static string ResourceOutputDirectoryNotExist {
+            get {
+                return ResourceManager.GetString("ResourceOutputDirectoryNotExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SerializerFactory does not allows null Serializer to be returned..
+        /// </summary>
+        internal static string SerializerFactoryDisallowNullSerializerReturn {
+            get {
+                return ResourceManager.GetString("SerializerFactoryDisallowNullSerializerReturn", resourceCulture);
             }
         }
         

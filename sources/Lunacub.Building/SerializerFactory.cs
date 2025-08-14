@@ -16,7 +16,7 @@ public abstract class SerializerFactory {
 
     internal Serializer InternalCreateSerializer(object serializingObject, SerializationContext context) {
         if (CreateUntypedSerializer(serializingObject, context) is not { } serializer) {
-            throw new InvalidOperationException($"{nameof(SerializerFactory)} does not allows null {nameof(Serializer)} to be returned.");
+            throw new InvalidOperationException(ExceptionMessages.SerializerFactoryDisallowNullSerializerReturn);
         }
         
         return serializer;

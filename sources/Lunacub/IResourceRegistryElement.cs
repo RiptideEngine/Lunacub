@@ -4,5 +4,5 @@ namespace Caxivitual.Lunacub;
 
 public interface IResourceRegistryElement {
     string? Name { get; }
-    ImmutableArray<string> Tags { get; }
+    TagCollection Tags { get; }
 }

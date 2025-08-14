@@ -5,18 +5,18 @@ namespace Caxivitual.Lunacub.Building.Core;
 
 [ExcludeFromCodeCoverage]
 public class FileOutputSystem : OutputSystem {
-    public string IncrementalInfoDirectory { get; }
+    public string BuildInformationDirectory { get; }
     public string ResourceOutputDirectory { get; }
     
-    public FileOutputSystem(string incrementalInfoDirectory, string resourceOutputDirectory) {
-        IncrementalInfoDirectory = Path.GetFullPath(incrementalInfoDirectory);
-        if (!Directory.Exists(IncrementalInfoDirectory)) {
-            throw new ArgumentException($"Incremental information directory '{IncrementalInfoDirectory}' does not exist.");
+    public FileOutputSystem(string buildInfoDirectory, string resourceOutputDirectory) {
+        BuildInformationDirectory = Path.GetFullPath(buildInfoDirectory);
+        if (!Directory.Exists(BuildInformationDirectory)) {
+            throw new ArgumentException(string.Format(ExceptionMessages.BuildInfoDirectoryNotExist, BuildInformationDirectory));
         }
         
         ResourceOutputDirectory = Path.GetFullPath(resourceOutputDirectory);
         if (!Directory.Exists(ResourceOutputDirectory)) {
-            throw new ArgumentException($"Resource output directory '{ResourceOutputDirectory}' does not exist.");
+            throw new ArgumentException(string.Format(ExceptionMessages.ResourceOutputDirectoryNotExist, ResourceOutputDirectory));
         }
     }
 
@@ -109,6 +109,6 @@ public class FileOutputSystem : OutputSystem {
         return Path.Combine(ResourceOutputDirectory, libraryId.ToString(), "__registry");
     }
 
-    private string IncrementalInfoFilePath => Path.Combine(IncrementalInfoDirectory, "incinfos.json");
-    private string ProceduralSchematicFilePath => Path.Combine(IncrementalInfoDirectory, "procschema.json");
+    private string IncrementalInfoFilePath => Path.Combine(BuildInformationDirectory, "incinfos.json");
+    private string ProceduralSchematicFilePath => Path.Combine(BuildInformationDirectory, "procschema.json");
 }

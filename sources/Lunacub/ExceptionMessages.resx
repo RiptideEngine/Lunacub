@@ -42,11 +42,8 @@
     <data name="InvalidTagCharacter" xml:space="preserve">
         <value>Tag '{0}' contains invalid character at position {1}.</value>
     </data>
-    <data name="DisallowNullOrEmptyResourceName" xml:space="preserve">
-        <value>Resource name cannot be null or empty string.</value>
-    </data>
-    <data name="DisallowNullOrEmptyTag" xml:space="preserve">
-        <value>Tag index {0} cannot be null or empty string.</value>
+    <data name="DisallowNullEmptyOrWhiteSpaceTag" xml:space="preserve">
+        <value>Tag cannot be null, empty or consists of only white space characters.</value>
     </data>
     <data name="SourceStreamMustBeSeekableOrReadable" xml:space="preserve">
         <value>Source Stream at address '{0}' must be readable and seekable.</value>

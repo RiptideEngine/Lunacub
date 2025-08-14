@@ -50,6 +50,23 @@ public class ResourceRegistry<TElement>
         _resources.Add(resourceId, element);
     }
 
+    public bool TryAdd(ResourceID resourceId, in TElement element) {
+        if (_resources.ContainsKey(resourceId)) return false;
+        if (!IsValidElement(element)) return false;
+        
+        if (!string.IsNullOrEmpty(element.Name)) {
+            ref var nameReference = ref CollectionsMarshal.GetValueRefOrAddDefault(_nameMap, element.Name, out bool exists);
+
+            if (exists) return false;
+
+            nameReference = resourceId;
+        }
+        
+        _resources.Add(resourceId, element);
+
+        return false;
+    }
+
     void ICollection<KeyValuePair<ResourceID, TElement>>.Add(KeyValuePair<ResourceID, TElement> item) {
         ValidateElement(item.Value);
 
@@ -186,24 +203,15 @@ public class ResourceRegistry<TElement>
         ((ICollection<KeyValuePair<ResourceID, TElement>>)_resources).CopyTo(array, arrayIndex);
     }
 
+    protected virtual bool IsValidElement(in TElement element) {
+        if (typeof(TElement).IsClass && EqualityComparer<TElement>.Default.Equals(element, default)) return false;
+
+        return true;
+    }
+
     [StackTraceHidden]
-    protected virtual void ValidateElement(TElement element) {
+    protected virtual void ValidateElement(in TElement element) {
         ArgumentNullException.ThrowIfNull(element);
-        
-        for (int i = 0, e = element.Tags.Length; i < e; i++) {
-            var tag = element.Tags[i];
-
-            if (string.IsNullOrEmpty(tag)) {
-                string message = string.Format(ExceptionMessages.DisallowNullOrEmptyTag, i);
-                throw new ArgumentException(message, nameof(element));
-            }
-
-            int invalidCharacterIndex = tag.AsSpan().IndexOfAnyExcept(Constants.ValidTagCharacters);
-            if (invalidCharacterIndex != -1) {
-                string message = string.Format(ExceptionMessages.InvalidTagCharacter, tag, invalidCharacterIndex);
-                throw new ArgumentException(message, nameof(element));
-            }
-        }
     }
 
     public Dictionary<ResourceID, TElement>.Enumerator GetEnumerator() => _resources.GetEnumerator();

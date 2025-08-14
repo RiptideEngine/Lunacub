@@ -21,7 +21,7 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     /// <summary>
     /// Get the tags of the resource.
     /// </summary>
-    public ImmutableArray<string> Tags { get; init; }
+    public TagCollection Tags { get; init; }
     
     /// <summary>
     /// Gets the importing option object that can be used for building resource.
@@ -49,7 +49,7 @@ public readonly struct BuildingProceduralResource : IEquatable<BuildingProcedura
     public BuildingProceduralResource(
         object obj,
         string? processorName,
-        ImmutableArray<string> tags,
+        TagCollection tags,
         IImportOptions? options,
         Action<object>? disposer
     ) {

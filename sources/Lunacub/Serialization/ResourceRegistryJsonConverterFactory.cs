@@ -38,7 +38,7 @@ internal sealed class ResourceRegistryJsonConverterFactory : JsonConverterFactor
         
         public override ResourceRegistry<TElement> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
             if (reader.TokenType != JsonTokenType.StartObject) {
-                throw new JsonException();
+                throw new JsonException("Expected start object.");
             }
 
             ResourceRegistry<TElement> registry = [];
@@ -49,7 +49,7 @@ internal sealed class ResourceRegistryJsonConverterFactory : JsonConverterFactor
                 }
                 
                 if (reader.TokenType != JsonTokenType.PropertyName) {
-                    throw new JsonException();
+                    throw new JsonException("Expected property name.");
                 }
                 
                 ResourceID resourceID = _resourceIdConverter.Read(ref reader, ResourceIDType, options);
@@ -61,7 +61,7 @@ internal sealed class ResourceRegistryJsonConverterFactory : JsonConverterFactor
                 }
             }
             
-            throw new JsonException();
+            throw new JsonException("Unexpected end of json.");
         }
         
         public override void Write(Utf8JsonWriter writer, ResourceRegistry<TElement> value, JsonSerializerOptions options) {

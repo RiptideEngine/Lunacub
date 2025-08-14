@@ -1,11 +1,16 @@
-﻿using System.Collections.Immutable;
-
-namespace Caxivitual.Lunacub;
+﻿namespace Caxivitual.Lunacub;
 
 public static class ResourceRegistry {
-    public readonly record struct Element(string? Name, ImmutableArray<string> Tags) : IResourceRegistryElement {
+    public readonly record struct Element(string? Name, TagCollection Tags) : IResourceRegistryElement {
         public bool Equals(Element other) {
-            return Name == other.Name && Tags.SequenceEqual(other.Tags);
+            if (Name != other.Name) return false;
+            if (Tags.Count != other.Tags.Count) return false;
+
+            for (int i = 0; i < Tags.Count; i++) {
+                if (Tags[i] != other.Tags[i]) return false;
+            }
+
+            return true;
         }
 
         [ExcludeFromCodeCoverage]
@@ -22,9 +27,16 @@ public static class ResourceRegistry {
         }
     }
 
-    public readonly record struct Element<TOption>(string? Name, ImmutableArray<string> Tags, TOption Option) : IResourceRegistryElement {
+    public readonly record struct Element<TOption>(string? Name, TagCollection Tags, TOption Option) : IResourceRegistryElement {
         public bool Equals(Element<TOption> other) {
-            return Name == other.Name && Tags.SequenceEqual(other.Tags) && EqualityComparer<TOption>.Default.Equals(Option, other.Option);
+            if (Name != other.Name) return false;
+            if (Tags.Count != other.Tags.Count) return false;
+
+            for (int i = 0; i < Tags.Count; i++) {
+                if (Tags[i] != other.Tags[i]) return false;
+            }
+
+            return EqualityComparer<TOption>.Default.Equals(Option, other.Option);
         }
 
         [ExcludeFromCodeCoverage]

@@ -56,18 +56,6 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void Add_NullTagCollection_ThrowsNullReferenceException() {
-        new Action(() => _registry.Add(1, new("A", default))).Should().Throw<NullReferenceException>();
-    }
-    
-    [Fact]
-    public void Add_NullTag_ThrowsArgumentExceptionReportNullTag() {
-        new Action(() => _registry.Add(1, new("A", [
-            null!,
-        ]))).Should().Throw<ArgumentException>().WithMessage("*tag*null*");
-    }
-    
-    [Fact]
     public void Add_EmptyTag_ThrowsArgumentExceptionReportEmptyTag() {
         new Action(() => _registry.Add(1, new("A", [
             null!,
@@ -153,24 +141,6 @@ public class ResourceRegistryOfTTests {
         ]);
         
         _registry.NameMap.Should().BeEmpty();
-    }
-    
-    [Fact]
-    public void InterfaceAdd_NullTagCollection_ThrowsNullReferenceException() {
-        ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
-        
-        new Action(() => {
-            registry.Add(KeyValuePair.Create<ResourceID, ResourceRegistry.Element>(1, new("A", default)));
-        }).Should().Throw<NullReferenceException>();
-    }
-    
-    [Fact]
-    public void InterfaceAdd_NullTag_ThrowsArgumentExceptionReportNullTag() {
-        ICollection<KeyValuePair<ResourceID, ResourceRegistry.Element>> registry = _registry;
-        
-        new Action(() => {
-            registry.Add(KeyValuePair.Create<ResourceID, ResourceRegistry.Element>(1, new("A", [null!])));
-        }).Should().Throw<ArgumentException>().WithMessage("*tag*null*");
     }
     
     [Fact]
@@ -364,7 +334,7 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void InterfaceRemove_DifferentTagCollection_NotRemove() {
+    public void InterfaceRemove_DifferentTag_NotRemove() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
         

@@ -76,7 +76,8 @@ partial class BuildSession {
                 path.Push(address);
 
                 if (!temporaryMarks.Add(address)) {
-                    throw new InvalidOperationException($"Circular dependency detected: {string.Join(" -> ", path.Reverse())}.");
+                    string message = string.Format(ExceptionMessages.CircularResourceDependency, string.Join(" -> ", path.Reverse()));
+                    throw new InvalidOperationException(message);
                 }
 
                 foreach (var dependencyID in _current[address].Resource.DependencyAddresses) {

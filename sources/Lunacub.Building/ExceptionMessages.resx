@@ -37,4 +37,16 @@
     <data name="DuplicateLibraryId" xml:space="preserve">
         <value>Trying to insert library with id of {0} but library with same id has already been registered.</value>
     </data>
+    <data name="BuildInfoDirectoryNotExist" xml:space="preserve">
+        <value>Build information directory '{0}' does not exist.</value>
+    </data>
+    <data name="ResourceOutputDirectoryNotExist" xml:space="preserve">
+        <value>Resource output directory '{0}' does not exist.</value>
+    </data>
+    <data name="SerializerFactoryDisallowNullSerializerReturn" xml:space="preserve">
+        <value>SerializerFactory does not allows null Serializer to be returned.</value>
+    </data>
+    <data name="CircularResourceDependency" xml:space="preserve">
+        <value>Circular resource dependency detected: {0}.</value>
+    </data>
 </root>

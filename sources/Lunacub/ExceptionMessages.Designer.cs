@@ -78,20 +78,11 @@ namespace Caxivitual.Lunacub {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Resource name cannot be null or empty string..
+        ///   Looks up a localized string similar to Tag cannot be null, empty or consists of only white space characters..
         /// </summary>
-        internal static string DisallowNullOrEmptyResourceName {
+        internal static string DisallowNullEmptyOrWhiteSpaceTag {
             get {
-                return ResourceManager.GetString("DisallowNullOrEmptyResourceName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Tag index {0} cannot be null or empty string..
-        /// </summary>
-        internal static string DisallowNullOrEmptyTag {
-            get {
-                return ResourceManager.GetString("DisallowNullOrEmptyTag", resourceCulture);
+                return ResourceManager.GetString("DisallowNullEmptyOrWhiteSpaceTag", resourceCulture);
             }
         }
         
