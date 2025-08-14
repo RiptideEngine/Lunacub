@@ -4,14 +4,13 @@ internal sealed class PartialReadStream : Stream {
     private Stream _baseStream;
     private readonly bool _ownStream;
     private readonly long _basePosition;
-    private readonly long _length;
 
     public override long Position {
         get => long.Max(_baseStream.Position - _basePosition, 0);
         set => _baseStream.Position = value + _basePosition;
     }
 
-    public override long Length => _length;
+    public override long Length { get; }
 
     public override bool CanRead => true;
     public override bool CanSeek => _baseStream.CanSeek;
@@ -29,12 +28,12 @@ internal sealed class PartialReadStream : Stream {
         _baseStream = baseStream;
         _ownStream = ownStream;
         _basePosition = basePosition;
-        _length = length;
+        Length = length;
 
         if (_baseStream.Position < _basePosition) {
             _baseStream.Position = _basePosition;
-        } else if (_baseStream.Position > _basePosition + _length) {
-            _baseStream.Position = _basePosition + _length;
+        } else if (_baseStream.Position > _basePosition + Length) {
+            _baseStream.Position = _basePosition + Length;
         }
     }
 
@@ -71,12 +70,12 @@ internal sealed class PartialReadStream : Stream {
                     );
                 }
 
-                offset = long.Min(offset, _length);
+                offset = long.Min(offset, Length);
                 _baseStream.Seek(_basePosition + offset, SeekOrigin.Begin);
                 return offset;
             
             case SeekOrigin.Current:
-                _baseStream.Seek(long.Clamp(_baseStream.Position + offset, _basePosition, _basePosition + _length), SeekOrigin.Begin);
+                _baseStream.Seek(long.Clamp(_baseStream.Position + offset, _basePosition, _basePosition + Length), SeekOrigin.Begin);
                 return _baseStream.Position - _basePosition;
             
             case SeekOrigin.End:
@@ -84,7 +83,7 @@ internal sealed class PartialReadStream : Stream {
                     throw new ArgumentOutOfRangeException(nameof(offset), offset, "Offset origin End must be less than or equal to zero.");
                 }
 
-                offset = long.Max(offset, -_length);
+                offset = long.Max(offset, -Length);
                 _baseStream.Seek(_basePosition + offset, SeekOrigin.End);
                 return _baseStream.Position - _basePosition;
             
@@ -95,8 +94,8 @@ internal sealed class PartialReadStream : Stream {
     public override int Read(byte[] buffer, int offset, int count) {
         long p = _baseStream.Position;
         
-        if (p + count > _basePosition + _length) {
-            count = (int)(_basePosition + _length - p);
+        if (p + count > _basePosition + Length) {
+            count = (int)(_basePosition + Length - p);
         }
         
         return _baseStream.Read(buffer, offset, count);
@@ -105,8 +104,8 @@ internal sealed class PartialReadStream : Stream {
     public override int Read(Span<byte> buffer) {
         long p = _baseStream.Position;
         
-        if (p + buffer.Length > _basePosition + _length) {
-            buffer = buffer[..(int)(_basePosition + _length - p)];
+        if (p + buffer.Length > _basePosition + Length) {
+            buffer = buffer[..(int)(_basePosition + Length - p)];
         }
         
         return _baseStream.Read(buffer);

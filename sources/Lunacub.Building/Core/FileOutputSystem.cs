@@ -106,7 +106,7 @@ public class FileOutputSystem : OutputSystem {
     }
 
     private string GetLibraryRegistryPath(LibraryID libraryId) {
-        return Path.Combine(ResourceOutputDirectory, libraryId.ToString(), "__registry");
+        return Path.Combine(ResourceOutputDirectory, libraryId.ToString("X"), "__registry");
     }
 
     private string IncrementalInfoFilePath => Path.Combine(BuildInformationDirectory, "incinfos.json");
