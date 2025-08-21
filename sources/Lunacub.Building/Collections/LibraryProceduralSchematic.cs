@@ -1,6 +1,8 @@
-﻿namespace Caxivitual.Lunacub.Building.Collections;
+﻿using Caxivitual.Lunacub.Collections;
 
-public sealed class LibraryProceduralSchematic : LibraryResourceDictionary<List<ProceduralResourceSchematicInfo>> {
+namespace Caxivitual.Lunacub.Building.Collections;
+
+public sealed class LibraryProceduralSchematic : ResourceIdentityDictionary<List<ProceduralResourceSchematicInfo>> {
     public void Add(ResourceID resourceId, ProceduralResourceSchematicInfo info) {
         ref var collection = ref CollectionsMarshal.GetValueRefOrAddDefault(_dict, resourceId, out bool exists);
         

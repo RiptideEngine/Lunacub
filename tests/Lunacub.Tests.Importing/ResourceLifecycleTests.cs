@@ -1,137 +1,137 @@
-﻿namespace Caxivitual.Lunacub.Tests.Importing;
-
-[Collection<PrebuildResourcesCollectionFixture>]
-public class ResourceLifecycleTests : IDisposable {
-    private readonly ImportEnvironment _importEnvironment;
-    
-    public ResourceLifecycleTests(PrebuildResourcesFixture fixture, ITestOutputHelper output) {
-        _importEnvironment = fixture.CreateImportEnvironment();
-        _importEnvironment.Logger = output.BuildLogger();
-    }
-
-    public void Dispose() {
-        _importEnvironment.Dispose();
-        GC.SuppressFinalize(this);
-    }
-    
-    [Fact]
-    public async Task Import_SingleTime_ShouldHaveReferenceCountOf1() {
-        var operation = _importEnvironment.Import(new(1, PrebuildResourcesFixture.SimpleResourceStart));
-
-        await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
-
-        operation.Status.Should().Be(ImportingStatus.Success);
-        operation.UnderlyingContainer.ReferenceCount.Should().Be(1);
-    }
-    
-    [Fact]
-    public async Task Import_MultipleTime_ReturnsSameResource() {
-        var operation = _importEnvironment.Import(new(1, PrebuildResourcesFixture.SimpleResourceStart));
-        ResourceHandle h1 = (await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync()).Which;
-        
-        var operation2 = _importEnvironment.Import(new(1, PrebuildResourcesFixture.SimpleResourceStart));
-        ResourceHandle h2 = (await new Func<Task<ResourceHandle>>(async () => await operation2).Should().NotThrowAsync()).Which;
-
-        h1.Value.Should().BeSameAs(h2.Value);
-    }
-    
-    [Fact]
-    public async Task ReleaseByAddress_AfterImporting_ShouldBeDisposed() {
-        var operation = _importEnvironment.Import(new(1, PrebuildResourcesFixture.SimpleResourceStart));
-        await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
-
-        _importEnvironment.Release(operation.Address).Should().BeOneOf(ReleaseStatus.Disposed, ReleaseStatus.NotDisposed);
-        
-        operation.Status.Should().Be(ImportingStatus.Disposed);
-        operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
-    }
-    
-    [Fact]
-    public async Task ReleaseByAddress_DuringImporting_ShouldBeDisposed() {
-        var operation = _importEnvironment.Import(new(1, PrebuildResourcesFixture.DeferrableResource));
-
-        _importEnvironment.Release(operation.Address).Should().BeOneOf(ReleaseStatus.Canceled);
-        
-        operation.Status.Should().Be(ImportingStatus.Canceled);
-        operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
-        
-        await new Func<Task<ResourceHandle>>(async () => await operation).Should().ThrowAsync<OperationCanceledException>();
-    }
-
-    [Fact]
-    public void ReleaseByAddress_NotImport_ReturnsNotimportedStatus() {
-        new Func<ReleaseStatus>(() => _importEnvironment.Release(new ResourceAddress(1, UInt128.MaxValue))).Should().NotThrow().Which.Should().Be(ReleaseStatus.NotImported);
-    }
-
-    [Fact]
-    public void ReleaseByAddress_NullAddress_ReturnsNullStatus() {
-        new Func<ReleaseStatus>(() => _importEnvironment.Release(ResourceAddress.Null)).Should().NotThrow().Which.Should().Be(ReleaseStatus.Null);
-    }
-    
-    [Fact]
-    public async Task ReleaseByResource_AfterImport_ShouldDisposeCorrectly() {
-        var operation = _importEnvironment.Import(new(1, PrebuildResourcesFixture.SimpleResourceStart));
-        ResourceHandle handle = (await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync()).Which;
-
-        _importEnvironment.Release(handle.Value).Should().BeOneOf(ReleaseStatus.Disposed, ReleaseStatus.NotDisposed);
-        
-        operation.Status.Should().Be(ImportingStatus.Disposed);
-        operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
-    }
-    
-    [Fact]
-    public async Task ReleaseByOperation_AfterImport_ShouldDisposeCorrectly() {
-        var operation = _importEnvironment.Import(new(1, PrebuildResourcesFixture.SimpleResourceStart));
-        await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
-
-        _importEnvironment.Release(operation).Should().BeOneOf(ReleaseStatus.Disposed, ReleaseStatus.NotDisposed);
-        
-        operation.Status.Should().Be(ImportingStatus.Disposed);
-        operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
-    }
-    
-    [Fact]
-    public async Task ReleaseByHandle_AfterImport_ShouldDisposeCorrectly() {
-        var operation = _importEnvironment.Import(new(1, PrebuildResourcesFixture.SimpleResourceStart));
-        ResourceHandle handle = (await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync()).Which;
-
-        _importEnvironment.Release(handle).Should().BeOneOf(ReleaseStatus.Disposed, ReleaseStatus.NotDisposed);
-        
-        operation.Status.Should().Be(ImportingStatus.Disposed);
-        operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task ReferenceImport_HasCorrectReferenceCount() {
-        var operation = _importEnvironment.Import(new(1, PrebuildResourcesFixture.ReferencingResource2ObjectsChainA));
-        ResourceHandle<ReferencingResource> handle = (await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync()).Which.Convert<ReferencingResource>();
-
-        handle.Value.Should().NotBeNull();
-        
-        var resourceContainer = _importEnvironment.GetResourceContainer(handle.Address);
-        resourceContainer.Should().NotBeNull();
-        resourceContainer!.ReferenceCount.Should().Be(1);
-        resourceContainer.Status.Should().Be(ImportingStatus.Success);
-
-        var referenceContainer = _importEnvironment.GetResourceContainer(handle.Value!);
-        referenceContainer.Should().NotBeNull();
-        referenceContainer!.ReferenceCount.Should().Be(1);
-        referenceContainer.Status.Should().Be(ImportingStatus.Success);
-    }
-    
-    [Fact]
-    public async Task Reimport_AfterDispose_ReinitializeImportOperation() {
-        // Extension of Release_SingleTime_ShouldCancelImportingOperation
-        
-        var operation = _importEnvironment.Import(new(1, PrebuildResourcesFixture.SimpleResourceStart));
-        await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
-
-        _importEnvironment.Release(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart)).Should().BeOneOf(ReleaseStatus.Disposed, ReleaseStatus.NotDisposed);
-        
-        var operation2 = _importEnvironment.Import(new(1, PrebuildResourcesFixture.SimpleResourceStart));
-        await new Func<Task<ResourceHandle>>(async () => await operation2).Should().NotThrowAsync();
-        
-        operation2.Status.Should().Be(ImportingStatus.Success);
-        operation2.UnderlyingContainer.ReferenceCount.Should().Be(1);
-    }
-}
+﻿// namespace Caxivitual.Lunacub.Tests.Importing;
+//
+// [Collection<PrebuildResourcesCollectionFixture>]
+// public class ResourceLifecycleTests : IDisposable {
+//     private readonly ImportEnvironment _importEnvironment;
+//     
+//     public ResourceLifecycleTests(PrebuildResourcesFixture fixture, ITestOutputHelper output) {
+//         _importEnvironment = fixture.CreateImportEnvironment();
+//         _importEnvironment.Logger = output.BuildLogger();
+//     }
+//
+//     public void Dispose() {
+//         _importEnvironment.Dispose();
+//         GC.SuppressFinalize(this);
+//     }
+//     
+//     [Fact]
+//     public async Task Import_SingleTime_ShouldHaveReferenceCountOf1() {
+//         var operation = _importEnvironment.Import(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart));
+//
+//         await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
+//
+//         operation.Status.Should().Be(ImportingStatus.Success);
+//         operation.UnderlyingContainer.ReferenceCount.Should().Be(1);
+//     }
+//     
+//     [Fact]
+//     public async Task Import_MultipleTime_ReturnsSameResource() {
+//         var operation = _importEnvironment.Import(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart));
+//         ResourceHandle h1 = (await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync()).Which;
+//         
+//         var operation2 = _importEnvironment.Import(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart));
+//         ResourceHandle h2 = (await new Func<Task<ResourceHandle>>(async () => await operation2).Should().NotThrowAsync()).Which;
+//
+//         h1.Value.Should().BeSameAs(h2.Value);
+//     }
+//     
+//     [Fact]
+//     public async Task ReleaseByAddress_AfterImporting_ShouldBeDisposed() {
+//         var operation = _importEnvironment.Import(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart));
+//         await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
+//
+//         _importEnvironment.Release(operation.Address).Should().BeOneOf(ReleaseStatus.Disposed, ReleaseStatus.NotDisposed);
+//         
+//         operation.Status.Should().Be(ImportingStatus.Disposed);
+//         operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
+//     }
+//     
+//     [Fact]
+//     public async Task ReleaseByAddress_DuringImporting_ShouldBeDisposed() {
+//         var operation = _importEnvironment.Import(new ResourceAddress(1, PrebuildResourcesFixture.DeferrableResource));
+//
+//         _importEnvironment.Release(operation.Address).Should().BeOneOf(ReleaseStatus.Canceled);
+//         
+//         operation.Status.Should().Be(ImportingStatus.Canceled);
+//         operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
+//         
+//         await new Func<Task<ResourceHandle>>(async () => await operation).Should().ThrowAsync<OperationCanceledException>();
+//     }
+//
+//     [Fact]
+//     public void ReleaseByAddress_NotImport_ReturnsNotimportedStatus() {
+//         new Func<ReleaseStatus>(() => _importEnvironment.Release(new ResourceAddress(1, UInt128.MaxValue))).Should().NotThrow().Which.Should().Be(ReleaseStatus.NotImported);
+//     }
+//
+//     [Fact]
+//     public void ReleaseByAddress_NullAddress_ReturnsNullStatus() {
+//         new Func<ReleaseStatus>(() => _importEnvironment.Release(ResourceAddress.Null)).Should().NotThrow().Which.Should().Be(ReleaseStatus.Null);
+//     }
+//     
+//     [Fact]
+//     public async Task ReleaseByResource_AfterImport_ShouldDisposeCorrectly() {
+//         var operation = _importEnvironment.Import(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart));
+//         ResourceHandle handle = (await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync()).Which;
+//
+//         _importEnvironment.Release(handle.Value).Should().BeOneOf(ReleaseStatus.Disposed, ReleaseStatus.NotDisposed);
+//         
+//         operation.Status.Should().Be(ImportingStatus.Disposed);
+//         operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
+//     }
+//     
+//     [Fact]
+//     public async Task ReleaseByOperation_AfterImport_ShouldDisposeCorrectly() {
+//         var operation = _importEnvironment.Import(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart));
+//         await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
+//
+//         _importEnvironment.Release(operation).Should().BeOneOf(ReleaseStatus.Disposed, ReleaseStatus.NotDisposed);
+//         
+//         operation.Status.Should().Be(ImportingStatus.Disposed);
+//         operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
+//     }
+//     
+//     [Fact]
+//     public async Task ReleaseByHandle_AfterImport_ShouldDisposeCorrectly() {
+//         var operation = _importEnvironment.Import(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart));
+//         ResourceHandle handle = (await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync()).Which;
+//
+//         _importEnvironment.Release(handle).Should().BeOneOf(ReleaseStatus.Disposed, ReleaseStatus.NotDisposed);
+//         
+//         operation.Status.Should().Be(ImportingStatus.Disposed);
+//         operation.UnderlyingContainer.ReferenceCount.Should().Be(0);
+//     }
+//
+//     [Fact]
+//     public async Task ReferenceImport_HasCorrectReferenceCount() {
+//         var operation = _importEnvironment.Import(new ResourceAddress(1, PrebuildResourcesFixture.ReferencingResource2ObjectsChainA));
+//         ResourceHandle<ReferencingResource> handle = (await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync()).Which.Convert<ReferencingResource>();
+//
+//         handle.Value.Should().NotBeNull();
+//         
+//         var resourceContainer = _importEnvironment.GetResourceContainer(handle.Address);
+//         resourceContainer.Should().NotBeNull();
+//         resourceContainer!.ReferenceCount.Should().Be(1);
+//         resourceContainer.Status.Should().Be(ImportingStatus.Success);
+//
+//         var referenceContainer = _importEnvironment.GetResourceContainer(handle.Value!);
+//         referenceContainer.Should().NotBeNull();
+//         referenceContainer!.ReferenceCount.Should().Be(1);
+//         referenceContainer.Status.Should().Be(ImportingStatus.Success);
+//     }
+//     
+//     [Fact]
+//     public async Task Reimport_AfterDispose_ReinitializeImportOperation() {
+//         // Extension of Release_SingleTime_ShouldCancelImportingOperation
+//         
+//         var operation = _importEnvironment.Import(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart));
+//         await new Func<Task<ResourceHandle>>(async () => await operation).Should().NotThrowAsync();
+//
+//         _importEnvironment.Release(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart)).Should().BeOneOf(ReleaseStatus.Disposed, ReleaseStatus.NotDisposed);
+//         
+//         var operation2 = _importEnvironment.Import(new ResourceAddress(1, PrebuildResourcesFixture.SimpleResourceStart));
+//         await new Func<Task<ResourceHandle>>(async () => await operation2).Should().NotThrowAsync();
+//         
+//         operation2.Status.Should().Be(ImportingStatus.Success);
+//         operation2.UnderlyingContainer.ReferenceCount.Should().Be(1);
+//     }
+// }

@@ -2,14 +2,11 @@
 
 public class IncrementalBuildTests : IClassFixture<ComponentsFixture>, IClassFixture<MemoryStreamManagerFixture>, IDisposable {
     private readonly BuildEnvironment _environment;
-    private readonly ComponentsFixture _componentsFixture;
 
     public IncrementalBuildTests(ComponentsFixture componentsFixture, MemoryStreamManagerFixture memoryStreamManagerFixture) {
-        _componentsFixture = componentsFixture;
-
         _environment = new(new MemoryOutputSystem(), memoryStreamManagerFixture.Manager);
         
-        _componentsFixture.ApplyComponents(_environment);
+        componentsFixture.ApplyComponents(_environment);
     }
     
     public void Dispose() {

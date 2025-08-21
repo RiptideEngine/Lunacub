@@ -57,4 +57,7 @@
     <data name="DuplicateLibraryId" xml:space="preserve">
         <value>Trying to insert library with id of {0} but library with same id has already been registered.</value>
     </data>
+    <data name="EmptyOrWhitespaceKey" xml:space="preserve">
+        <value>Key cannot be empty or consist of only whitespace characters.</value>
+    </data>
 </root>

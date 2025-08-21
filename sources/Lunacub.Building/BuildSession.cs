@@ -4,13 +4,14 @@
 // 04-08-2025: Using ProceduralSchematic, detect if the compiled resource file missing to trigger compilation of that resource.
                
 using Caxivitual.Lunacub.Building.Collections;
+using Caxivitual.Lunacub.Collections;
 
 namespace Caxivitual.Lunacub.Building;
 
 internal sealed partial class BuildSession {
     private readonly BuildEnvironment _environment;
 
-    public EnvironmentLibraryDictionary<ResourceResultDictionary> Results { get; }
+    public LibraryIdentityDictionary<ResourceResultDictionary> Results { get; }
     
     private readonly FrozenDictionary<LibraryID, LibraryGraphVertices> _graph;
     

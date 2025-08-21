@@ -15,7 +15,8 @@ public readonly struct LibraryID :
     ISpanFormattable,
     IUtf8SpanFormattable,
     ISpanParsable<LibraryID>,
-    IUtf8SpanParsable<LibraryID>
+    IUtf8SpanParsable<LibraryID>,
+    IComparable<LibraryID>
 {
     /// <summary>
     /// Represents a default or null value of <see cref="LibraryID"/>, used to signify the absence of a
@@ -299,6 +300,9 @@ public readonly struct LibraryID :
     public static bool operator !=(LibraryID left, LibraryID right) => left.Value != right.Value;
     public static bool operator ==(LibraryID left, ulong right) => left.Value == right;
     public static bool operator !=(LibraryID left, ulong right) => left.Value != right;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public int CompareTo(LibraryID other) => Value.CompareTo(other.Value);
     
     public static implicit operator LibraryID(uint value) => new(value);
     public static implicit operator LibraryID(ulong value) => new(value);

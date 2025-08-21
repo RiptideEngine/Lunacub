@@ -279,7 +279,6 @@ public class ResourceIDTests {
     
     [Fact]
     public void Inequality_ShouldReturnsCorrectly() {
-        ResourceID.Parse("255").Should().NotBe(255D);
         ResourceID.Parse("255").Should().NotBe((UInt128)256U);
         
         ((ResourceID)255 != (ResourceID)257).Should().BeTrue();

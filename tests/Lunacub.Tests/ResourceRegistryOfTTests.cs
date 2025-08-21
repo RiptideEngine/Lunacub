@@ -410,24 +410,26 @@ public class ResourceRegistryOfTTests {
     }
     
     [Fact]
-    public void TryGetValueName_Contains_ReturnsTrueAndReturnsCorrectObject() {
+    public void TryGetValueName_Contains_ReturnsTrueAndReturnsCorrectObjects() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
 
         _registry.TryGetValue("B", out ResourceRegistry.Element element).Should().BeTrue();
         element.Should().Be(new ResourceRegistry.Element("B", []));
         
-        _registry.TryGetValue("B", out ResourceID id).Should().BeTrue();
+        _registry.TryGetValue("B", out ResourceID id, out element).Should().BeTrue();
         id.Should().Be((ResourceID)2);
+        element.Should().Be(new ResourceRegistry.Element("B", []));
     }
     
     [Fact]
     public void TryGetValueName_NotContains_ReturnsFalse() {
         _registry.Add(1, new("A", []));
         _registry.Add(2, new("B", []));
-
+        
         _registry.TryGetValue("E", out ResourceRegistry.Element _).Should().BeFalse();
-        _registry.TryGetValue("E", out ResourceID _).Should().BeFalse();
+        _registry.TryGetValue("E", out ResourceID _, out ResourceRegistry.Element _).Should().BeFalse();
+        _registry.TryGetValue("E", out ResourceRegistry.Element _).Should().BeFalse();
     }
 
     [Fact]

@@ -79,7 +79,7 @@ internal static class Program {
             },
         };
         
-        ResourceHandle<EmittingResource> handle = (await importEnvironment.Import(new(1, 1))).Convert<EmittingResource>();
+        ResourceHandle<EmittingResource> handle = (await importEnvironment.Import(1, 1)).Convert<EmittingResource>();
         
         _logger.LogInformation("Imported: {value}.", handle.Value);
     }

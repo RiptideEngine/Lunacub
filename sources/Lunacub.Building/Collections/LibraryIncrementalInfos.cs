@@ -1,3 +1,5 @@
-﻿namespace Caxivitual.Lunacub.Building.Collections;
+﻿using Caxivitual.Lunacub.Collections;
 
-public sealed class LibraryIncrementalInfos : LibraryResourceDictionary<IncrementalInfo>;
+namespace Caxivitual.Lunacub.Building.Collections;
+
+public sealed class LibraryIncrementalInfos : ResourceIdentityDictionary<IncrementalInfo>;

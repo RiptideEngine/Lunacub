@@ -1,4 +1,6 @@
-﻿using System.Collections.Immutable;
+﻿using Caxivitual.Lunacub.Building.Extensions;
+using Caxivitual.Lunacub.Importing.Extensions;
+using System.Collections.Immutable;
 using System.Reflection;
 
 namespace Caxivitual.Lunacub.Tests.Common;
@@ -23,22 +25,22 @@ public sealed class ComponentsFixture {
 
     public void ApplyComponents(BuildEnvironment environment) {
         foreach (var type in ComponentTypes[typeof(Importer)]) {
-            environment.Importers[type.Name] = (Importer)Activator.CreateInstance(type)!;
+            environment.SetImporter(type.Name, (Importer)Activator.CreateInstance(type)!);
         }
         
         foreach (var type in ComponentTypes[typeof(Processor)]) {
-            environment.Processors[type.Name] = (Processor)Activator.CreateInstance(type)!;
+            environment.SetProcessor(type.Name, (Processor)Activator.CreateInstance(type)!);
         }
         
         environment.SerializerFactories.Clear();
         foreach (var type in ComponentTypes[typeof(SerializerFactory)]) {
-            environment.SerializerFactories.Add((SerializerFactory)Activator.CreateInstance(type)!);
+            environment.AddSerializerFactory((SerializerFactory)Activator.CreateInstance(type)!);
         }
     }
     
     public void ApplyComponents(ImportEnvironment environment) {
         foreach (var type in ComponentTypes[typeof(Deserializer)]) {
-            environment.Deserializers[type.Name] = (Deserializer)Activator.CreateInstance(type)!;
+            environment.SetDeserializer(type.Name, (Deserializer)Activator.CreateInstance(type)!);
         }
     }
 }

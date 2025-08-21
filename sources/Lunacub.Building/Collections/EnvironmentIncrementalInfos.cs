@@ -1,6 +1,8 @@
-﻿namespace Caxivitual.Lunacub.Building.Collections;
+﻿using Caxivitual.Lunacub.Collections;
 
-public sealed class EnvironmentIncrementalInfos : EnvironmentLibraryDictionary<LibraryIncrementalInfos> {
+namespace Caxivitual.Lunacub.Building.Collections;
+
+public sealed class EnvironmentIncrementalInfos : LibraryIdentityDictionary<LibraryIncrementalInfos> {
     public void SetIncrementalInfo(LibraryID libraryId, ResourceID resourceId, IncrementalInfo incrementalInfo) {
         ref var libraryIncrementalInfos = ref CollectionsMarshal.GetValueRefOrAddDefault(_dict, libraryId, out bool exists);
 

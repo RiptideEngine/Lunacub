@@ -88,7 +88,7 @@ internal static class Program {
         
         // TODO: Fix caching procedural resource make registry disappear
         
-        ResourceHandle<EmittableResource> handle = (await importEnvironment.Import(new(1, 1))).Convert<EmittableResource>();
+        ResourceHandle<EmittableResource> handle = (await importEnvironment.Import(1, 1)).Convert<EmittableResource>();
         
         _logger.LogInformation("resource.Value: {value}", handle.Value!.Value);
         _logger.LogInformation("resource.Value.Generated.Value: {value}", handle.Value!.Generated!.Value);

@@ -1,11 +1,12 @@
 ﻿using Caxivitual.Lunacub.Building.Collections;
+using Caxivitual.Lunacub.Collections;
 using System.Collections.Frozen;
 using ResourceOutput = (System.Collections.Immutable.ImmutableArray<byte>, System.DateTime);
 
 namespace Caxivitual.Lunacub.Building.Core;
 
 public sealed class MemoryOutputSystem : OutputSystem {
-    public Dictionary<LibraryID, LibraryOutput> Outputs { get; } = [];
+    public LibraryIdentityDictionary<LibraryOutput> Outputs { get; } = [];
 
     public EnvironmentIncrementalInfos IncrementalInfos { get; } = [];
     public EnvironmentProceduralSchematic ProceduralSchematic { get; } = [];
@@ -69,10 +70,9 @@ public sealed class MemoryOutputSystem : OutputSystem {
     }
 
     public override void CopyCompiledResourceOutput(Stream sourceStream, ResourceAddress address) {
-        ref var libraryOutput = ref CollectionsMarshal.GetValueRefOrAddDefault(Outputs, address.LibraryId, out bool exists);
-
-        if (!exists) {
+        if (!Outputs.TryGetValue(address.LibraryId, out var libraryOutput)) {
             libraryOutput = new([], []);
+            Outputs.Add(address.LibraryId, libraryOutput);
         }
         
         byte[] buffer = new byte[sourceStream.Length];

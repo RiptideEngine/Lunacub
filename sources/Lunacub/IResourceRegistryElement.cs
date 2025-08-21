@@ -1,6 +1,4 @@
-﻿using System.Collections.Immutable;
-
-namespace Caxivitual.Lunacub;
+﻿namespace Caxivitual.Lunacub;
 
 public interface IResourceRegistryElement {
     string? Name { get; }

@@ -104,7 +104,7 @@ internal static class Program {
             },
         };
 
-        ResourceHandle<MergingResource> handle = (await importEnvironment.Import(new(1, 4))).Convert<MergingResource>();
+        ResourceHandle<MergingResource> handle = (await importEnvironment.Import(1, 4)).Convert<MergingResource>();
         
         _logger.LogInformation("Values: {values}", string.Join(", ", handle.Value!.Values));
     }

@@ -46,7 +46,7 @@ public sealed class ResourceLibraryCollection : ResourceLibraryCollection<Import
         foreach (var library in this) {
             if (library.Id != libraryId) continue;
             
-            if (library.Registry.TryGetValue(name, out output)) {
+            if (library.Registry.TryGetValue(name, out output, out _)) {
                 return true;
             }
         }
@@ -59,13 +59,25 @@ public sealed class ResourceLibraryCollection : ResourceLibraryCollection<Import
         foreach (var library in this) {
             if (library.Id != libraryId) continue;
             
-            if (library.Registry.TryGetValue(name, out output)) {
+            if (library.Registry.TryGetValue(name, out _, out output)) {
                 return true;
             }
         }
 
         output = default;
         return false;
+    }
+    
+    public bool ContainsResource(SpanNamedResourceAddress address) {
+        return ContainsResource(address.LibraryId, address.Name);
+    }
+    
+    public bool ContainsResource(SpanNamedResourceAddress address, out ResourceID output) {
+        return ContainsResource(address.LibraryId, address.Name, out output);
+    }
+    
+    public bool ContainsResource(SpanNamedResourceAddress address, out ResourceRegistry.Element output) {
+        return ContainsResource(address.LibraryId, address.Name, out output);
     }
     
     public Stream? CreateResourceStream(LibraryID libraryId, ResourceID resourceId) {

@@ -1,6 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Building.Collections;
+﻿namespace Caxivitual.Lunacub.Collections;
 
-public class EnvironmentLibraryDictionary<T> : IDictionary<LibraryID, T>, IReadOnlyDictionary<LibraryID, T> {
+public class LibraryIdentityDictionary<T> : IDictionary<LibraryID, T>, IReadOnlyDictionary<LibraryID, T> {
     protected readonly Dictionary<LibraryID, T> _dict = [];
     
     public int Count => _dict.Count;

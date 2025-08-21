@@ -1,12 +1,13 @@
 ﻿using System.Collections.Immutable;
 
-namespace Caxivitual.Lunacub.Importing;
+namespace Caxivitual.Lunacub;
 
-internal readonly struct TagFilter {
+// TODO: Would be nice if we can use source generation like GeneratedRegex.
+public readonly struct TagQuery {
     public readonly string Query;
-    public readonly Expression RootExpression;
+    internal readonly Expression RootExpression;
     
-    public TagFilter(string query) {
+    public TagQuery(string query) {
         Query = query;
         RootExpression = ParseQuery();
     }
@@ -50,7 +51,7 @@ internal readonly struct TagFilter {
         }
     }
 
-    public bool Check(ImmutableArray<string> tags) {
+    public bool Check(TagCollection tags) {
         return RootExpression.Check(tags, Query);
     }
 
@@ -61,20 +62,20 @@ internal readonly struct TagFilter {
         And, Or, Not, Xor,
     }
 
-    public readonly record struct Token(TokenType Type, Range Range);
+    internal readonly record struct Token(TokenType Type, Range Range);
 
-    public abstract class Expression {
-        public abstract bool Check(ImmutableArray<string> tags, string query);
+    internal abstract class Expression {
+        public abstract bool Check(TagCollection tags, string query);
     }
 
-    public sealed class LiteralExpression : Expression {
+    internal sealed class LiteralExpression : Expression {
         public readonly Range ValueRange;
 
         public LiteralExpression(Range valueRange) {
             ValueRange = valueRange;
         }
         
-        public override bool Check(ImmutableArray<string> tags, string query) {
+        public override bool Check(TagCollection tags, string query) {
             ReadOnlySpan<char> searchingTag = query.AsSpan(ValueRange);
             
             foreach (var tag in tags) {
@@ -87,7 +88,7 @@ internal readonly struct TagFilter {
         }
     }
 
-    public sealed class UnaryExpression : Expression {
+    internal sealed class UnaryExpression : Expression {
         public readonly TokenType Operator;
         public readonly Expression Expression;
 
@@ -96,7 +97,7 @@ internal readonly struct TagFilter {
             Expression = expression;
         }
         
-        public override bool Check(ImmutableArray<string> tags, string query) {
+        public override bool Check(TagCollection tags, string query) {
             switch (Operator) {
                 case TokenType.Not: return !Expression.Check(tags, query);
                 default: throw new UnreachableException();
@@ -104,7 +105,7 @@ internal readonly struct TagFilter {
         }
     }
 
-    public sealed class BinaryExpression : Expression {
+    internal sealed class BinaryExpression : Expression {
         public readonly Expression Left;
         public readonly TokenType Operator;
         public readonly Expression Right;
@@ -115,7 +116,7 @@ internal readonly struct TagFilter {
             Right = right;
         }
         
-        public override bool Check(ImmutableArray<string> tags, string query) {
+        public override bool Check(TagCollection tags, string query) {
             switch (Operator) {
                 case TokenType.And: return Left.Check(tags, query) && Right.Check(tags, query);
                 case TokenType.Or: return Left.Check(tags, query) || Right.Check(tags, query);

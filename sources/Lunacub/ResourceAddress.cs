@@ -15,20 +15,20 @@ public readonly struct ResourceAddress : IEquatable<ResourceAddress> {
     public static ResourceAddress Null => default;
 
     /// <summary>
-    /// The id of the resource library to search for resource.
+    /// The id of the resource library.
     /// </summary>
     public readonly LibraryID LibraryId;
     
     /// <summary>
-    /// The id of the resource to search for.
+    /// The id of the resource.
     /// </summary>
     public readonly ResourceID ResourceId;
 
     /// <summary>
     /// Creates a new instance of <see cref="ResourceAddress"/> with the specified library id and resource id.
     /// </summary>
-    /// <param name="libraryId">The id of the resource library to search for resource.</param>
-    /// <param name="resourceId">The id of the resource to search for.</param>
+    /// <param name="libraryId">The id of the resource library.</param>
+    /// <param name="resourceId">The id of the resource.</param>
     public ResourceAddress(LibraryID libraryId, ResourceID resourceId) {
         LibraryId = libraryId;
         ResourceId = resourceId;

@@ -1,3 +1,5 @@
-﻿namespace Caxivitual.Lunacub.Building.Collections;
+﻿using Caxivitual.Lunacub.Collections;
 
-public sealed class EnvironmentProceduralSchematic : EnvironmentLibraryDictionary<LibraryProceduralSchematic>;
+namespace Caxivitual.Lunacub.Building.Collections;
+
+public sealed class EnvironmentProceduralSchematic : LibraryIdentityDictionary<LibraryProceduralSchematic>;

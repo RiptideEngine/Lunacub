@@ -11,7 +11,7 @@ partial class ImportEnvironment {
     public ImportingOperation Import(ResourceAddress address) {
         return _importDispatcher.Import(address);
     }
-
+    
     /// <summary>
     /// Imports the weakly-typed resource along with its references.
     /// </summary>
@@ -19,7 +19,16 @@ partial class ImportEnvironment {
     /// <param name="resourceId">Id of the resource to import.</param>
     /// <returns>The <see cref="ImportingOperation"/> instance that encapsulates the importing operation.</returns>
     public ImportingOperation Import(LibraryID libraryId, ResourceID resourceId) {
-        return _importDispatcher.Import(new(libraryId, resourceId));
+        return Import(new ResourceAddress(libraryId, resourceId));
+    }
+
+    /// <summary>
+    /// Imports the weakly-typed resource along with its references.
+    /// </summary>
+    /// <param name="address">Address of the resource to import.</param>
+    /// <returns>The <see cref="ImportingOperation"/> instance that encapsulates the importing operation.</returns>
+    public ImportingOperation Import(SpanNamedResourceAddress address) {
+        return _importDispatcher.Import(address);
     }
 
     /// <summary>
@@ -29,7 +38,7 @@ partial class ImportEnvironment {
     /// <param name="name">Name of the resource to import.</param>
     /// <returns>The <see cref="ImportingOperation"/> instance that encapsulates the importing operation.</returns>
     public ImportingOperation Import(LibraryID libraryId, ReadOnlySpan<char> name) {
-        return _importDispatcher.Import(libraryId, name);
+        return _importDispatcher.Import(new SpanNamedResourceAddress(libraryId, name));
     }
 
     // TODO: Generic overload.
@@ -42,6 +51,14 @@ partial class ImportEnvironment {
     // public ImportingOperation<T> Import<T>(ResourceID rid) where T : class {
     //     return _importDispatcher.Import<T>(rid);
     // }
+
+    public IReadOnlyCollection<ImportingOperation> ImportByQueryTags(string query) {
+        return ImportByQueryTags(new TagQuery(query));
+    }
+
+    public IReadOnlyCollection<ImportingOperation> ImportByQueryTags(TagQuery query) {
+        return _importDispatcher.Import(query);
+    }
 
     /// <summary>
     /// Releases the resource using the specified imported resource object.

@@ -1,6 +1,8 @@
 ﻿// ReSharper disable VariableHidesOuterVariable
 
 using Caxivitual.Lunacub.Compilation;
+using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.ObjectModel;
 
@@ -20,24 +22,26 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
     public ImportingOperation Import(ResourceAddress address) {
         ObjectDisposedException.ThrowIf(_disposed, this);
-
-        if (!TryGetImportingLibrary(address.LibraryId, out var failureContainer, out var library)) return new(failureContainer);
         
-        if (!library.Registry.TryGetValue(address.ResourceId, out ResourceRegistry.Element element)) {
-            string message = string.Format(ExceptionMessages.ImportFromUnregisteredResourceId, address.ResourceId, address.LibraryId);
-
-            ResourceCache.ElementContainer container = new(address, string.Empty) {
-                FinalizeTask = Task.FromException<ResourceHandle>(new ArgumentException(message, nameof(address))),
-                ReferenceCount = 0,
-                Status = ImportingStatus.Failed,
-            };
-
-            return new(container);
-        }
+        return new(Cache.GetOrBeginImporting(address, ProcessCachedContainer, BeginImport));
         
-        return new(Cache.GetOrBeginImporting(address, ProcessCachedContainer, BeginImport, element));
+        ResourceCache.ElementContainer BeginImport(ResourceAddress address, ref bool add) {
+            if (!TryGetImportingLibrary(address.LibraryId, out var failureContainer, out var library)) {
+                add = false;
+                return failureContainer;
+            }
         
-        ResourceCache.ElementContainer BeginImport(ResourceAddress address, ResourceRegistry.Element element) {
+            if (!library.Registry.TryGetValue(address.ResourceId, out ResourceRegistry.Element element)) {
+                string message = string.Format(ExceptionMessages.ImportFromUnregisteredResourceId, address.ResourceId, address.LibraryId);
+
+                add = false;
+                return new(address, string.Empty) {
+                    FinalizeTask = Task.FromException<ResourceHandle>(new ArgumentException(message, nameof(address))),
+                    ReferenceCount = 0,
+                    Status = ImportingStatus.Failed,
+                };
+            }
+            
             ResourceCache.ElementContainer container = new(address, element.Name);
         
             _environment.Statistics.AddReference();
@@ -46,32 +50,70 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         
             container.InitializeImport();
             container.FinalizeTask = ImportingTask(container);
+
+            add = true;
+            return container;
+        }
+    }
+
+    public ImportingOperation Import(SpanNamedResourceAddress address) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
+        return new(Cache.GetOrBeginImporting(address, ProcessCachedContainer, BeginImport));
+        
+        ResourceCache.ElementContainer BeginImport(SpanNamedResourceAddress address, ref bool add) {
+            (LibraryID libraryId, ReadOnlySpan<char> name) = address;
+            
+            if (!TryGetImportingLibrary(libraryId, out var failureContainer, out _)) {
+                add = false;
+                return failureContainer;
+            }
+            
+            if (!_environment.Libraries.ContainsResource(libraryId, name, out ResourceID resourceId)) {
+                string message = string.Format(ExceptionMessages.ImportFromUnregisteredResourceName, name.ToString(), libraryId);
+
+                return new(default, name.ToString()) {
+                    FinalizeTask = Task.FromException<ResourceHandle>(new ArgumentException(message, nameof(name))),
+                    ReferenceCount = 0,
+                    Status = ImportingStatus.Failed,
+                };
+            }
+            
+            ResourceCache.ElementContainer container = new(new(address.LibraryId, resourceId), name.ToString());
+        
+            _environment.Statistics.AddReference();
+        
+            Log.BeginImport(_environment.Logger, address.LibraryId, resourceId);
+        
+            container.InitializeImport();
+            container.FinalizeTask = ImportingTask(container);
         
             return container;
         }
     }
 
-    public ImportingOperation Import(LibraryID libraryId, ReadOnlySpan<char> name) {
+    public IReadOnlyCollection<ImportingOperation> Import(TagQuery query) {
         ObjectDisposedException.ThrowIf(_disposed, this);
-
-        if (!TryGetImportingLibrary(libraryId, out var failureContainer, out var library)) return new(failureContainer);
-
-        if (!_environment.Libraries.ContainsResource(libraryId, name, out ResourceID resourceId)) {
-            string message = string.Format(ExceptionMessages.ImportFromUnregisteredResourceName, name.ToString());
-
-            ResourceCache.ElementContainer container = new(new(libraryId, default), name.ToString()) {
-                FinalizeTask = Task.FromException<ResourceHandle>(new ArgumentException(message, nameof(name))),
-                ReferenceCount = 0,
-                Status = ImportingStatus.Failed,
-            };
-
-            return new(container);
-        }
-
-        return new(Cache.GetOrBeginImporting(new(libraryId, resourceId), ProcessCachedContainer, BeginImport, name));
         
-        ResourceCache.ElementContainer BeginImport(ResourceAddress address, ReadOnlySpan<char> name) {
-            ResourceCache.ElementContainer container = new(address, name.ToString());
+        ConcurrentBag<ImportingOperation> outputOperations = [];
+
+        Parallel.ForEach(_environment.Libraries, EnumerateLibrary);
+
+        return outputOperations;
+
+        void EnumerateLibrary(ImportResourceLibrary library, ParallelLoopState state) {
+            foreach ((ResourceID resourceId, ResourceRegistry.Element registryElement) in library.Registry) {
+                if (!query.Check(registryElement.Tags)) continue;
+                
+                ResourceCache.ElementContainer container =
+                    Cache.GetOrBeginImporting(new(library.Id, resourceId), ProcessCachedContainer, BeginImport, registryElement);
+                
+                outputOperations.Add(new(container));
+            }
+        }
+        
+        ResourceCache.ElementContainer BeginImport(ResourceAddress address, ResourceRegistry.Element element, ref bool add) {
+            ResourceCache.ElementContainer container = new(address, element.Name);
         
             _environment.Statistics.AddReference();
         
@@ -79,7 +121,8 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         
             container.InitializeImport();
             container.FinalizeTask = ImportingTask(container);
-        
+
+            add = true;
             return container;
         }
     }
@@ -144,6 +187,8 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             Debug.Assert(waitContainers.All(x => x.FinalizeTask != null), "Unexpected null FinalizeTask.");
 
+            _environment.Logger.LogDebug("Wait containers for resource {address}: {addresses}.", container.Address, string.Join(", ", waitContainers.Select(x => x.Address)));
+            
             await Task.WhenAll(waitContainers.Select(async x => {
                 try {
                     await x.FinalizeTask;
@@ -152,6 +197,8 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
                     // TODO: Log?
                 }
             }));
+            
+            container.CancellationToken.ThrowIfCancellationRequested();
 
             _environment.Statistics.IncrementUniqueResourceCount();
 
@@ -180,10 +227,14 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
                 container.DisposeCancellationToken();
                 container.EnsureCancellationTokenSourceIsDisposed();
             }
+            
+            _environment.Logger.LogDebug("End import for resource {address}.", container.Address);
         }
     }
     
     private async Task<ReferenceResolveResult> ResolveReference(ResourceCache.ElementContainer container) {
+        _environment.Logger.LogDebug("Begin resolve reference for resource {address}.", container.Address);
+        
         Deserializer deserializer;
         object resource;
         DeserializationContext context;
@@ -206,39 +257,44 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
         try {
             ResourceHandle handle = new(container.Address, resource);
-            
+
             if (context.RequestingReferences.Count == 0) {
                 return new(handle, ReadOnlyCollection<ResourceCache.ElementContainer>.Empty, ReadOnlyCollection<ResourceAddress>.Empty);
             }
-            
+
             container.CancellationToken.ThrowIfCancellationRequested();
 
             Log.BeginResolvingReference(_environment.Logger, container.Address.LibraryId, container.Address.ResourceId);
 
-            IReadOnlyCollection<ResourceCache.ElementContainer> waitContainers = 
+            IReadOnlyCollection<ResourceCache.ElementContainer> waitContainers =
                 await ProcessReferences(container, context, resource, deserializer);
 
             Log.EndResolvingReference(_environment.Logger, container.Address.LibraryId, container.Address.ResourceId);
 
             List<ResourceAddress> releaseReferences = [];
+
             foreach (var releasingReference in context.RequestingReferences.ReleasedReferences) {
                 bool getSuccessfully = context.RequestingReferences.References!.TryGetValue(releasingReference, out var referenceHandle);
                 Debug.Assert(getSuccessfully);
-                
+
                 releaseReferences.Add(referenceHandle.Address);
             }
-            
+
             return new(handle, waitContainers, releaseReferences);
         } catch (OperationCanceledException) {
             ReleaseContainerReferenceCounter(container);
             DisposeResource(resource);
-            
+
             throw;
+        } finally {
+            _environment.Logger.LogDebug("End resolve reference for resource {address}.", container.Address);
         }
     }
     
     private async Task<ResourceImportResult> ImportVesselTask(ResourceCache.ElementContainer container) {
         await Task.Yield();
+        
+        _environment.Logger.LogDebug("Begin import vessel for resource {address}.", container.Address);
 
         try {
             if (_environment.Libraries.CreateResourceStream(container.Address) is not { } stream) {
@@ -278,7 +334,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             throw;
         } catch (Exception e) {
             Log.ReportImportException(_environment.Logger, container.Address.LibraryId, container.Address.ResourceId, e);
-            
+
             ReleaseContainerReferenceCounter(container);
 
             using (container.EnterLockScope()) {
@@ -287,6 +343,8 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             }
 
             throw;
+        } finally {
+            _environment.Logger.LogDebug("End import vessel for resource {address}.", container.Address);
         }
     }
 
@@ -344,8 +402,10 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         
         return new(references, waitContainers);
         
-        ResourceCache.ElementContainer BeginReferenceImport(ResourceAddress resourceAddress, string? resourceName) {
+        ResourceCache.ElementContainer BeginReferenceImport(ResourceAddress resourceAddress, string? resourceName, ref bool add) {
             Debug.Assert(_environment.Libraries.ContainsResource(resourceAddress));
+            
+            add = true;
             
             Log.BeginImport(_environment.Logger, resourceAddress.LibraryId, resourceAddress.ResourceId);
             
@@ -361,7 +421,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         }
     }
     
-    private void ProcessCachedContainer<T>(ResourceCache.ElementContainer container, T unusedArg) where T : allows ref struct {
+    private void ProcessCachedContainer(ResourceCache.ElementContainer container) {
         switch (container.Status) {
             case ImportingStatus.Success or ImportingStatus.Importing:
                 uint incremented = container.IncrementReference();
@@ -388,6 +448,11 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             
             case ImportingStatus.Failed: throw new UnreachableException();
         }
+    }
+
+    
+    private void ProcessCachedContainer<T>(ResourceCache.ElementContainer container, T unusedArg) where T : allows ref struct {
+        ProcessCachedContainer(container);
     }
 
     private void ReleaseContainerReferenceCounter(ResourceCache.ElementContainer container) {

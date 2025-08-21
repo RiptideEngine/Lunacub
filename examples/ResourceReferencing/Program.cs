@@ -81,7 +81,7 @@ internal static class Program {
             },
         };
         
-        ResourceHandle<ReferencingResource> handle = (await importEnvironment.Import(new(1, 1))).Convert<ReferencingResource>();
+        ResourceHandle<ReferencingResource> handle = (await importEnvironment.Import(1, 1)).Convert<ReferencingResource>();
         
         _logger.LogInformation("Reference value: {value}.", handle.Value!.Reference!.Value);
     }

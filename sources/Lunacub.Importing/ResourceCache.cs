@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Caxivitual.Lunacub.Collections;
+using Microsoft.Extensions.Logging;
 using System.Collections.Frozen;
-using System.Runtime.ExceptionServices;
 
 namespace Caxivitual.Lunacub.Importing;
 
@@ -8,100 +8,232 @@ namespace Caxivitual.Lunacub.Importing;
 /// Represents the thread-safe containers to store resource container object, and provides access from resource object to
 /// <see cref="ResourceID"/>.
 /// </summary>
-internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
+internal sealed class ResourceCache : IDisposable {
     private bool _disposed;
 
     // private readonly SemaphoreSlim _lock;
     private readonly ImportEnvironment _environment;
     private readonly Lock _lock;
     
-    private readonly Dictionary<ResourceAddress, ElementContainer> _containers;
+    private readonly SortedList<LibraryID, LibraryResourceCache> _libraryCaches;
     private readonly Dictionary<object, ResourceAddress> _resourceMap;
     
     // ReSharper disable once ConvertConstructorToMemberInitializers
     public ResourceCache(ImportEnvironment environment) {
         _environment = environment;
         _lock = new();
-        _containers = [];
+        _libraryCaches = [];
         _resourceMap = [];
     }
 
     public ElementContainer? Get(ResourceAddress address) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
         using (_lock.EnterScope()) {
-            return _containers.GetValueOrDefault(address);
+            return _libraryCaches.TryGetValue(address.LibraryId, out var libraryCache) ? libraryCache.Containers.GetValueOrDefault(address.ResourceId) : null;
+        }
+    }
+
+    public ElementContainer? Get(LibraryID libraryId, ReadOnlySpan<char> name) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
+        using (_lock.EnterScope()) {
+            return _libraryCaches.TryGetValue(libraryId, out var libraryCache) ? 
+                libraryCache.NameMap.TryGetValue(name, out var resourceId) ? 
+                    libraryCache.Containers[resourceId] : 
+                    null : 
+                null;
         }
     }
 
     public ElementContainer? Get(object resource) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
         using (_lock.EnterScope()) {
-            return _resourceMap.TryGetValue(resource, out var id) ? _containers[id] : null;
+            if (!_resourceMap.TryGetValue(resource, out var address)) return null;
+
+            return _libraryCaches[address.LibraryId].Containers[address.ResourceId];
         }
     }
 
     public bool Remove(ResourceAddress address) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
         using (_lock.EnterScope()) {
-            return _containers.Remove(address);
+            if (_libraryCaches.TryGetValue(address.LibraryId, out var libraryCache)) {
+                if (libraryCache.Containers.Remove(address.ResourceId, out var removed)) {
+                    if (removed.ResourceName != null) {
+                        libraryCache.NameMap.Remove(removed.ResourceName);
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    public bool Remove(LibraryID libraryId, ReadOnlySpan<char> name) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
+        using (_lock.EnterScope()) {
+            if (_libraryCaches.TryGetValue(libraryId, out var libraryCache)) {
+                if (libraryCache.NameMap.Remove(name, out _, out ResourceID removedId)) {
+                    bool removedSuccessfully = libraryCache.Containers.Remove(removedId);
+                    Debug.Assert(removedSuccessfully);
+                    
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 
     public bool Contains(ResourceAddress address) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
         using (_lock.EnterScope()) {
-            return _containers.ContainsKey(address);
+            return _libraryCaches.TryGetValue(address.LibraryId, out var libraryCache) && libraryCache.Containers.ContainsKey(address.ResourceId);
         }
     }
 
-    public ElementContainer GetOrBeginImporting(
-        ResourceAddress address,
-        Action<ElementContainer> action,
-        Func<ResourceAddress, ElementContainer> factory
-    ) {
+    public bool Contains(LibraryID libraryId, ReadOnlySpan<char> name) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
         using (_lock.EnterScope()) {
-            ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, address, out bool exists);
-
-            if (!exists) {
-                reference = factory(address);
-
-                if (reference == null) {
-                    throw new InvalidOperationException("Factory must return non-null instance.");
-                }
-            } else {
-                action(reference!);
-            }
-
-            return reference!;
+            return _libraryCaches.TryGetValue(libraryId, out var libraryCache) && libraryCache.NameMap.ContainsKey(name);
         }
     }
     
+    public ElementContainer GetOrBeginImporting(
+        ResourceAddress address,
+        Action<ElementContainer> action,
+        ElementFactory<ResourceAddress> factory
+    ) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
+        using (_lock.EnterScope()) {
+            if (!_libraryCaches.TryGetValue(address.LibraryId, out var libraryCache)) {
+                libraryCache = new([], new(StringComparer.Ordinal));
+                _libraryCaches.Add(address.LibraryId, libraryCache);
+            }
+
+            if (libraryCache.Containers.TryGetValue(address.ResourceId, out ElementContainer? resourceContainer)) {
+                action(resourceContainer);
+            } else {
+                bool add = true;
+                resourceContainer = factory(address, ref add);
+            
+                if (resourceContainer == null) {
+                    throw new InvalidOperationException("Factory must return non-null instance.");
+                }
+
+                if (add) {
+                    libraryCache.Containers.Add(address.ResourceId, resourceContainer);
+
+                    if (resourceContainer.ResourceName is { } name) {
+                        libraryCache.NameMap.Add(name, address.ResourceId);
+                    }
+                }
+            }
+
+            return resourceContainer;
+        }
+    }
+
     public ElementContainer GetOrBeginImporting<TArg>(
         ResourceAddress address,
         Action<ElementContainer, TArg> action,
-        Func<ResourceAddress, TArg, ElementContainer> factory,
+        ElementFactory<ResourceAddress, TArg> factory,
         TArg arg
     ) where TArg : allows ref struct {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
         using (_lock.EnterScope()) {
-            ref var reference = ref CollectionsMarshal.GetValueRefOrAddDefault(_containers, address, out bool exists);
+            if (!_libraryCaches.TryGetValue(address.LibraryId, out var libraryCache)) {
+                libraryCache = new([], new(StringComparer.Ordinal));
+                _libraryCaches.Add(address.LibraryId, libraryCache);
+            }
+
+            if (libraryCache.Containers.TryGetValue(address.ResourceId, out ElementContainer? resourceContainer)) {
+                action(resourceContainer, arg);
+            } else {
+                bool add = true;
+                resourceContainer = factory(address, arg, ref add);
             
-            if (!exists) {
-                reference = factory(address, arg);
-                
-                if (reference == null) {
+                if (resourceContainer == null) {
                     throw new InvalidOperationException("Factory must return non-null instance.");
                 }
-            } else {
-                action(reference!, arg);
+
+                if (add) {
+                    libraryCache.Containers.Add(address.ResourceId, resourceContainer);
+
+                    if (resourceContainer.ResourceName is { } name) {
+                        libraryCache.NameMap.Add(name, address.ResourceId);
+                    }
+                }
             }
+
+            return resourceContainer;
+        }
+    }
+    
+    public ElementContainer GetOrBeginImporting(
+        SpanNamedResourceAddress address,
+        Action<ElementContainer> action,
+        ElementFactory<SpanNamedResourceAddress> factory
+    ) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
+        using (_lock.EnterScope()) {
+            (LibraryID libraryId, ReadOnlySpan<char> name) = address;
             
-            return reference!;
+            if (!_libraryCaches.TryGetValue(libraryId, out var libraryCache)) {
+                libraryCache = new([], new(StringComparer.Ordinal));
+                _libraryCaches.Add(libraryId, libraryCache);
+            }
+
+            ElementContainer container;
+
+            if (libraryCache.NameMap.TryGetValue(name, out var resourceId)) {
+                action(container = libraryCache.Containers[resourceId]);
+            } else {
+                bool add = true;
+                container = factory(address, ref add);
+            
+                if (container == null) {
+                    throw new InvalidOperationException("Factory must return non-null instance.");
+                }
+
+                if (add) {
+                    resourceId = container.Address.ResourceId;
+                    
+                    if (!name.Equals(container.ResourceName, StringComparison.Ordinal)) {
+                        throw new InvalidOperationException("Created container must have the same resource name as argument.");
+                    }
+                    
+                    libraryCache.Containers.Add(resourceId, container);
+                    libraryCache.NameMap.Add(name.ToString(), resourceId);
+                }
+            }
+
+            return container;
         }
     }
 
     public void RegisterResourceMap(object resource, ResourceAddress address) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
         using (_lock.EnterScope()) {
             _resourceMap.Add(resource, address);
         }
     }
 
     public bool RemoveResourceMap(object resource) {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        
         using (_lock.EnterScope()) {
             return _resourceMap.Remove(resource);
         }
@@ -111,34 +243,46 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
         if (Interlocked.Exchange(ref _disposed, true)) return;
 
         if (disposing) {
+            _environment.Logger.LogDebug("ResourceCache: Disposing...");
+            
             using (_lock.EnterScope()) {
-                Task.WaitAll(_containers.Values.Select(async container => {
-                    using (container.EnterLockScope()) {
-                        container.CancelImport();
+                foreach ((_, var libraryCache) in _libraryCaches) {
+                    foreach ((_, var container) in libraryCache.Containers) {
+                        using (container.EnterLockScope()) {
+                            container.CancelImport();
+                        }
                     }
+                }
+                
+                foreach ((_, var libraryCache) in _libraryCaches) {
+                    Task.WaitAll(((IDictionary<ResourceID, ElementContainer>)libraryCache.Containers).Values.Select(async container => {
+                        using (container.EnterLockScope()) {
+                            container.CancelImport();
+                        }
                     
-                    ResourceHandle handle;
-
-                    try {
-                        handle = await container.FinalizeTask;
-                    } catch {
-                        // Ignored.
-                        return;
-                    }
+                        ResourceHandle handle;
                     
-                    container.EnsureCancellationTokenSourceIsDisposed();
-
-                    if (_environment.Disposers.TryDispose(handle.Value!)) {
-                        _environment.Statistics.IncrementDisposedResourceCount();
-                    } else {
-                        _environment.Statistics.IncrementUndisposedResourceCount();
-                    }
-
-                    container.ReferenceCount = 0;
-                    container.Status = ImportingStatus.Disposed;
-                }));
-
-                _containers.Clear();
+                        try {
+                            handle = await container.FinalizeTask;
+                        } catch {
+                            // Ignored.
+                            return;
+                        }
+                    
+                        container.EnsureCancellationTokenSourceIsDisposed();
+                    
+                        if (_environment.Disposers.TryDispose(handle.Value!)) {
+                            _environment.Statistics.IncrementDisposedResourceCount();
+                        } else {
+                            _environment.Statistics.IncrementUndisposedResourceCount();
+                        }
+                    
+                        container.ResetReferenceCounter();
+                        container.Status = ImportingStatus.Disposed;
+                    }));
+                }
+            
+                _libraryCaches.Clear();
                 _environment.Statistics.ResetReferenceCounts();
                 _environment.Statistics.ResetUniqueResourceCount();
             }
@@ -148,43 +292,6 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
     public void Dispose() {
         Dispose(true);
         GC.SuppressFinalize(this);
-    }
-
-    public async ValueTask DisposeAsync() {
-        if (Interlocked.Exchange(ref _disposed, true)) return;
-
-        _lock.Enter();
-
-        try {
-            await Task.WhenAll(_containers.Values.Select(async container => {
-                // await container.CancellationTokenSource?.CancelAsync() ?? Task.CompletedTask;
-                
-                
-                ResourceHandle handle;
-
-                try {
-                    handle = await container.FinalizeTask;
-                } catch {
-                    // Ignored.
-                    return;
-                }
-
-                if (_environment.Disposers.TryDispose(handle.Value!)) {
-                    _environment.Statistics.IncrementDisposedResourceCount();
-                } else {
-                    _environment.Statistics.IncrementUndisposedResourceCount();
-                }
-
-                container.ReferenceCount = 0;
-                container.Status = ImportingStatus.Disposed;
-            })).ConfigureAwait(false);
-
-            _containers.Clear();
-            _environment.Statistics.ResetReferenceCounts();
-            _environment.Statistics.ResetUniqueResourceCount();
-        } finally {
-            _lock.Exit();
-        }
     }
 
     ~ResourceCache() {
@@ -293,4 +400,9 @@ internal sealed class ResourceCache : IDisposable, IAsyncDisposable {
             return _lock.EnterScope();
         }
     }
+
+    public delegate ElementContainer ElementFactory<in TAddress>(TAddress address, ref bool add) where TAddress : allows ref struct;
+    public delegate ElementContainer ElementFactory<in TAddress, in TArg>(TAddress address, TArg arg, ref bool add) where TAddress : allows ref struct where TArg : allows ref struct;
+
+    private readonly record struct LibraryResourceCache(ResourceIdentityDictionary<ElementContainer> Containers, IdentityDictionary<ResourceID> NameMap);
 }

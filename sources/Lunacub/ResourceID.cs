@@ -15,7 +15,8 @@ public readonly struct ResourceID :
     ISpanFormattable,
     IUtf8SpanFormattable,
     ISpanParsable<ResourceID>,
-    IUtf8SpanParsable<ResourceID>
+    IUtf8SpanParsable<ResourceID>,
+    IComparable<ResourceID>
 {
     // Prevent using UInt128 due to it's alignment.    
     [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _lower;
@@ -297,6 +298,9 @@ public readonly struct ResourceID :
     public static bool operator !=(ResourceID left, ResourceID right) => left.Value != right.Value;
     public static bool operator ==(ResourceID left, UInt128 right) => left.Value == right;
     public static bool operator !=(ResourceID left, UInt128 right) => left.Value != right;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public int CompareTo(ResourceID other) => Value.CompareTo(other.Value);
     
     public static implicit operator ResourceID(uint value) => new(value);
     public static implicit operator ResourceID(ulong value) => new(value);

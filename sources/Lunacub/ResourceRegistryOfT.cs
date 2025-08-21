@@ -152,24 +152,18 @@ public class ResourceRegistry<TElement>
         return _resources.TryGetValue(resourceId, out output);
     }
     
-    public bool TryGetValue(ReadOnlySpan<char> name, out ResourceID output) {
-        if (_nameMap.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(name, out var id)) {
-            output = id;
-            return true;
-        }
-
-        output = default;
-        return false;
-    }
-
-    public bool TryGetValue(ReadOnlySpan<char> name, [NotNullWhen(true)] out TElement? output) {
-        if (_nameMap.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(name, out var id)) {
+    public bool TryGetValue(ReadOnlySpan<char> name, out ResourceID id, [NotNullWhen(true)] out TElement? output) {
+        if (_nameMap.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(name, out id)) {
             output = _resources[id];
             return true;
         }
 
         output = default;
         return false;
+    }
+    
+    public bool TryGetValue(ReadOnlySpan<char> name, [NotNullWhen(true)] out TElement? output) {
+        return TryGetValue(name, out _, out output);
     }
 
     public TElement this[ResourceID resourceId] {

@@ -96,6 +96,15 @@ namespace Caxivitual.Lunacub {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Key cannot be empty or consist of only whitespace characters..
+        /// </summary>
+        internal static string EmptyOrWhitespaceKey {
+            get {
+                return ResourceManager.GetString("EmptyOrWhitespaceKey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Expected chunk tag {0} at position {1}..
         /// </summary>
         internal static string ExpectedChunkAtPosition {
