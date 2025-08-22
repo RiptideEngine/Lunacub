@@ -69,37 +69,34 @@ public class ResourceContainerCachingTests : IClassFixture<ComponentsFixture> {
 
         var operation = environment.Import(1, 1);
 
-        operation.Status.Should().Be(ImportingStatus.Importing);
         operation.UnderlyingContainer.ReferenceCount.Should().Be(1);
     }
 
     [Fact]
-    public void ImportFromIdAddress_MultipleTime_ReturnsSameContainer() {
+    public void ImportFromIdAddress_MultipleTime_ReturnsSameContainerAndIncrementsReference() {
         using ImportEnvironment environment = BuildSingleResource();
         
         var operation = environment.Import(1, 1);
-        operation.Status.Should().Be(ImportingStatus.Importing);
-
         var operation2 = environment.Import(1, 1);
 
         operation2.UnderlyingContainer.Should().BeSameAs(operation.UnderlyingContainer);
+        operation.UnderlyingContainer.ReferenceCount.Should().Be(2);
     }
 
     [Fact]
-    public void ImportFromIdAddress_MultipleTimeParallel_IncrementsReferenceCountCorrectly() {
+    public void ImportFromIdAddress_MultipleTimeParallel_IncrementsReferenceAtomically() {
         const int count = 10000;
         using ImportEnvironment environment = BuildSingleResource();
 
-        var operation = environment.Import(1, 1);
-        operation.Status.Should().Be(ImportingStatus.Importing);
+        ImportingOperation operation;
 
         Parallel.ForEach(Partitioner.Create(0, count, count / 10), (range, _) => {
             for (int i = range.Item1; i < range.Item2; i++) {
-                environment.Import(1, 1);
+                operation = environment.Import(1, 1);
             }
         });
 
-        operation.UnderlyingContainer.ReferenceCount.Should().Be(count + 1);
+        operation.UnderlyingContainer.ReferenceCount.Should().Be(count);
     }
 
     [Fact]
@@ -113,46 +110,34 @@ public class ResourceContainerCachingTests : IClassFixture<ComponentsFixture> {
     }
 
     [Fact]
-    public void ImportFromNameAddress_MultipleTime_ReturnsSameContainer() {
+    public void ImportFromNameAddress_MultipleTime_ReturnsSameContainerAndIncrementsReference() {
         using ImportEnvironment environment = BuildSingleResource();
         
         var operation = environment.Import(1, nameof(SimpleResource));
-        operation.Status.Should().Be(ImportingStatus.Importing);
-
         var operation2 = environment.Import(1, nameof(SimpleResource));
+        
         operation2.UnderlyingContainer.Should().BeSameAs(operation.UnderlyingContainer);
+        operation.UnderlyingContainer.ReferenceCount.Should().Be(2);
     }
 
     [Fact]
-    public void ImportFromNameAddress_MultipleTimeParallel_IncrementsReferenceCountCorrectly() {
+    public void ImportFromNameAddress_MultipleTimeParallel_IncrementsReferenceAtomically() {
         const int count = 10000;
         using ImportEnvironment environment = BuildSingleResource();
 
-        var operation = environment.Import(1, nameof(SimpleResource));
-        operation.Status.Should().Be(ImportingStatus.Importing);
+        ImportingOperation operation;
 
         Parallel.ForEach(Partitioner.Create(0, count, count / 10), (range, _) => {
             for (int i = range.Item1; i < range.Item2; i++) {
-                environment.Import(1, nameof(SimpleResource));
+                operation = environment.Import(1, nameof(SimpleResource));
             }
         });
 
-        operation.UnderlyingContainer.ReferenceCount.Should().Be(count + 1);
+        operation.UnderlyingContainer.ReferenceCount.Should().Be(count);
     }
 
     [Fact]
-    public void ImportFromNameAddressAndIdAddress_SameElement_ReturnsSameContainer() {
-        using ImportEnvironment environment = BuildSingleResource();
-        
-        var operation = environment.Import(1, 1);
-        operation.Status.Should().Be(ImportingStatus.Importing);
-
-        var operation2 = environment.Import(1, nameof(SimpleResource));
-        operation2.UnderlyingContainer.Should().BeSameAs(operation.UnderlyingContainer);
-    }
-
-    [Fact]
-    public void ImportFromNameAddressAndIdAddress_SameElement_IncrementsReferenceCount() {
+    public void ImportFromNameAddressAndIdAddress_SameElement_ReturnsSameContainerAndIncrementsReference() {
         using ImportEnvironment environment = BuildSingleResource();
         
         var operation = environment.Import(1, 1);
@@ -165,7 +150,65 @@ public class ResourceContainerCachingTests : IClassFixture<ComponentsFixture> {
     }
 
     [Fact]
-    public async Task ReleaseByOperation_SingleTime_ShouldCancelImportingOperation() {
+    public void ImportFromTags_SingleTimeSingleTag_InitializesImportOperation() {
+        using ImportEnvironment environment = BuildResources(library => {
+            library.AddRegistryElement(1, new(nameof(SimpleResource), ["A", "B"], new() {
+                Addresses = new("SingleValue1.json"),
+                Options = new(nameof(SimpleResourceImporter)),
+            }));
+        });
+
+        var operations = new Func<IReadOnlyCollection<ImportingOperation>>(() => environment.Import(new TagQuery("A"))).Should().NotThrow().Which;
+        ImportingOperation operation = operations.Should().ContainSingle().Which;
+        
+        operation.UnderlyingContainer.ReferenceCount.Should().Be(1);
+    }
+    
+    [Fact]
+    public void ImportFromTags_MultipleTimeSingleTag_InitializesImportOperation() {
+        using ImportEnvironment environment = BuildResources(library => {
+            library.AddRegistryElement(1, new(nameof(SimpleResource), ["A", "B"], new() {
+                Addresses = new("SingleValue1.json"),
+                Options = new(nameof(SimpleResourceImporter)),
+            }));
+        });
+
+        var operations = new Func<IReadOnlyCollection<ImportingOperation>>(() => environment.Import(new TagQuery("A"))).Should().NotThrow().Which;
+        ImportingOperation operation = operations.Should().ContainSingle().Which;
+        
+        var operations2 = new Func<IReadOnlyCollection<ImportingOperation>>(() => environment.Import(new TagQuery("A"))).Should().NotThrow().Which;
+        ImportingOperation operation2 = operations2.Should().ContainSingle().Which;
+
+        operation2.UnderlyingContainer.Should().Be(operation.UnderlyingContainer);
+        operation.UnderlyingContainer.ReferenceCount.Should().Be(2);
+    }
+    
+    [Fact]
+    public void ImportFromTags_MultipleTimeParallelSingleTag_InitializesImportOperation() {
+        const int count = 10000;
+
+        TagQuery query = new("A");
+        
+        using ImportEnvironment environment = BuildResources(library => {
+            library.AddRegistryElement(1, new(nameof(SimpleResource), ["A", "B"], new() {
+                Addresses = new("SingleValue1.json"),
+                Options = new(nameof(SimpleResourceImporter)),
+            }));
+        });
+
+        ImportingOperation operation;
+        
+        Parallel.ForEach(Partitioner.Create(0, count, count / 10), (range, _) => {
+            for (int i = range.Item1; i < range.Item2; i++) {
+                operation = environment.Import(query).Should().ContainSingle().Which;
+            }
+        });
+
+        operation.UnderlyingContainer.ReferenceCount.Should().Be(count);
+    }
+
+    [Fact]
+    public async Task ReleaseByOperation_SingleTime_CancelsImportingOperation() {
         using ImportEnvironment environment = BuildDeferrableResource();
         
         var operation = environment.Import(1, 1);

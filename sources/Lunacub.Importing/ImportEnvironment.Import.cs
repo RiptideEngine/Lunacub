@@ -52,11 +52,13 @@ partial class ImportEnvironment {
     //     return _importDispatcher.Import<T>(rid);
     // }
 
-    public IReadOnlyCollection<ImportingOperation> ImportByQueryTags(string query) {
-        return ImportByQueryTags(new TagQuery(query));
-    }
-
-    public IReadOnlyCollection<ImportingOperation> ImportByQueryTags(TagQuery query) {
+    /// <summary>
+    /// Imports weakly-typed resources whsoe tags satisfy the query along with its references.
+    /// </summary>
+    /// <param name="query">The tag query to filter resources.</param>
+    /// <returns>A collection of <see cref="ImportingOperation"/> that satisfied the tag query.</returns>
+    /// <remarks>The returned collection doesn't guarantee resource ordering.</remarks>
+    public IReadOnlyCollection<ImportingOperation> Import(TagQuery query) {
         return _importDispatcher.Import(query);
     }
 

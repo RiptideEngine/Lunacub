@@ -13,7 +13,6 @@ internal sealed class ResourceCache : IDisposable {
 
     // private readonly SemaphoreSlim _lock;
     private readonly ImportEnvironment _environment;
-    private readonly Lock _lock;
     
     private readonly SortedList<LibraryID, LibraryResourceCache> _libraryCaches;
     private readonly Dictionary<object, ResourceAddress> _resourceMap;
@@ -21,7 +20,6 @@ internal sealed class ResourceCache : IDisposable {
     // ReSharper disable once ConvertConstructorToMemberInitializers
     public ResourceCache(ImportEnvironment environment) {
         _environment = environment;
-        _lock = new();
         _libraryCaches = [];
         _resourceMap = [];
     }
@@ -29,7 +27,7 @@ internal sealed class ResourceCache : IDisposable {
     public ElementContainer? Get(ResourceAddress address) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        using (_lock.EnterScope()) {
+        lock (_libraryCaches) {
             return _libraryCaches.TryGetValue(address.LibraryId, out var libraryCache) ? libraryCache.Containers.GetValueOrDefault(address.ResourceId) : null;
         }
     }
@@ -37,7 +35,7 @@ internal sealed class ResourceCache : IDisposable {
     public ElementContainer? Get(LibraryID libraryId, ReadOnlySpan<char> name) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        using (_lock.EnterScope()) {
+        lock (_libraryCaches) {
             return _libraryCaches.TryGetValue(libraryId, out var libraryCache) ? 
                 libraryCache.NameMap.TryGetValue(name, out var resourceId) ? 
                     libraryCache.Containers[resourceId] : 
@@ -49,7 +47,7 @@ internal sealed class ResourceCache : IDisposable {
     public ElementContainer? Get(object resource) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        using (_lock.EnterScope()) {
+        lock (_libraryCaches) {
             if (!_resourceMap.TryGetValue(resource, out var address)) return null;
 
             return _libraryCaches[address.LibraryId].Containers[address.ResourceId];
@@ -59,7 +57,7 @@ internal sealed class ResourceCache : IDisposable {
     public bool Remove(ResourceAddress address) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        using (_lock.EnterScope()) {
+        lock (_libraryCaches) {
             if (_libraryCaches.TryGetValue(address.LibraryId, out var libraryCache)) {
                 if (libraryCache.Containers.Remove(address.ResourceId, out var removed)) {
                     if (removed.ResourceName != null) {
@@ -77,7 +75,7 @@ internal sealed class ResourceCache : IDisposable {
     public bool Remove(LibraryID libraryId, ReadOnlySpan<char> name) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        using (_lock.EnterScope()) {
+        lock (_libraryCaches) {
             if (_libraryCaches.TryGetValue(libraryId, out var libraryCache)) {
                 if (libraryCache.NameMap.Remove(name, out _, out ResourceID removedId)) {
                     bool removedSuccessfully = libraryCache.Containers.Remove(removedId);
@@ -94,7 +92,7 @@ internal sealed class ResourceCache : IDisposable {
     public bool Contains(ResourceAddress address) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        using (_lock.EnterScope()) {
+        lock (_libraryCaches) {
             return _libraryCaches.TryGetValue(address.LibraryId, out var libraryCache) && libraryCache.Containers.ContainsKey(address.ResourceId);
         }
     }
@@ -102,7 +100,7 @@ internal sealed class ResourceCache : IDisposable {
     public bool Contains(LibraryID libraryId, ReadOnlySpan<char> name) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        using (_lock.EnterScope()) {
+        lock (_libraryCaches) {
             return _libraryCaches.TryGetValue(libraryId, out var libraryCache) && libraryCache.NameMap.ContainsKey(name);
         }
     }
@@ -114,7 +112,7 @@ internal sealed class ResourceCache : IDisposable {
     ) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        using (_lock.EnterScope()) {
+        lock (_libraryCaches) {
             if (!_libraryCaches.TryGetValue(address.LibraryId, out var libraryCache)) {
                 libraryCache = new([], new(StringComparer.Ordinal));
                 _libraryCaches.Add(address.LibraryId, libraryCache);
@@ -123,14 +121,13 @@ internal sealed class ResourceCache : IDisposable {
             if (libraryCache.Containers.TryGetValue(address.ResourceId, out ElementContainer? resourceContainer)) {
                 action(resourceContainer);
             } else {
-                bool add = true;
-                resourceContainer = factory(address, ref add);
+                resourceContainer = factory(address);
             
                 if (resourceContainer == null) {
                     throw new InvalidOperationException("Factory must return non-null instance.");
                 }
 
-                if (add) {
+                if (resourceContainer.Status == ImportingStatus.Importing) {
                     libraryCache.Containers.Add(address.ResourceId, resourceContainer);
 
                     if (resourceContainer.ResourceName is { } name) {
@@ -151,7 +148,7 @@ internal sealed class ResourceCache : IDisposable {
     ) where TArg : allows ref struct {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        using (_lock.EnterScope()) {
+        lock (_libraryCaches) {
             if (!_libraryCaches.TryGetValue(address.LibraryId, out var libraryCache)) {
                 libraryCache = new([], new(StringComparer.Ordinal));
                 _libraryCaches.Add(address.LibraryId, libraryCache);
@@ -160,14 +157,13 @@ internal sealed class ResourceCache : IDisposable {
             if (libraryCache.Containers.TryGetValue(address.ResourceId, out ElementContainer? resourceContainer)) {
                 action(resourceContainer, arg);
             } else {
-                bool add = true;
-                resourceContainer = factory(address, arg, ref add);
+                resourceContainer = factory(address, arg);
             
                 if (resourceContainer == null) {
                     throw new InvalidOperationException("Factory must return non-null instance.");
                 }
 
-                if (add) {
+                if (resourceContainer.Status == ImportingStatus.Importing) {
                     libraryCache.Containers.Add(address.ResourceId, resourceContainer);
 
                     if (resourceContainer.ResourceName is { } name) {
@@ -187,7 +183,7 @@ internal sealed class ResourceCache : IDisposable {
     ) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        using (_lock.EnterScope()) {
+        lock (_libraryCaches) {
             (LibraryID libraryId, ReadOnlySpan<char> name) = address;
             
             if (!_libraryCaches.TryGetValue(libraryId, out var libraryCache)) {
@@ -200,14 +196,13 @@ internal sealed class ResourceCache : IDisposable {
             if (libraryCache.NameMap.TryGetValue(name, out var resourceId)) {
                 action(container = libraryCache.Containers[resourceId]);
             } else {
-                bool add = true;
-                container = factory(address, ref add);
+                container = factory(address);
             
                 if (container == null) {
                     throw new InvalidOperationException("Factory must return non-null instance.");
                 }
 
-                if (add) {
+                if (container.Status == ImportingStatus.Importing) {
                     resourceId = container.Address.ResourceId;
                     
                     if (!name.Equals(container.ResourceName, StringComparison.Ordinal)) {
@@ -226,7 +221,7 @@ internal sealed class ResourceCache : IDisposable {
     public void RegisterResourceMap(object resource, ResourceAddress address) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        using (_lock.EnterScope()) {
+        lock (_resourceMap) {
             _resourceMap.Add(resource, address);
         }
     }
@@ -234,7 +229,7 @@ internal sealed class ResourceCache : IDisposable {
     public bool RemoveResourceMap(object resource) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         
-        using (_lock.EnterScope()) {
+        lock (_resourceMap) {
             return _resourceMap.Remove(resource);
         }
     }
@@ -245,7 +240,7 @@ internal sealed class ResourceCache : IDisposable {
         if (disposing) {
             _environment.Logger.LogDebug("ResourceCache: Disposing...");
             
-            using (_lock.EnterScope()) {
+            lock (_libraryCaches) {
                 foreach ((_, var libraryCache) in _libraryCaches) {
                     foreach ((_, var container) in libraryCache.Containers) {
                         using (container.EnterLockScope()) {
@@ -401,8 +396,8 @@ internal sealed class ResourceCache : IDisposable {
         }
     }
 
-    public delegate ElementContainer ElementFactory<in TAddress>(TAddress address, ref bool add) where TAddress : allows ref struct;
-    public delegate ElementContainer ElementFactory<in TAddress, in TArg>(TAddress address, TArg arg, ref bool add) where TAddress : allows ref struct where TArg : allows ref struct;
+    public delegate ElementContainer ElementFactory<in TAddress>(TAddress address) where TAddress : allows ref struct;
+    public delegate ElementContainer ElementFactory<in TAddress, in TArg>(TAddress address, TArg arg) where TAddress : allows ref struct where TArg : allows ref struct;
 
     private readonly record struct LibraryResourceCache(ResourceIdentityDictionary<ElementContainer> Containers, IdentityDictionary<ResourceID> NameMap);
 }

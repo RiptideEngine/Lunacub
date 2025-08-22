@@ -16,12 +16,12 @@ internal static partial class Log {
     [LoggerMessage(LogLevel.Information, "End resolving references for resource L{libraryId}-R{resourceId}.")]
     public static partial void EndResolvingReference(ILogger logger, LibraryID libraryId, ResourceID resourceId);
     
-    [LoggerMessage(LogLevel.Debug, "Exception occured while importing resource L{libraryId}-R{resourceId}.")]
+    [LoggerMessage(LogLevel.Error, "Exception occured while importing resource L{libraryId}-R{resourceId}.")]
     public static partial void ReportImportException(ILogger logger, LibraryID libraryId, ResourceID resourceId, Exception ex);
 
-    [LoggerMessage(LogLevel.Debug, "Exception occured while waiting import task of resource L{libraryId}-R{resourceId}.")]
+    [LoggerMessage(LogLevel.Error, "Exception occured while waiting import task of resource L{libraryId}-R{resourceId}.")]
     public static partial void ResolveReferenceExceptionOccured(ILogger logger, LibraryID libraryId, ResourceID resourceId);
     
-    [LoggerMessage(LogLevel.Debug, "Exception occured while waiting reference resolve task of resource L{libraryId}-R{resourceId}.")]
+    [LoggerMessage(LogLevel.Error, "Exception occured while waiting reference resolve task of resource L{libraryId}-R{resourceId}.")]
     public static partial void FinalizeTaskExceptionOccured(ILogger logger, LibraryID libraryId, ResourceID resourceId);
 }
