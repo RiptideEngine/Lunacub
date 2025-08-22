@@ -1,6 +1,4 @@
-﻿using System.Collections.Immutable;
-
-namespace Caxivitual.Lunacub;
+﻿namespace Caxivitual.Lunacub;
 
 // TODO: Would be nice if we can use source generation like GeneratedRegex.
 public readonly struct TagQuery {

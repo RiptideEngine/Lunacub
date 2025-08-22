@@ -1,4 +1,14 @@
-﻿// ReSharper disable VariableHidesOuterVariable
+﻿/*
+ *  Sometime, when I look at these code, I wonder who in their right mind would implement shits like this.
+ *  It does it works in the test units, but in the production environment? Who know...
+ *
+ *  Every line of code is a monumental, and every function is a hell floor.
+ *
+ *  Edge cases can be everywhere, and no amount of salvation could save it.
+ *  Also this is the most reworked code in the whole library.
+ */
+
+// ReSharper disable VariableHidesOuterVariable
 
 using Caxivitual.Lunacub.Compilation;
 using Microsoft.Extensions.Logging;
@@ -389,7 +399,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             if (!_environment.Libraries.ContainsResource(requesting.ResourceAddress, out ResourceRegistry.Element element)) continue;
             
             ResourceCache.ElementContainer referenceContainer =
-                Cache.GetOrBeginImporting(requesting.ResourceAddress, ProcessCachedContainer, BeginReferenceImport, element.Name);
+                Cache.GetOrBeginImporting(requesting.ResourceAddress, ProcessCachedContainer, BeginReferenceImport, (element.Name, waitContainers));
             
             try {
                 (_, object vessel, _) = await referenceContainer.ImportTask!;
@@ -403,12 +413,12 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
         
         return new(references, waitContainers);
         
-        ResourceCache.ElementContainer BeginReferenceImport(ResourceAddress resourceAddress, string? resourceName) {
+        ResourceCache.ElementContainer BeginReferenceImport(ResourceAddress resourceAddress, (string? resourceName, List<ResourceCache.ElementContainer> waitContainers) arg) {
             Debug.Assert(_environment.Libraries.ContainsResource(resourceAddress));
             
             Log.BeginImport(_environment.Logger, resourceAddress.LibraryId, resourceAddress.ResourceId);
 
-            ResourceCache.ElementContainer container = new(resourceAddress, resourceName) {
+            ResourceCache.ElementContainer container = new(resourceAddress, arg.resourceName) {
                 Status = ImportingStatus.Importing
             };
             _environment.Statistics.AddReference();
@@ -416,7 +426,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             container.InitializeImport();
             container.FinalizeTask = ImportingTask(container);
         
-            waitContainers.Add(container);
+            arg.waitContainers.Add(container);
             
             return container;
         }
