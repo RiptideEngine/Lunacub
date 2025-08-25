@@ -19,6 +19,9 @@
         <DependentUpon>ExceptionMessages.resx</DependentUpon>
       </Compile>
     </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
+    </ItemGroup>
 
     <Import Project="..\..\commons\languagecommon.props"/>
     <Import Project="..\..\commons\nugetcommon.props"/>
