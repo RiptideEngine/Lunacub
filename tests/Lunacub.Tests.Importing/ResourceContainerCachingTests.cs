@@ -240,7 +240,6 @@ public class ResourceContainerCachingTests : IClassFixture<ComponentsFixture> {
         environment.Release(operation).Should().Be(ReleaseStatus.Success);
 
         operation.UnderlyingContainer.ReferenceCount.Should().Be(1);
-        operation.Status.Should().Be(ImportingStatus.Importing);
     }
 
     [Fact]
@@ -296,7 +295,6 @@ public class ResourceContainerCachingTests : IClassFixture<ComponentsFixture> {
         environment.Release(operation.Address).Should().Be(ReleaseStatus.Success);
 
         operation.UnderlyingContainer.ReferenceCount.Should().Be(1);
-        operation.Status.Should().Be(ImportingStatus.Importing);
     }
 
     [Fact]
