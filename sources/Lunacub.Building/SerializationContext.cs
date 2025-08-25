@@ -1,7 +1,9 @@
-﻿namespace Caxivitual.Lunacub.Building;
+﻿using Microsoft.IO;
+
+namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
-/// Represents the context used during the importing process, providing access to import options.
+/// Represents the context used during the resource compilation process, providing access to import options.
 /// </summary>
 public readonly struct SerializationContext {
     /// <summary>
@@ -14,9 +16,15 @@ public readonly struct SerializationContext {
     /// Gets the <see cref="ILogger"/> instance used for debugging and reporting.
     /// </summary>
     public ILogger Logger { get; }
+    
+    /// <summary>
+    /// Gets the <see cref="RecyclableMemoryStreamManager"/> instance that associates with the <see cref="BuildEnvironment"/>.
+    /// </summary>
+    public RecyclableMemoryStreamManager MemoryStreamManager { get; }
 
-    internal SerializationContext(IImportOptions? options, ILogger logger) {
+    internal SerializationContext(IImportOptions? options, ILogger logger, RecyclableMemoryStreamManager memoryStreamManager) {
         Options = options;
         Logger = logger;
+        MemoryStreamManager = memoryStreamManager;
     }
 }

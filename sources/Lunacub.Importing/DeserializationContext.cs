@@ -2,11 +2,24 @@
 
 namespace Caxivitual.Lunacub.Importing;
 
+/// <summary>
+/// Represents the context used during the resource deserialization process, providing access to some environment properties.
+/// </summary>
 [ExcludeFromCodeCoverage]
 public readonly struct DeserializationContext {
     public RequestingReferences RequestingReferences { get; }
+    
+    /// <summary>
+    /// Gets the <see cref="ILogger"/> instance used for debugging and reporting.
+    /// </summary>
     public ILogger Logger { get; }
-    public Dictionary<object, object> ValueContainer { get; }
+    
+    
+    
+    /// <summary>
+    /// Gets the storage that used for storing custom data between deserialization stages.
+    /// </summary>
+    public Dictionary<object, object?> ValueContainer { get; }
 
     internal DeserializationContext(ILogger logger) {
         Logger = logger;

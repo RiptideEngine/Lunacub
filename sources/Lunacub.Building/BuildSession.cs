@@ -220,7 +220,7 @@ internal sealed partial class BuildSession {
 
         using MemoryStream ms = _environment.MemoryStreamManager.GetStream($"BuildSession L{address.LibraryId}-R{address.ResourceId}");
 
-        var serializer = factory.InternalCreateSerializer(processed, new(options, _environment.Logger));
+        var serializer = factory.InternalCreateSerializer(processed, new(options, _environment.Logger, _environment.MemoryStreamManager));
         
         CompileHelpers.Compile(serializer, ms, tags);
         ms.Position = 0;
