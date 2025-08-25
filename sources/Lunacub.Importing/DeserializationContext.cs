@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.IO;
 
 namespace Caxivitual.Lunacub.Importing;
 
@@ -14,17 +15,18 @@ public readonly struct DeserializationContext {
     /// </summary>
     public ILogger Logger { get; }
     
-    
+    public RecyclableMemoryStreamManager MemoryStreamManager { get; }
     
     /// <summary>
     /// Gets the storage that used for storing custom data between deserialization stages.
     /// </summary>
     public Dictionary<object, object?> ValueContainer { get; }
 
-    internal DeserializationContext(ILogger logger) {
+    internal DeserializationContext(ILogger logger, RecyclableMemoryStreamManager memoryStreamManager) {
         Logger = logger;
         RequestingReferences = new();
         ValueContainer = [];
+        MemoryStreamManager = memoryStreamManager;
     }
 
     public void RequestReference(ReferencePropertyKey key, RequestingReferences.RequestingReference requesting) {

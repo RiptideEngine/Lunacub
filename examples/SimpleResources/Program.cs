@@ -61,7 +61,7 @@ internal static class Program {
     }
     
     private static async Task ImportResource(string resourceDirectory) {
-        using ImportEnvironment importEnvironment = new ImportEnvironment();
+        using ImportEnvironment importEnvironment = new ImportEnvironment(_memoryStreamManager);
         importEnvironment.Deserializers[nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer();
         importEnvironment.Logger = _logger;
         importEnvironment.Libraries.Add(new(1, new FileSourceProvider(Path.Combine(resourceDirectory, "1"))) {

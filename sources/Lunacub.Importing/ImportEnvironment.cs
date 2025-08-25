@@ -1,6 +1,7 @@
 ﻿using Caxivitual.Lunacub.Importing.Collections;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.IO;
 
 namespace Caxivitual.Lunacub.Importing;
 
@@ -43,15 +44,21 @@ public sealed partial class ImportEnvironment : IDisposable {
     
     private bool _disposed;
     
+    internal RecyclableMemoryStreamManager MemoryStreamManager { get; }
+    
     /// <summary>
     /// Initializes a new instance of <see cref="ImportEnvironment"/> with empty components and null logger.
     /// </summary>
-    public ImportEnvironment() {
+    /// <param name="memoryStreamManager">
+    /// An instance of memory stream manager that <see cref="Deserializer"/> can use.
+    /// </param>
+    public ImportEnvironment(RecyclableMemoryStreamManager memoryStreamManager) {
         Libraries = [];
         Deserializers = [];
         Disposers = [];
         _importDispatcher = new(this);
         _logger = NullLogger.Instance;
+        MemoryStreamManager = memoryStreamManager;
     }
 
     private void Dispose(bool disposing) {

@@ -75,17 +75,12 @@ internal static class Program {
             }
         }
         
-        using ImportEnvironment importEnvironment = new ImportEnvironment {
-            Deserializers = {
-                [nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer(),
-                [nameof(EmittableResourceDeserializer)] = new EmittableResourceDeserializer(),
-            },
-            Logger = _logger,
-            Libraries = {
-                library,
-            },
-        };
-        
+        using ImportEnvironment importEnvironment = new ImportEnvironment(_memoryStreamManager);
+        importEnvironment.Deserializers[nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer();
+        importEnvironment.Deserializers[nameof(EmittableResourceDeserializer)] = new EmittableResourceDeserializer();
+        importEnvironment.Logger = _logger;
+        importEnvironment.Libraries.Add(library);
+
         // TODO: Fix caching procedural resource make registry disappear
         
         ResourceHandle<EmittableResource> handle = (await importEnvironment.Import(1, 1)).Convert<EmittableResource>();

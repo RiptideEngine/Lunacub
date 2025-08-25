@@ -50,7 +50,7 @@ internal static class ResourceImporterVersion1 {
             optionsStream.Seek(0, SeekOrigin.Begin);
 
             await using PartialReadStream dataStream = new(resourceStream, dataChunk.ContentOffset, dataChunk.Length, false);
-            DeserializationContext context = new(environment.Logger);
+            DeserializationContext context = new(environment.Logger, environment.MemoryStreamManager);
 
             object deserialized = await deserializer.DeserializeObjectAsync(dataStream, optionsStream, context, cancellationToken);
 

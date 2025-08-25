@@ -69,16 +69,11 @@ internal static class Program {
             }
         }
         
-        using ImportEnvironment importEnvironment = new ImportEnvironment {
-            Deserializers = {
-                [nameof(EmittingResourceDeserializer)] = new EmittingResourceDeserializer(),
-            },
-            Logger = _logger,
-            Libraries = {
-                library,
-            },
-        };
-        
+        using ImportEnvironment importEnvironment = new ImportEnvironment(_memoryStreamManager);
+        importEnvironment.Deserializers[nameof(EmittingResourceDeserializer)] = new EmittingResourceDeserializer();
+        importEnvironment.Logger = _logger;
+        importEnvironment.Libraries.Add(library);
+
         ResourceHandle<EmittingResource> handle = (await importEnvironment.Import(1, 1)).Convert<EmittingResource>();
         
         _logger.LogInformation("Imported: {value}.", handle.Value);

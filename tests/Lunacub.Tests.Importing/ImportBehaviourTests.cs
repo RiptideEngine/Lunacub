@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Tests.Importing;
+﻿using Microsoft.IO;
+
+namespace Caxivitual.Lunacub.Tests.Importing;
 
 // [Collection<PrebuildResourcesCollectionFixture>]
 
@@ -10,8 +12,9 @@ public class ImportBehaviourTests : IClassFixture<ComponentsFixture>, IDisposabl
         buildSourceProvider.Sources.Add(nameof(SimpleResource), new([.."{\"Value\":1}"u8], DateTime.MinValue));
         
         MemoryOutputSystem _buildOutput = new();
+        RecyclableMemoryStreamManager memoryStreamManager = new();
 
-        using BuildEnvironment buildEnv = new BuildEnvironment(_buildOutput, new())
+        using BuildEnvironment buildEnv = new BuildEnvironment(_buildOutput, memoryStreamManager)
             .AddLibrary(
                 new BuildResourceLibrary(1, buildSourceProvider).AddRegistryElement(1, new("SimpleResource", [], new() {
                     Addresses = new(nameof(SimpleResource)),
@@ -33,7 +36,7 @@ public class ImportBehaviourTests : IClassFixture<ComponentsFixture>, IDisposabl
             importLibrary.AddRegistryElement(resourceId, registryElement);
         }
         
-        _importEnvironment = new ImportEnvironment()
+        _importEnvironment = new ImportEnvironment(memoryStreamManager)
             .SetLogger(output.BuildLogger())
             .AddLibrary(importLibrary);
         

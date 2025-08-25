@@ -93,16 +93,11 @@ internal static class Program {
             }
         }
         
-        using ImportEnvironment importEnvironment = new ImportEnvironment {
-            Deserializers = {
-                [nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer(),
-                [nameof(MergingResourceDeserializer)] = new MergingResourceDeserializer(),
-            },
-            Logger = _logger,
-            Libraries = {
-                library
-            },
-        };
+        using ImportEnvironment importEnvironment = new ImportEnvironment(_memoryStreamManager);
+        importEnvironment.Deserializers[nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer();
+        importEnvironment.Deserializers[nameof(MergingResourceDeserializer)] = new MergingResourceDeserializer();
+        importEnvironment.Logger = _logger;
+        importEnvironment.Libraries.Add(library);
 
         ResourceHandle<MergingResource> handle = (await importEnvironment.Import(1, 4)).Convert<MergingResource>();
         

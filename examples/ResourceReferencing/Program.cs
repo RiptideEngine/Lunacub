@@ -65,22 +65,17 @@ internal static class Program {
     private static async Task ImportResource(string resourceDirectory) {
         _logger.LogInformation("Importing resources...");
         
-        using ImportEnvironment importEnvironment = new ImportEnvironment {
-            Deserializers = {
-                [nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer(),
-                [nameof(ReferencingResourceDeserializer)] = new ReferencingResourceDeserializer(),
+        using ImportEnvironment importEnvironment = new ImportEnvironment(_memoryStreamManager);
+        importEnvironment.Deserializers[nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer();
+        importEnvironment.Deserializers[nameof(ReferencingResourceDeserializer)] = new ReferencingResourceDeserializer();
+        importEnvironment.Logger = _logger;
+        importEnvironment.Libraries.Add(new(1, new FileSourceProvider(Path.Combine(resourceDirectory, "1"))) {
+            Registry = {
+                [1] = new("Resource", []),
+                [2] = new("Reference", []),
             },
-            Logger = _logger,
-            Libraries = {
-                new(1, new FileSourceProvider(Path.Combine(resourceDirectory, "1"))) {
-                    Registry = {
-                        [1] = new("Resource", []),
-                        [2] = new("Reference", []),
-                    },
-                },
-            },
-        };
-        
+        });
+
         ResourceHandle<ReferencingResource> handle = (await importEnvironment.Import(1, 1)).Convert<ReferencingResource>();
         
         _logger.LogInformation("Reference value: {value}.", handle.Value!.Reference!.Value);
