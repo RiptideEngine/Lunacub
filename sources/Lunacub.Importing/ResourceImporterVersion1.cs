@@ -1,6 +1,7 @@
 ﻿using Caxivitual.Lunacub.Compilation;
 using Caxivitual.Lunacub.Exceptions;
 using Caxivitual.Lunacub.Importing.Extensions;
+using Microsoft.IO;
 
 namespace Caxivitual.Lunacub.Importing;
 
@@ -44,7 +45,7 @@ internal static class ResourceImporterVersion1 {
                 throw new ArgumentException(message);
             }
 
-            await using Stream optionsStream = await CopyOptionsStreamAsync(resourceStream, header, cancellationToken);
+            await using Stream optionsStream = await CopyOptionsStreamAsync(environment.MemoryStreamManager, resourceStream, header, cancellationToken);
 
             resourceStream.Seek(dataChunk.ContentOffset, SeekOrigin.Begin);
             optionsStream.Seek(0, SeekOrigin.Begin);
@@ -75,12 +76,12 @@ internal static class ResourceImporterVersion1 {
         }
     }
     
-    private static async Task<Stream> CopyOptionsStreamAsync(Stream stream, BinaryHeader header, CancellationToken token) {
+    private async static Task<Stream> CopyOptionsStreamAsync(RecyclableMemoryStreamManager memoryStreamManager, Stream stream, BinaryHeader header, CancellationToken token) {
         if (header.TryGetChunkInformation(CompilingConstants.ImportOptionsChunkTag, out ChunkInformation optionsChunkInfo)) {
             stream.Seek(optionsChunkInfo.ContentOffset, SeekOrigin.Begin);
             
-            MemoryStream optionsStream = new((int)optionsChunkInfo.Length);
-            await stream.CopyToAsync(optionsStream, (int)optionsChunkInfo.Length, token, 128);
+            RecyclableMemoryStream optionsStream = memoryStreamManager.GetStream("OptionsStream", optionsChunkInfo.Length, false);
+            await stream.CopyToAsync(optionsStream, (int)optionsChunkInfo.Length, token, 256);
     
             return optionsStream;
         }

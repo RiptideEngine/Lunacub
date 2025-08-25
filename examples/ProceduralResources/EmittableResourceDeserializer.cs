@@ -10,8 +10,6 @@ public sealed class EmittableResourceDeserializer : Deserializer<EmittableResour
         int value = reader.ReadInt32();
         var generatedResourceAddress = reader.ReadResourceAddress();
         
-        context.Logger.LogDebug("Requesting generated resource address: {addrL} - {addrR}", generatedResourceAddress.LibraryId, generatedResourceAddress.ResourceId.ToString("X"));
-        
         context.RequestReference(1, new(generatedResourceAddress));
         
         return Task.FromResult(new EmittableResource {

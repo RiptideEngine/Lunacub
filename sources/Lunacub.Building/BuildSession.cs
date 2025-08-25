@@ -5,6 +5,7 @@
                
 using Caxivitual.Lunacub.Building.Collections;
 using Caxivitual.Lunacub.Collections;
+using Microsoft.IO;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -218,7 +219,7 @@ internal sealed partial class BuildSession {
             throw new InvalidOperationException(string.Format(ExceptionMessages.NoSuitableSerializerFactory, processed.GetType()));
         }
 
-        using MemoryStream ms = _environment.MemoryStreamManager.GetStream($"BuildSession L{address.LibraryId}-R{address.ResourceId}");
+        using RecyclableMemoryStream ms = _environment.MemoryStreamManager.GetStream($"BuildOutput L{address.LibraryId}-R{address.ResourceId}");
 
         var serializer = factory.InternalCreateSerializer(processed, new(options, _environment.Logger, _environment.MemoryStreamManager));
         

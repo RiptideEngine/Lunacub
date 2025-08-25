@@ -238,8 +238,6 @@ internal sealed class ResourceCache : IDisposable {
         if (Interlocked.Exchange(ref _disposed, true)) return;
 
         if (disposing) {
-            _environment.Logger.LogDebug("ResourceCache: Disposing...");
-            
             lock (_libraryCaches) {
                 foreach ((_, var libraryCache) in _libraryCaches) {
                     foreach ((_, var container) in libraryCache.Containers) {

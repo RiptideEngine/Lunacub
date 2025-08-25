@@ -198,8 +198,6 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             Debug.Assert(waitContainers.All(x => x.FinalizeTask != null), "Unexpected null FinalizeTask.");
 
-            _environment.Logger.LogDebug("Wait containers for resource {address}: {addresses}.", container.Address, string.Join(", ", waitContainers.Select(x => x.Address)));
-            
             await Task.WhenAll(waitContainers.Select(async x => {
                 try {
                     await x.FinalizeTask;
@@ -238,14 +236,10 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
                 container.DisposeCancellationToken();
                 container.EnsureCancellationTokenSourceIsDisposed();
             }
-            
-            _environment.Logger.LogDebug("End import for resource {address}.", container.Address);
         }
     }
     
     private async Task<ReferenceResolveResult> ResolveReference(ResourceCache.ElementContainer container) {
-        _environment.Logger.LogDebug("Begin resolve reference for resource {address}.", container.Address);
-        
         Deserializer deserializer;
         object resource;
         DeserializationContext context;
@@ -297,16 +291,12 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             DisposeResource(resource);
 
             throw;
-        } finally {
-            _environment.Logger.LogDebug("End resolve reference for resource {address}.", container.Address);
         }
     }
     
     private async Task<ResourceImportResult> ImportVesselTask(ResourceCache.ElementContainer container) {
         await Task.Yield();
         
-        _environment.Logger.LogDebug("Begin import vessel for resource {address}.", container.Address);
-
         try {
             if (_environment.Libraries.CreateResourceStream(container.Address) is not { } stream) {
                 string message = string.Format(ExceptionMessages.NullResourceStream, container.Address);
@@ -354,8 +344,6 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
             }
 
             throw;
-        } finally {
-            _environment.Logger.LogDebug("End import vessel for resource {address}.", container.Address);
         }
     }
 
