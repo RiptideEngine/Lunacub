@@ -1,4 +1,4 @@
-﻿namespace Caxivitual.Lunacub.Building;
+﻿namespace Caxivitual.Lunacub.Building.Incremental;
 
 public readonly record struct ComponentVersions(
     string? ImporterVersion,

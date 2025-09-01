@@ -1,7 +1,9 @@
-﻿namespace Caxivitual.Lunacub.Building;
+﻿using Microsoft.IO;
+
+namespace Caxivitual.Lunacub.Building;
 
 internal static class CompileHelpers {
-    public static unsafe void Compile(Serializer serializer, Stream outputStream, IReadOnlyCollection<string> tags) {
+    public static unsafe void Compile(BuildEnvironment environment, Serializer serializer, Stream outputStream, IReadOnlyCollection<string> tags) {
         using BinaryWriter bwriter = new(outputStream, Encoding.UTF8, true);
         bwriter.Write(CompilingConstants.MagicIdentifier);
         bwriter.Write((ushort)1);
@@ -20,11 +22,11 @@ internal static class CompileHelpers {
         chunks[chunkIndex++] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.TagChunkTag), chunkStart);
         
         chunkStart = (int)outputStream.Position;
-        WriteDataChunk(bwriter, serializer);
+        WriteDataChunk(environment.MemoryStreamManager, bwriter, serializer);
         chunks[chunkIndex++] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.ResourceDataChunkTag), chunkStart);
 
         chunkStart = (int)outputStream.Position;
-        WriteOptionsChunk(bwriter, serializer);
+        WriteOptionsChunk(environment.MemoryStreamManager, bwriter, serializer);
         chunks[chunkIndex++] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.ImportOptionsChunkTag), chunkStart);
         
         chunkStart = (int)outputStream.Position;
@@ -62,41 +64,29 @@ internal static class CompileHelpers {
         }
     }
     
-    private static void WriteDataChunk(BinaryWriter writer, Serializer serializer) {
-        Stream outputStream = writer.BaseStream;
-        
-        writer.Write(CompilingConstants.ResourceDataChunkTag);
-        {
-            var chunkLenPosition = (int)outputStream.Position;
-            writer.Seek(4, SeekOrigin.Current);
+    private static void WriteDataChunk(RecyclableMemoryStreamManager memoryStreamManager, BinaryWriter writer, Serializer serializer) {
+        using (var dataStream = memoryStreamManager.GetStream("DataStream", 0, false)) {
+            serializer.SerializeObject(dataStream);
             
-            serializer.SerializeObject(outputStream);
-            
-            var contentSize = (int)(outputStream.Position - chunkLenPosition - 4);
-        
-            writer.Seek(chunkLenPosition, SeekOrigin.Begin);
-            writer.Write(contentSize);
-            
-            writer.Seek(contentSize, SeekOrigin.Current);
+            writer.Write(CompilingConstants.ResourceDataChunkTag);
+            {
+                writer.Write((int)dataStream.Length);
+                dataStream.Seek(0, SeekOrigin.Begin);
+                dataStream.CopyTo(writer.BaseStream);
+            }
         }
     }
     
-    private static void WriteOptionsChunk(BinaryWriter writer, Serializer serializer) {
-        Stream outputStream = writer.BaseStream;
-        
-        writer.Write(CompilingConstants.ImportOptionsChunkTag);
-        {
-            var chunkLenPosition = (int)outputStream.Position;
-            writer.Seek(4, SeekOrigin.Current);
+    private static void WriteOptionsChunk(RecyclableMemoryStreamManager memoryStreamManager, BinaryWriter writer, Serializer serializer) {
+        using (var optionStream = memoryStreamManager.GetStream("OptionStream", 0, false)) {
+            serializer.SerializeObject(optionStream);
             
-            serializer.SerializeOptions(outputStream);
-            
-            var contentSize = (int)(outputStream.Position - chunkLenPosition - 4);
-        
-            writer.Seek(chunkLenPosition, SeekOrigin.Begin);
-            writer.Write(contentSize);
-            
-            writer.Seek(contentSize, SeekOrigin.Current);
+            writer.Write(CompilingConstants.ResourceDataChunkTag);
+            {
+                writer.Write((int)optionStream.Length);
+                optionStream.Seek(0, SeekOrigin.Begin);
+                optionStream.CopyTo(writer.BaseStream);
+            }
         }
     }
 

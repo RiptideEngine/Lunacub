@@ -4,6 +4,7 @@
 // 04-08-2025: Using ProceduralSchematic, detect if the compiled resource file missing to trigger compilation of that resource.
                
 using Caxivitual.Lunacub.Building.Collections;
+using Caxivitual.Lunacub.Building.Incremental;
 using Caxivitual.Lunacub.Collections;
 using Microsoft.IO;
 
@@ -24,7 +25,7 @@ internal sealed partial class BuildSession {
     public BuildSession(BuildEnvironment environment) {
         _environment = environment;
         _graph = _environment.Libraries.Select(x => {
-            Dictionary<ResourceID, EnvironmentResourceVertex> vertices = new(x.Registry.Count);
+            Dictionary<ResourceID, ResourceVertex> vertices = new(x.Registry.Count);
             
             return KeyValuePair.Create<LibraryID, LibraryGraphVertices>(x.Id, new(x, vertices));
         }).ToFrozenDictionary();
@@ -43,14 +44,14 @@ internal sealed partial class BuildSession {
         BuildEnvironmentResources();
         
         Debug.Assert(
-            _graph.Values.SelectMany(x => x.Vertices.Values).All(x => x.ImportOutput == null), 
+            _graph.Values.SelectMany(x => x.Vertices.Values).All(x => x.ImportedData == null), 
             "Resource leaked after building environment resources."
         );
         
         BuildProceduralResources();
         
         Debug.Assert(
-            _graph.Values.SelectMany(x => x.Vertices.Values).All(x => x.ImportOutput == null),
+            _graph.Values.SelectMany(x => x.Vertices.Values).All(x => x.ImportedData == null),
             "Resource leaked after building procedural resources."
         );
         // Welp, fun is over.
@@ -109,13 +110,13 @@ internal sealed partial class BuildSession {
     private void ReleaseDependencies(IReadOnlyCollection<ResourceAddress> dependencyAddresses) {
         foreach (var dependencyAddress in dependencyAddresses) {
             if (!_graph.TryGetValue(dependencyAddress.LibraryId, out var libraryVertices)) continue;
-            if (!libraryVertices.Vertices.TryGetValue(dependencyAddress.ResourceId, out EnvironmentResourceVertex? vertex)) continue;
+            if (!libraryVertices.Vertices.TryGetValue(dependencyAddress.ResourceId, out ResourceVertex? vertex)) continue;
 
             ReleaseVertexOutput(vertex);
         }
     }
 
-    private void ReleaseVertexOutput(EnvironmentResourceVertex vertex) {
+    private void ReleaseVertexOutput(ResourceVertex vertex) {
         if (vertex.DecrementReference() == 0) {
             vertex.DisposeImportedObject(new(_environment.Logger));
         }
@@ -153,7 +154,7 @@ internal sealed partial class BuildSession {
         }
     }
     
-    private bool TryGetVertex(ResourceAddress address, [NotNullWhen(true)] out BuildResourceLibrary? library, [NotNullWhen(true)] out EnvironmentResourceVertex? vertex) {
+    private bool TryGetVertex(ResourceAddress address, [NotNullWhen(true)] out BuildResourceLibrary? library, [NotNullWhen(true)] out ResourceVertex? vertex) {
         if (_graph.TryGetValue(address.LibraryId, out var libraryVertices) &&
             libraryVertices.Vertices.TryGetValue(address.ResourceId, out vertex)
            ) {
@@ -166,7 +167,7 @@ internal sealed partial class BuildSession {
         return false;
     }
 
-    private bool TryGetVertex(ResourceAddress address, [NotNullWhen(true)] out EnvironmentResourceVertex? vertex) {
+    private bool TryGetVertex(ResourceAddress address, [NotNullWhen(true)] out ResourceVertex? vertex) {
         if (_graph.TryGetValue(address.LibraryId, out var libraryVertices) &&
             libraryVertices.Vertices.TryGetValue(address.ResourceId, out vertex)
         ) {
@@ -223,7 +224,7 @@ internal sealed partial class BuildSession {
 
         var serializer = factory.InternalCreateSerializer(processed, new(options, _environment.Logger, _environment.MemoryStreamManager));
         
-        CompileHelpers.Compile(serializer, ms, tags);
+        CompileHelpers.Compile(_environment, serializer, ms, tags);
         ms.Position = 0;
         _environment.Output.CopyCompiledResourceOutput(ms, address);
     }
@@ -237,98 +238,112 @@ internal sealed partial class BuildSession {
             receiver.Add(new(sourceResourceAddress.LibraryId, resourceId), new(sourceResourceAddress.ResourceId, resource));
         }
     }
-    
-    /// <summary>
-    /// Determines whether a resource should be rebuilt based on timeline, configurations, dependencies from previous build informations.
-    /// </summary>
-    /// <param name="address">Resource to determines whether rebuilding needed.</param>
-    /// <param name="sourceLastWriteTimes">The last write times of resource's sources.</param>
-    /// <param name="currentOptions">Building options of the resource.</param>
-    /// <param name="currentDependencies">Dependencies of the resource.</param>
-    /// <param name="previousIncrementalInfo">
-    ///     When this method returns, contains the <see cref="IncrementalInfo"/> of the previous building session of the resource. If the
-    ///     resource hasn't been build before, <see langword="default"/> is returned.
-    /// </param>
-    /// <returns><see langword="true"/> if the resource should be rebuilt; otherwise, <see langword="false"/>.</returns>
-    /// <remarks>The function does not account for the version of building components.</remarks>
-    private bool IsResourceCacheable(
-        ResourceAddress address,
-        SourceLastWriteTimes sourceLastWriteTimes,
-        BuildingOptions currentOptions,
-        IReadOnlySet<ResourceAddress> currentDependencies,
-        out IncrementalInfo previousIncrementalInfo
-    ) {
-        if (!_environment.IncrementalInfos.TryGetValue(address.LibraryId, out var libraryIncrementalInfos)) {
-            previousIncrementalInfo = default;
-            return false;
-        }
-        
-        // If resource has been built before, and have old report, we can begin checking for caching.
-        if (_environment.Output.GetResourceLastBuildTime(address) is { } resourceLastBuildTime &&
-            libraryIncrementalInfos.TryGetValue(address.ResourceId, out previousIncrementalInfo)) {
-            if (CompareLastWriteTimes(previousIncrementalInfo.SourcesLastWriteTime, sourceLastWriteTimes)) {
-                // If the options are equal, no need to rebuild.
-                if (currentOptions.Equals(previousIncrementalInfo.Options)) {
-                    if (previousIncrementalInfo.DependencyAddresses.SequenceEqual(currentDependencies)) {
-                        return true;
-                    }
-                }
-            }
-    
-            return false;
-        }
-    
-        previousIncrementalInfo = default;
-        return false;
 
-        // Check if resource's last write time is the same as the time stored in report.
-        // Check if destination's last write time is later than resource's last write time.
-        static bool CompareLastWriteTimes(SourceLastWriteTimes previous, SourceLastWriteTimes current) {
-            if (previous.Primary != current.Primary) return false;
-            if (previous.Secondaries == null) return current.Secondaries == null;
+    // /// <summary>
+    // /// Determines whether a resource should be rebuilt based on timeline, configurations, dependencies from previous build informations.
+    // /// </summary>
+    // /// <param name="address">Resource to determines whether rebuilding needed.</param>
+    // /// <param name="sourceLastWriteTimes">The last write times of resource's sources.</param>
+    // /// <param name="currentOptions">Building options of the resource.</param>
+    // /// <param name="currentDependencies">Dependencies of the resource.</param>
+    // /// <param name="previousIncrementalInfo">
+    // ///     When this method returns, contains the <see cref="IncrementalInfo"/> of the previous building session of the resource. If the
+    // ///     resource hasn't been build before, <see langword="default"/> is returned.
+    // /// </param>
+    // /// <returns><see langword="true"/> if the resource should be rebuilt; otherwise, <see langword="false"/>.</returns>
+    // /// <remarks>The function does not account for the version of building components.</remarks>
+    // private bool IsResourceCacheable(
+    //     ResourceAddress address,
+    //     SourceLastWriteTimes sourceLastWriteTimes,
+    //     BuildingOptions currentOptions,
+    //     IReadOnlySet<ResourceAddress> currentDependencies,
+    //     out IncrementalInfo previousIncrementalInfo
+    // ) {
+    //     if (!_environment.IncrementalInfos.TryGetValue(address.LibraryId, out var libraryIncrementalInfos)) {
+    //         previousIncrementalInfo = default;
+    //         return false;
+    //     }
+    //     
+    //     // If resource has been built before, and have old report, we can begin checking for caching.
+    //     if (_environment.Output.GetResourceLastBuildTime(address) is { } resourceLastBuildTime &&
+    //         libraryIncrementalInfos.TryGetValue(address.ResourceId, out previousIncrementalInfo)) {
+    //         if (CompareLastWriteTimes(previousIncrementalInfo.SourcesLastWriteTime, sourceLastWriteTimes)) {
+    //             // If the options are equal, no need to rebuild.
+    //             if (currentOptions.Equals(previousIncrementalInfo.Options)) {
+    //                 if (previousIncrementalInfo.DependencyAddresses.SequenceEqual(currentDependencies)) {
+    //                     return true;
+    //                 }
+    //             }
+    //         }
+    //
+    //         return false;
+    //     }
+    //
+    //     previousIncrementalInfo = default;
+    //     return false;
+    //
+    //     // Check if resource's last write time is the same as the time stored in report.
+    //     // Check if destination's last write time is later than resource's last write time.
+    //     static bool CompareLastWriteTimes(SourceLastWriteTimes previous, SourceLastWriteTimes current) {
+    //         if (previous.Primary != current.Primary) return false;
+    //         if (previous.Secondaries == null) return current.Secondaries == null;
+    //
+    //         if (current.Secondaries == null) return false;
+    //             
+    //         foreach ((var previousSourceName, var previousSourceLastWriteTime) in previous.Secondaries) {
+    //             if (!current.Secondaries.TryGetValue(previousSourceName, out var curentSourceLastWriteTime)) return false;
+    //             if (previousSourceLastWriteTime != curentSourceLastWriteTime) return false;
+    //         }
+    //
+    //         return true;
+    //     }
+    // }
 
-            if (current.Secondaries == null) return false;
-                
-            foreach ((var previousSourceName, var previousSourceLastWriteTime) in previous.Secondaries) {
-                if (!current.Secondaries.TryGetValue(previousSourceName, out var curentSourceLastWriteTime)) return false;
-                if (previousSourceLastWriteTime != curentSourceLastWriteTime) return false;
-            }
-
-            return true;
-        }
-    }
-
-    private sealed class EnvironmentResourceVertex {
+    private sealed class ResourceVertex {
         /// <summary>
         /// Gets the Id of the dependency resources, the collection is unsanitied, thus it can reference unregistered resource
         /// id, or self-referencing.
         /// </summary>
-        public IReadOnlySet<ResourceAddress> DependencyResourceAddresses;
+        public IReadOnlySet<ResourceAddress> DependencyResourceAddresses { get; }
         
         /// <summary>
         /// Gets the <see cref="Importer"/> associate with the resource.
         /// </summary>
         public readonly Importer Importer;
         
-        public object? ImportOutput { get; private set; }
+        /// <summary>
+        /// Gets the <see cref="Processor"/> associate with the resource.
+        /// </summary>
+        public readonly Processor? Processor;
+        
+        /// <summary>
+        /// Gets the data object imported by <see cref="Importer"/>.
+        /// </summary>
+        public object? ImportedData { get; private set; }
         
         public int ReferenceCount;
 
-        public EnvironmentResourceVertex(
-            Importer importer,
-            IReadOnlySet<ResourceAddress> dependencyResourceAddresses
-        ) {
-            Importer = importer;
-            DependencyResourceAddresses = dependencyResourceAddresses;
-        }
+        public readonly bool IsSelfUnchanged;
+        public bool IsFaulty { get; private set; }
 
-        [MemberNotNull(nameof(ImportOutput))]
+        public ResourceVertex(Importer importer, Processor? processor, IReadOnlySet<ResourceAddress> dependencyResourceAddresses, bool isSelfUnchanged) {
+            Importer = importer;
+            Processor = processor;
+            DependencyResourceAddresses = dependencyResourceAddresses;
+            IsSelfUnchanged = isSelfUnchanged;
+        }
+    
+        [MemberNotNull(nameof(ImportedData))]
         public void SetImportResult(object importOutput) {
             // Debug.Assert(ReferenceCount > 0);
             
-            ImportOutput = importOutput;
+            ImportedData = importOutput;
         }
 
+        public void MarkFaulty() {
+            IsFaulty = true;
+        }
+    
         public void IncrementReference() {
             Interlocked.Increment(ref ReferenceCount);
         }
@@ -336,18 +351,18 @@ internal sealed partial class BuildSession {
         public int DecrementReference() {
             return Interlocked.Decrement(ref ReferenceCount);
         }
-
+    
         public void DisposeImportedObject(DisposingContext context) {
-            if (ImportOutput == null) return;
+            if (ImportedData == null) return;
             
             Debug.Assert(ReferenceCount == 0);
             
-            Importer.Dispose(ImportOutput, context);
-            ImportOutput = null;
+            Importer.Dispose(ImportedData, context);
+            ImportedData = null;
         }
     }
 
     private readonly record struct ProceduralResourceRequest(ResourceID SourceResourceId, BuildingProceduralResource Resource);
 
-    private readonly record struct LibraryGraphVertices(BuildResourceLibrary Library, Dictionary<ResourceID, EnvironmentResourceVertex> Vertices);
+    private readonly record struct LibraryGraphVertices(BuildResourceLibrary Library, Dictionary<ResourceID, ResourceVertex> Vertices);
 }

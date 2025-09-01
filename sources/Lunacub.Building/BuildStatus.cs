@@ -21,9 +21,14 @@ public enum BuildStatus {
     UnknownImporter = 1000,
     
     /// <summary>
-    /// Indicates that the <see cref="BuildingResource"/> instance deemed invalid by the <see cref="Importer"/>.
+    /// Indicates that the <see cref="BuildingResource"/> instance is deemed invalid by the <see cref="Importer"/>.
     /// </summary>
     InvalidBuildingResource,
+    
+    /// <summary>
+    /// Indicates that the <see cref="BuildResourceLibrary"/> failed to collect <see cref="Stream"/> instances of a <see cref="BuildingResource"/>.
+    /// </summary>
+    GetSourceStreamsFail,
     
     /// <summary>
     /// Indicates that the library returned a <see cref="Stream"/> instance that is either writable, or not seekable nor seekable.

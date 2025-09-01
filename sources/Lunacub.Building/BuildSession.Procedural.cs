@@ -173,16 +173,16 @@ partial class BuildSession {
             foreach (var dependencyAddress in dependencyIds) {
                 // If the dependency is environment's resource.
                 if (_session.TryGetVertex(dependencyAddress, out var dependencyResourceLibrary, out var dependencyVertex)) {
-                    if (dependencyVertex.ImportOutput is { } dependencyImportOutput) {
+                    if (dependencyVertex.ImportedData is { } dependencyImportOutput) {
                         dependencyCollection.Add(dependencyAddress, dependencyImportOutput);
                     } else {
                         if (_session.TryGetResult(dependencyAddress, out var result)) {
                             // Traversed through this resource vertex before.
                             switch (result.Status) {
                                 case BuildStatus.Success:
-                                    Debug.Assert(dependencyVertex.ImportOutput != null);
+                                    Debug.Assert(dependencyVertex.ImportedData != null);
                         
-                                    dependencyCollection[dependencyAddress] = dependencyVertex.ImportOutput;
+                                    dependencyCollection[dependencyAddress] = dependencyVertex.ImportedData;
                                     continue;
                     
                                 case BuildStatus.Cached:

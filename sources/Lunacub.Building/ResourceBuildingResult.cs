@@ -1,6 +1,4 @@
-﻿using System.Collections.Frozen;
-
-namespace Caxivitual.Lunacub.Building;
+﻿namespace Caxivitual.Lunacub.Building;
 
 /// <summary>
 /// Represents the result of a single resource building process.

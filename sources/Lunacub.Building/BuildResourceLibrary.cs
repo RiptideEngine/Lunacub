@@ -1,4 +1,5 @@
-﻿using Caxivitual.Lunacub.Exceptions;
+﻿using Caxivitual.Lunacub.Building.Incremental;
+using Caxivitual.Lunacub.Exceptions;
 using System.Collections.Frozen;
 
 namespace Caxivitual.Lunacub.Building;
@@ -50,25 +51,24 @@ public sealed class BuildResourceLibrary : ResourceLibrary {
         }
     }
 
-    public SourceLastWriteTimes GetSourceLastWriteTimes(ResourceID resourceId) {
+    public SourcesInfo GetSourcesInformations(ResourceID resourceId) {
         if (!Registry.TryGetValue(resourceId, out ResourceRegistry.Element<BuildingResource> element)) {
-            return new(DateTime.MinValue, FrozenDictionary<string, DateTime>.Empty);
+            return new(default, FrozenDictionary<string, SourceInfo>.Empty);
         }
         
         var sourceAddresses = element.Option.Addresses;
-
-        DateTime primaryLastWriteTime = _provider.GetLastWriteTime(sourceAddresses.Primary);
-
+        SourceInfo primary = new(sourceAddresses.Primary, _provider.GetLastWriteTime(sourceAddresses.Primary));
+        
         if (sourceAddresses.Secondaries.Count > 0) {
-            Dictionary<string, DateTime> secondaries = [];
-
-            foreach ((var name, var address) in sourceAddresses.Secondaries) {
-                secondaries.Add(name, _provider.GetLastWriteTime(address));
-            }
+            Dictionary<string, SourceInfo> secondaries = [];
             
-            return new(primaryLastWriteTime, secondaries);
+            foreach ((var name, var address) in sourceAddresses.Secondaries) {
+                secondaries.Add(name, new(address, _provider.GetLastWriteTime(address)));
+            }
+    
+            return new(primary, secondaries);
         }
-
-        return new(primaryLastWriteTime);
+        
+        return new(primary);
     }
 }

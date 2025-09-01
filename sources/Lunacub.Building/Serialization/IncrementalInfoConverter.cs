@@ -1,4 +1,5 @@
-﻿using System.Collections.Frozen;
+﻿using Caxivitual.Lunacub.Building.Incremental;
+using System.Collections.Frozen;
 
 namespace Caxivitual.Lunacub.Building.Serialization;
 
@@ -9,14 +10,14 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
             throw new JsonException();
         }
 
-        SourceLastWriteTimes sourceLastWriteTimes = default;
+        SourcesInfo sourcesInfo = default;
         BuildingOptions buildingOptions = default;
         IReadOnlySet<ResourceAddress> dependencies = FrozenSet<ResourceAddress>.Empty;
         ComponentVersions componentVersions = default;
             
         while (reader.Read()) {
             if (reader.TokenType == JsonTokenType.EndObject) {
-                return new(sourceLastWriteTimes, buildingOptions, dependencies, componentVersions);
+                return new(sourcesInfo, buildingOptions, dependencies, componentVersions);
             }
 
             if (reader.TokenType != JsonTokenType.PropertyName) {
@@ -27,8 +28,8 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
             reader.Read();
 
             switch (propertyName) {
-                case nameof(IncrementalInfo.SourcesLastWriteTime):
-                    sourceLastWriteTimes = JsonSerializer.Deserialize<SourceLastWriteTimes>(ref reader, options);
+                case nameof(IncrementalInfo.SourcesInfo):
+                    sourcesInfo = JsonSerializer.Deserialize<SourcesInfo>(ref reader, options);
                     break;
                     
                 case nameof(IncrementalInfo.Options):
@@ -57,8 +58,8 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
     public override void Write(Utf8JsonWriter writer, IncrementalInfo info, JsonSerializerOptions options) {
         writer.WriteStartObject();
         
-        writer.WritePropertyName(nameof(IncrementalInfo.SourcesLastWriteTime));
-        JsonSerializer.Serialize(writer, info.SourcesLastWriteTime, options);
+        writer.WritePropertyName(nameof(IncrementalInfo.SourcesInfo));
+        JsonSerializer.Serialize(writer, info.SourcesInfo, options);
         
         writer.WritePropertyName(nameof(IncrementalInfo.Options));
         JsonSerializer.Serialize(writer, info.Options, options);
