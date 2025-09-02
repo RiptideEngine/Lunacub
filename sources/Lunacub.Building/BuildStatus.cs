@@ -5,16 +5,6 @@
 /// </summary>
 public enum BuildStatus {
     /// <summary>
-    /// Indicates that the resource build process completed successfully without any errors.
-    /// </summary>
-    Success = 0,
-    
-    /// <summary>
-    /// Indicates that the resource doesn't need to be rebuilt because it's already up-to-date.
-    /// </summary>
-    Cached = 1,
-    
-    /// <summary>
     /// Indicates that the resource is requesting to be imported by an unregistered <see cref="Importer"/>.
     /// </summary>
     /// <seealso cref="BuildEnvironment.Importers"/>

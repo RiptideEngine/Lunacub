@@ -3,8 +3,6 @@
 // TODO:
 // 04-08-2025: Using ProceduralSchematic, detect if the compiled resource file missing to trigger compilation of that resource.
                
-using Caxivitual.Lunacub.Building.Collections;
-using Caxivitual.Lunacub.Building.Incremental;
 using Caxivitual.Lunacub.Collections;
 using Microsoft.IO;
 
@@ -42,69 +40,6 @@ internal sealed partial class BuildSession {
         
         // This is where the fun begin.
         BuildEnvironmentResources();
-        
-        Debug.Assert(
-            _graph.Values.SelectMany(x => x.Vertices.Values).All(x => x.ImportedData == null), 
-            "Resource leaked after building environment resources."
-        );
-        
-        BuildProceduralResources();
-        
-        Debug.Assert(
-            _graph.Values.SelectMany(x => x.Vertices.Values).All(x => x.ImportedData == null),
-            "Resource leaked after building procedural resources."
-        );
-        // Welp, fun is over.
-        
-        // Post-compilation incremental info processing and flushing.
-        
-        // Merge our procedural schematic to environment.
-        
-        // The override procedural schematic only contains successfully build resource, it doesn't contains cached resources.
-        foreach ((var libraryId, var overrideLibraryProceduralSchematic) in _overrideProceduralSchematic) {
-            if (_environment.ProceduralSchematic.TryGetValue(libraryId, out var envLibraryProceduralSchematic)) {
-                envLibraryProceduralSchematic.Clear();
-                
-                foreach ((var resourceId, var overrideSchematic) in overrideLibraryProceduralSchematic) {
-                    envLibraryProceduralSchematic.Add(resourceId, overrideSchematic);
-                }
-            } else {
-                // Newly built library?
-                _environment.ProceduralSchematic.Add(libraryId, overrideLibraryProceduralSchematic);
-            }
-        }
-        
-        // When the resource is cached, the registry does not contains our procedural generated resource.
-        // This is where the procedural schematic came into used.
-        
-        foreach ((LibraryID libraryId, ResourceRegistry<ResourceRegistry.Element> registry) in _outputRegistries) {
-            // How this processing works:
-            // Enumerate through the resource which got cached, convert the old procedural schematic into the registry element
-            // and add it to the registry.
-
-            // If the library got procedural schematic.
-            if (_environment.ProceduralSchematic.TryGetValue(libraryId, out var libraryProceduralSchematic)) {
-                bool getSuccessful = Results.TryGetValue(libraryId, out var libraryResults);
-                Debug.Assert(getSuccessful);
-
-                foreach ((var resourceId, var result) in libraryResults!) {
-                    if (result.Status != BuildStatus.Cached) continue;
-
-                    getSuccessful = libraryProceduralSchematic.TryGetValue(resourceId, out var resourceProceduralSchematic);
-                    Debug.Assert(getSuccessful);
-
-                    foreach ((var proceduralResourceId, var tags) in resourceProceduralSchematic!) {
-                        registry.Add(proceduralResourceId, new(null, tags));
-                    }
-                }
-            }
-
-            // Output the registry.
-            _environment.Output.OutputLibraryRegistry(registry, libraryId);
-        }
-        
-        _environment.FlushProceduralSchematic();
-        _environment.FlushIncrementalInfos();
     }
 
     private void ReleaseDependencies(IReadOnlyCollection<ResourceAddress> dependencyAddresses) {
@@ -142,7 +77,7 @@ internal sealed partial class BuildSession {
         }
     }
 
-    private void SetResult(ResourceAddress address, ResourceBuildingResult result) {
+    private void SetResult(ResourceAddress address, FailureResult result) {
         if (Results.TryGetValue(address.LibraryId, out var resourceResults)) {
             resourceResults[address.ResourceId] = result;
         } else {
@@ -178,7 +113,7 @@ internal sealed partial class BuildSession {
         return false;
     }
     
-    private bool TryGetResult(LibraryID libraryId, ResourceID resourceId, out ResourceBuildingResult result) {
+    private bool TryGetResult(LibraryID libraryId, ResourceID resourceId, out FailureResult result) {
         if (!Results.TryGetValue(libraryId, out var libraryResults)) {
             result = default;
             return false;
@@ -187,7 +122,7 @@ internal sealed partial class BuildSession {
         return libraryResults.TryGetValue(resourceId, out result);
     }
 
-    private bool TryGetResult(ResourceAddress address, out ResourceBuildingResult result) {
+    private bool TryGetResult(ResourceAddress address, out FailureResult result) {
         if (!Results.TryGetValue(address.LibraryId, out var libraryResults)) {
             result = default;
             return false;
@@ -196,7 +131,7 @@ internal sealed partial class BuildSession {
         return libraryResults.TryGetValue(address.ResourceId, out result);
     }
     
-    private void SetResult(LibraryID libraryId, ResourceID resourceId, ResourceBuildingResult result) {
+    private void SetResult(LibraryID libraryId, ResourceID resourceId, FailureResult result) {
         if (Results.TryGetValue(libraryId, out var resourceResults)) {
             resourceResults[resourceId] = result;
         } else {
@@ -304,7 +239,7 @@ internal sealed partial class BuildSession {
         /// Gets the Id of the dependency resources, the collection is unsanitied, thus it can reference unregistered resource
         /// id, or self-referencing.
         /// </summary>
-        public IReadOnlySet<ResourceAddress> DependencyResourceAddresses { get; }
+        public IReadOnlySet<ResourceAddress> DependencyResourceAddresses { get; set; }
         
         /// <summary>
         /// Gets the <see cref="Importer"/> associate with the resource.
@@ -315,50 +250,57 @@ internal sealed partial class BuildSession {
         /// Gets the <see cref="Processor"/> associate with the resource.
         /// </summary>
         public readonly Processor? Processor;
+
+        /// <summary>
+        /// Gets the <see cref="SourcesInfo"/> associate with the resource.
+        /// </summary>
+        public readonly SourcesInfo SourcesInformation;
         
         /// <summary>
         /// Gets the data object imported by <see cref="Importer"/>.
         /// </summary>
-        public object? ImportedData { get; private set; }
+        public object? ObjectRepresentation { get; private set; }
         
         public int ReferenceCount;
 
-        public readonly bool IsSelfUnchanged;
-        public bool IsFaulty { get; private set; }
+        public bool IsSelfUnchanged { get; set; }
+        public bool IsBuilt { get; set; }
 
-        public ResourceVertex(Importer importer, Processor? processor, IReadOnlySet<ResourceAddress> dependencyResourceAddresses, bool isSelfUnchanged) {
+        public ResourceVertex(Importer importer, Processor? processor, SourcesInfo sourcesInfo) {
             Importer = importer;
             Processor = processor;
-            DependencyResourceAddresses = dependencyResourceAddresses;
-            IsSelfUnchanged = isSelfUnchanged;
+            SourcesInformation = sourcesInfo;
+            DependencyResourceAddresses = FrozenSet<ResourceAddress>.Empty;
+            ReferenceCount = 0;
         }
     
-        [MemberNotNull(nameof(ImportedData))]
-        public void SetImportResult(object importOutput) {
-            // Debug.Assert(ReferenceCount > 0);
-            
-            ImportedData = importOutput;
+        [MemberNotNull(nameof(ObjectRepresentation))]
+        public void SetObjectRepresentation(object obj) {
+            ObjectRepresentation = obj;
         }
 
-        public void MarkFaulty() {
-            IsFaulty = true;
-        }
-    
         public void IncrementReference() {
             Interlocked.Increment(ref ReferenceCount);
         }
         
         public int DecrementReference() {
-            return Interlocked.Decrement(ref ReferenceCount);
+            int original, computed;
+            do {
+                original = ReferenceCount;
+                computed = ReferenceCount == 0 ? 0 : ReferenceCount - 1;
+            } while (Interlocked.CompareExchange(ref ReferenceCount, computed, original) != original);
+
+            return computed;
+            // return Interlocked.Decrement(ref ReferenceCount);
         }
     
         public void DisposeImportedObject(DisposingContext context) {
-            if (ImportedData == null) return;
+            if (ObjectRepresentation == null) return;
             
             Debug.Assert(ReferenceCount == 0);
             
-            Importer.Dispose(ImportedData, context);
-            ImportedData = null;
+            Importer.Dispose(ObjectRepresentation, context);
+            ObjectRepresentation = null;
         }
     }
 

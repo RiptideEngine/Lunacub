@@ -18,17 +18,17 @@ public readonly struct BuildingResult {
     public readonly DateTime BuildFinishTime;
     
     /// <summary>
-    /// The collections of every resources involves in the building process and their building results.
+    /// The collections of every resources that failed to build between each step of the resource building process.
     /// </summary>
-    public readonly LibraryIdentityDictionary<ResourceResultDictionary> EnvironmentResults;
+    public readonly LibraryIdentityDictionary<ResourceResultDictionary> FailureResults;
 
     internal BuildingResult(
         DateTime startTime,
         DateTime finishTime,
-        LibraryIdentityDictionary<ResourceResultDictionary> environmentResults
+        LibraryIdentityDictionary<ResourceResultDictionary> failureResults
     ) {
         BuildStartTime = startTime;
         BuildFinishTime = finishTime;
-        EnvironmentResults = environmentResults;
+        FailureResults = failureResults;
     }
 }

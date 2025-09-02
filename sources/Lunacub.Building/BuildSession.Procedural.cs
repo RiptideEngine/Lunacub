@@ -4,9 +4,21 @@ namespace Caxivitual.Lunacub.Building;
 
 partial class BuildSession {
     private void BuildProceduralResources() {
-        if (_proceduralResources.Count == 0) return;
+        if (_proceduralResources.Count != 0) {
+            Log.BeginBuildingProceduralResources(_environment.Logger);
+            new ProceduralResourceBuild(this, _proceduralResources, null).Build();
+            
+            Debug.Assert(
+                _graph.Values.SelectMany(x => x.Vertices.Values).All(x => x.ObjectRepresentation == null),
+                "Resource leaked after building procedural resources."
+            );
+        }
 
-        new ProceduralResourceBuild(this, _proceduralResources, null).Build();
+        Log.FinishBuildingResources(_environment.Logger);
+        
+        // We're done building every resources.
+        // Now we should postprocess and flush some incremental infos like schematics.
+        ProcessPostBuild();
     }
 
     private sealed class ProceduralResourceBuild {
@@ -150,9 +162,7 @@ partial class BuildSession {
                     _session.AppendProceduralResources(resourceAddress, processingContext.ProceduralResources, next);
                 }
                 
-                _session.SetResult(resourceAddress, new(BuildStatus.Success));
                 _session.AddOutputResourceRegistry(resourceAddress, new(null, resource.Tags));
-                
                 _session.AddOverrideProceduralSchematicEdge(new(resourceAddress.LibraryId, sourceResourceId), new(resourceAddress.ResourceId, resource.Tags));
             } finally {
                 _session.ReleaseDependencies(resource.DependencyAddresses);
@@ -173,39 +183,21 @@ partial class BuildSession {
             foreach (var dependencyAddress in dependencyIds) {
                 // If the dependency is environment's resource.
                 if (_session.TryGetVertex(dependencyAddress, out var dependencyResourceLibrary, out var dependencyVertex)) {
-                    if (dependencyVertex.ImportedData is { } dependencyImportOutput) {
+                    if (dependencyVertex.ObjectRepresentation is { } dependencyImportOutput) {
                         dependencyCollection.Add(dependencyAddress, dependencyImportOutput);
                     } else {
-                        if (_session.TryGetResult(dependencyAddress, out var result)) {
-                            // Traversed through this resource vertex before.
-                            switch (result.Status) {
-                                case BuildStatus.Success:
-                                    Debug.Assert(dependencyVertex.ImportedData != null);
-                        
-                                    dependencyCollection[dependencyAddress] = dependencyVertex.ImportedData;
-                                    continue;
-                    
-                                case BuildStatus.Cached:
-                                    // Resource is cached, but still import it to handle dependencies.
-                                    // Fallthrough.
-                                    break;
-                    
-                                default: continue;
-                            }
+                        BuildingOptions options = dependencyResourceLibrary.Registry[dependencyAddress.ResourceId].Option.Options;
 
-                            BuildingOptions options = dependencyResourceLibrary.Registry[dependencyAddress.ResourceId].Option.Options;
-
-                            if (_session.Import(
+                        if (_session.Import(
                                 dependencyAddress,
                                 dependencyResourceLibrary,
                                 _session._environment.Importers[options.ImporterName],
                                 options.Options,
                                 out var imported,
                                 out _)
-                            ) {
-                                dependencyVertex.SetImportResult(imported);
-                                dependencyCollection.Add(dependencyAddress, imported);
-                            }
+                           ) {
+                            dependencyVertex.SetObjectRepresentation(imported);
+                            dependencyCollection.Add(dependencyAddress, imported);
                         }
                     }
                 } else if (RecursivelyTryGetProceduralResource(dependencyAddress) is { } proceduralResource) {

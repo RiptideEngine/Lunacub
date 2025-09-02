@@ -2,4 +2,4 @@
 
 namespace Caxivitual.Lunacub.Building.Collections;
 
-public sealed class ResourceResultDictionary : ResourceIdentityDictionary<ResourceBuildingResult>;
+public sealed class ResourceResultDictionary : ResourceIdentityDictionary<FailureResult>;
