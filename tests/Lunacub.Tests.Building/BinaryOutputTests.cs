@@ -1,11 +1,6 @@
 ﻿// ReSharper disable AccessToDisposedClosure
 
-using Caxivitual.Lunacub.Extensions;
-using Microsoft.IO;
-using Newtonsoft.Json;
-using System.Buffers.Binary;
 using System.Collections.Immutable;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Caxivitual.Lunacub.Tests.Building;
 
@@ -33,15 +28,8 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
                 }),
             },
         });
-        
-        var result = new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow()
-            .Which.EnvironmentResults.Should().ContainSingle()
-            .Which.Value.Should().ContainSingle()
-            .Which;
 
-        result.Key.Should().Be((ResourceID)1);
-        result.Value.Status.Should().Be(BuildStatus.Success);
-        result.Value.Exception.Should().BeNull();
+        new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.FailureResults.Should().BeEmpty();
 
         ImmutableArray<byte> compiledBinary = new Func<ImmutableArray<byte>>(() => _buildOutput.Outputs[1].CompiledResources[1].Item1).Should().NotThrow().Which;
         BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
@@ -72,9 +60,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
             },
         });
 
-        new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow()
-            .Which.EnvironmentResults.Should().ContainSingle()
-            .Which.Value.Should().HaveCount(2);
+        new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.FailureResults.Should().BeEmpty();
 
         ImmutableArray<byte> compiledBinary = new Func<ImmutableArray<byte>>(() => _buildOutput.Outputs[1].CompiledResources[1].Item1).Should().NotThrow().Which;
         BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
@@ -115,16 +101,9 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
                 }),
             },
         });
-        
-        var result = new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow()
-            .Which.EnvironmentResults.Should().ContainSingle()
-            .Which.Value.Should().ContainSingle()
-            .Which;
 
-        result.Key.Should().Be((ResourceID)1);
-        result.Value.Status.Should().Be(BuildStatus.Success);
-        result.Value.Exception.Should().BeNull();
-    
+        new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.FailureResults.Should().BeEmpty();
+
         ImmutableArray<byte> compiledBinary = new Func<ImmutableArray<byte>>(() => _buildOutput.Outputs[1].CompiledResources[1].Item1).Should().NotThrow().Which;
         BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
 
@@ -148,16 +127,9 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
                 }),
             },
         });
-        
-        var result = new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow()
-            .Which.EnvironmentResults.Should().ContainSingle()
-            .Which.Value.Should().ContainSingle()
-            .Which;
 
-        result.Key.Should().Be((ResourceID)1);
-        result.Value.Status.Should().Be(BuildStatus.Success);
-        result.Value.Exception.Should().BeNull();
-    
+        new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.FailureResults.Should().BeEmpty();
+
         ImmutableArray<byte> compiledBinary = new Func<ImmutableArray<byte>>(() => _buildOutput.Outputs[1].CompiledResources[1].Item1).Should().NotThrow().Which;
         BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
 

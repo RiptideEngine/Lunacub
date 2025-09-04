@@ -23,7 +23,7 @@ public class ImportBehaviourTests : IClassFixture<ComponentsFixture>, IDisposabl
             );
 
         componentsFixture.ApplyComponents(buildEnv);
-        buildEnv.BuildResources();
+        buildEnv.BuildResources(BuildFlags.Rebuild);
         
         var importSourceProvider = new ImportMemorySourceProvider();
         var importLibrary = new ImportResourceLibrary(1, importSourceProvider);

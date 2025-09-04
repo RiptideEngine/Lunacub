@@ -1,5 +1,6 @@
 ﻿// ReSharper disable AccessToDisposedClosure
 
+using Microsoft.Extensions.Logging;
 using Microsoft.IO;
 using System.Collections.Concurrent;
 using FileSourceProvider = Caxivitual.Lunacub.Building.Core.FileSourceProvider;
@@ -21,12 +22,15 @@ public class ResourceContainerCachingTests : IClassFixture<ComponentsFixture> {
 
         MemoryOutputSystem memoryOutput = new();
         RecyclableMemoryStreamManager memStreamManager = new();
+
+        ILogger logger = _output.BuildLogger();
         
-        using var environment = new BuildEnvironment(memoryOutput, memStreamManager)
-            .AddLibrary(library);
+        using var environment =new BuildEnvironment(memoryOutput, memStreamManager)
+            .AddLibrary(library)
+            .SetLogger(logger);
 
         _componentsFixture.ApplyComponents(environment);
-        environment.BuildResources();
+        environment.BuildResources(BuildFlags.Rebuild);
 
         var importSourceProvider = new ImportMemorySourceProvider();
         var importLibrary = new ImportResourceLibrary(1, importSourceProvider);
@@ -40,7 +44,7 @@ public class ResourceContainerCachingTests : IClassFixture<ComponentsFixture> {
         }
 
         ImportEnvironment importEnvironment = new ImportEnvironment(memStreamManager)
-            .SetLogger(_output.BuildLogger())
+            .SetLogger(logger)
             .AddLibrary(importLibrary);
 
         _componentsFixture.ApplyComponents(importEnvironment);

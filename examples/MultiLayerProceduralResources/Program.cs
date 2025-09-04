@@ -56,7 +56,7 @@ internal static class Program {
             },
         };
 
-        env.BuildResources();
+        env.BuildResources(BuildFlags.Rebuild);
     }
     
     private static async Task ImportResource(string resourceDirectory) {

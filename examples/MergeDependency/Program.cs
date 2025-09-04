@@ -74,13 +74,7 @@ internal static class Program {
             },
         };
 
-        var result = env.BuildResources();
-
-        foreach ((var libraryId, var libraryResults) in result.EnvironmentResults) {
-            foreach ((var resourceId, var resourceResult) in libraryResults) {
-                _logger.LogInformation(resourceResult.Exception?.SourceException, "L{libid}-R{rid}: {status}", libraryId, resourceId, resourceResult.Status);
-            }
-        }
+        env.BuildResources(BuildFlags.Rebuild);
     }
     
     private static async Task ImportResource(string resourceDirectory) {

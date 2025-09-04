@@ -75,7 +75,7 @@
 //             buildEnv.SerializerFactories.Add((SerializerFactory)Activator.CreateInstance(type)!);
 //         }
 //
-//         buildEnv.BuildResources();
+//         buildEnv.BuildResources(BuildFlags.Rebuild);
 //     }
 //
 //     private static void AppendBuildingResources(BuildMemorySourceProvider sourceProvider, BuildResourceLibrary library) {

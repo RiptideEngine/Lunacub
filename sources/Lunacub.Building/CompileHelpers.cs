@@ -9,19 +9,16 @@ internal static class CompileHelpers {
         bwriter.Write((ushort)1);
         bwriter.Write((ushort)0);
         
-        bwriter.Write(4);
+        // TODO: Rewrite this into a system instead of hard-coded values.
+        bwriter.Write(3);
         
         long chunkLocationPosition = bwriter.BaseStream.Position;
-        Span<KeyValuePair<uint, int>> chunks = stackalloc KeyValuePair<uint, int>[4];
+        Span<KeyValuePair<uint, int>> chunks = stackalloc KeyValuePair<uint, int>[3];
         int chunkIndex = 0;
 
         bwriter.Seek(sizeof(KeyValuePair<uint, int>) * chunks.Length, SeekOrigin.Current);
         
         int chunkStart = (int)outputStream.Position;
-        WriteTagChunk(bwriter, tags);
-        chunks[chunkIndex++] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.TagChunkTag), chunkStart);
-        
-        chunkStart = (int)outputStream.Position;
         WriteDataChunk(environment.MemoryStreamManager, bwriter, serializer);
         chunks[chunkIndex++] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.ResourceDataChunkTag), chunkStart);
 
@@ -40,29 +37,6 @@ internal static class CompileHelpers {
             bwriter.Write(chunkSize);
         }
     }
-
-    private static void WriteTagChunk(BinaryWriter writer, IReadOnlyCollection<string> tags) {
-        Stream outputStream = writer.BaseStream;
-        
-        writer.Write(CompilingConstants.TagChunkTag);
-        {
-            var chunkLenPosition = (int)outputStream.Position;
-            writer.Seek(4, SeekOrigin.Current);
-            
-            writer.Write(tags.Count);
-
-            foreach (string tag in tags) {
-                writer.Write(tag);
-            }
-            
-            var contentSize = (int)(outputStream.Position - chunkLenPosition - 4);
-        
-            writer.Seek(chunkLenPosition, SeekOrigin.Begin);
-            writer.Write(contentSize);
-            
-            writer.Seek(contentSize, SeekOrigin.Current);
-        }
-    }
     
     private static void WriteDataChunk(RecyclableMemoryStreamManager memoryStreamManager, BinaryWriter writer, Serializer serializer) {
         using (var dataStream = memoryStreamManager.GetStream("DataStream", 0, false)) {
@@ -79,9 +53,9 @@ internal static class CompileHelpers {
     
     private static void WriteOptionsChunk(RecyclableMemoryStreamManager memoryStreamManager, BinaryWriter writer, Serializer serializer) {
         using (var optionStream = memoryStreamManager.GetStream("OptionStream", 0, false)) {
-            serializer.SerializeObject(optionStream);
+            serializer.SerializeOptions(optionStream);
             
-            writer.Write(CompilingConstants.ResourceDataChunkTag);
+            writer.Write(CompilingConstants.ImportOptionsChunkTag);
             {
                 writer.Write((int)optionStream.Length);
                 optionStream.Seek(0, SeekOrigin.Begin);
