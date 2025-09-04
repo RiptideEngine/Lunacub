@@ -32,12 +32,12 @@ internal sealed partial class BuildSession {
         _proceduralResources = [];
     }
 
-    public void Build() {
+    public void Build(bool rebuild) {
         Results.Clear();
         _outputRegistries.Clear();
         
         // This is where the fun begin.
-        BuildEnvironmentResources();
+        BuildEnvironmentResources(rebuild);
     }
 
     private void ReleaseDependencies(IReadOnlyCollection<ResourceAddress> dependencyAddresses) {
@@ -227,7 +227,7 @@ internal sealed partial class BuildSession {
         /// Gets the Id of the dependency resources, the collection is unsanitied, thus it can reference unregistered resource
         /// id, or self-referencing.
         /// </summary>
-        public IReadOnlySet<ResourceAddress> DependencyResourceAddresses { get; set; }
+        public IReadOnlySet<ResourceAddress>? DependencyResourceAddresses { get; set; }
         
         /// <summary>
         /// Gets the <see cref="Importer"/> associate with the resource.

@@ -2,7 +2,7 @@
 namespace Caxivitual.Lunacub.Building;
 
 partial class BuildSession {
-    private void BuildEnvironmentResources() {
+    private void BuildEnvironmentResources(bool rebuild) {
         Log.BeginBuildingEnvironmentResources(_environment.Logger);
         
         // Initialize some variable to use during graph cycle validation.
@@ -10,7 +10,7 @@ partial class BuildSession {
         Stack<ResourceAddress> cyclePath = [];
         
         // Populate the graph vertices.
-        CreateGraphVertices();
+        CreateGraphVertices(rebuild);
 
         if (Results.Count > 0) return;
 
@@ -322,7 +322,7 @@ partial class BuildSession {
             try {
                 foreach ((var libraryId, var libraryVertices) in _graph) {
                     foreach ((var resourceId, var resourceVertex) in libraryVertices.Vertices) {
-                        if (Visit(new(libraryId, resourceId), resourceVertex, temporaryMarks, permanentMarks, cyclePath)) {
+                        if (Visit(new(libraryId, resourceId), resourceVertex)) {
                             return;
                         }
                     }
@@ -337,28 +337,29 @@ partial class BuildSession {
         
             bool Visit(
                 ResourceAddress resourceAddress,
-                ResourceVertex resourceVertex,
-                HashSet<ResourceAddress> temporaryMarks,
-                HashSet<ResourceAddress> permanentMarks,
-                Stack<ResourceAddress> path
+                ResourceVertex resourceVertex
             ) {
                 if (permanentMarks.Contains(resourceAddress)) return false;
         
-                path.Push(resourceAddress);
+                cyclePath.Push(resourceAddress);
         
                 if (!temporaryMarks.Add(resourceAddress)) {
-                    onCycleDetected(path.Reverse());
+                    onCycleDetected(cyclePath.Reverse());
                     return true;
                 }
-        
-                foreach (var dependencyAddress in resourceVertex.DependencyResourceAddresses) {
-                    if (!TryGetVertex(dependencyAddress, out var dependencyVertex)) continue;
-        
-                    Visit(dependencyAddress, dependencyVertex, temporaryMarks, permanentMarks, path);
+
+                if (resourceVertex.DependencyResourceAddresses != null) {
+                    foreach (var dependencyAddress in resourceVertex.DependencyResourceAddresses) {
+                        if (!TryGetVertex(dependencyAddress, out var dependencyVertex)) continue;
+
+                        if (Visit(dependencyAddress, dependencyVertex)) {
+                            return true;
+                        }
+                    }
                 }
-        
+
                 permanentMarks.Add(resourceAddress);
-                path.Pop();
+                cyclePath.Pop();
                 return false;
             }
         }
@@ -371,7 +372,7 @@ partial class BuildSession {
     /// Unchanged resources will have its dependency collection populated form the previous incremental infos.
     /// Changed resources will have its dependency collection null on purpose.
     /// </remarks>
-    private void CreateGraphVertices() {
+    private void CreateGraphVertices(bool rebuild) {
         Log.CreateVertices(_environment.Logger);
         
         Parallel.ForEach(_graph, (graphKvp, _, _) => {
@@ -414,7 +415,7 @@ partial class BuildSession {
                     continue;
                 }
                 
-                if (_environment.IncrementalInfos.TryGetValue(libraryId, out LibraryIncrementalInfos? libraryIncrementalInfos)) {
+                if (!rebuild && _environment.IncrementalInfos.TryGetValue(libraryId, out LibraryIncrementalInfos? libraryIncrementalInfos)) {
                     if (libraryIncrementalInfos.TryGetValue(resourceId, out IncrementalInfo previousIncrementalInfo)) {
                         // So we do got the report from the last building session.
                         
@@ -438,7 +439,7 @@ partial class BuildSession {
                 
                 // Set the dependency collection null on purpose.
                 vertexDictionary.Add(resourceId, new(importer, processor, sourcesInformation) {
-                    DependencyResourceAddresses = null!,
+                    DependencyResourceAddresses = null,
                     IsSelfUnchanged = false,
                 });
             }
@@ -487,7 +488,11 @@ partial class BuildSession {
                 Debug.Assert(getSuccessfully && vertex != null);
                 
                 if (vertex.IsSelfUnchanged) continue;
-                if (vertex.Importer.Flags.HasFlag(ImporterFlags.NoDependency)) continue;
+
+                if (vertex.Importer.Flags.HasFlag(ImporterFlags.NoDependency)) {
+                    vertex.DependencyResourceAddresses = FrozenSet<ResourceAddress>.Empty;
+                    continue;
+                }
                 
                 Debug.Assert(vertex.DependencyResourceAddresses is null);
                 
@@ -530,8 +535,11 @@ partial class BuildSession {
                 Debug.Assert(getSuccessfully && vertex != null);
 
                 vertex.IsSelfUnchanged = false;
-                
-                if (vertex.Importer.Flags.HasFlag(ImporterFlags.NoDependency)) continue;
+
+                if (vertex.Importer.Flags.HasFlag(ImporterFlags.NoDependency)) {
+                    vertex.DependencyResourceAddresses = FrozenSet<ResourceAddress>.Empty;
+                    continue;
+                }
                 
                 Debug.Assert(vertex.DependencyResourceAddresses is null);
                 
@@ -572,6 +580,7 @@ partial class BuildSession {
                 
                 bool getSuccessfully = vertexDictionary.TryGetValue(resourceId, out ResourceVertex? vertex);
                 Debug.Assert(getSuccessfully && vertex != null);
+                Debug.Assert(vertex.DependencyResourceAddresses != null);
 
                 foreach (var dependencyAddress in vertex.DependencyResourceAddresses) {
                     if (!TryGetVertex(dependencyAddress, out _, out _)) continue;

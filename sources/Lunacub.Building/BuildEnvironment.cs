@@ -73,11 +73,11 @@ public sealed class BuildEnvironment : IDisposable {
     /// Build all the registered resources from registered resource libraries.
     /// </summary>
     /// <returns>An structure that contains all the building resources.</returns>
-    public BuildingResult BuildResources() {
+    public BuildingResult BuildResources(BuildFlags flags = BuildFlags.None) {
         DateTime begin = DateTime.Now;
         
         BuildSession session = new BuildSession(this);
-        session.Build();
+        session.Build(flags.HasFlag(BuildFlags.Rebuild));
 
         return new(begin, DateTime.Now, session.Results);
     }
