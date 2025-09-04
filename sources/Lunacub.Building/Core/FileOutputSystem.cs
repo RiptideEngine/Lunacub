@@ -46,32 +46,6 @@ public class FileOutputSystem : OutputSystem {
         JsonSerializer.Serialize(stream, incrementalInfos);
     }
 
-    public override void CollectProceduralSchematic(EnvironmentProceduralSchematic receiver) {
-        string filePath = ProceduralSchematicFilePath;
-
-        if (!File.Exists(filePath)) return;
-        
-        using var stream = File.OpenRead(filePath);
-
-        try {
-            if (JsonSerializer.Deserialize<EnvironmentProceduralSchematic>(stream) is not { } infos) return;
-            
-            foreach ((var libraryId, var libraryIncrementalInfo) in infos) {
-                receiver.Add(libraryId, libraryIncrementalInfo);
-            }
-        } catch {
-            // Ignored.
-        }
-    }
-
-    public override void FlushProceduralSchematic(EnvironmentProceduralSchematic schematic) {
-        using var stream = File.OpenWrite(ProceduralSchematicFilePath);
-        stream.SetLength(0);
-        stream.Flush();
-        
-        JsonSerializer.Serialize(stream, schematic);
-    }
-
     public override DateTime? GetResourceLastBuildTime(ResourceAddress address) {
         string path = GetCompiledResourcePath(address);
         

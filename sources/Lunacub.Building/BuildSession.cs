@@ -16,7 +16,6 @@ internal sealed partial class BuildSession {
     private readonly FrozenDictionary<LibraryID, LibraryGraphVertices> _graph;
     
     private readonly Dictionary<LibraryID, ResourceRegistry<ResourceRegistry.Element>> _outputRegistries;
-    private readonly EnvironmentProceduralSchematic _overrideProceduralSchematic;
     
     private readonly Dictionary<ResourceAddress, ProceduralResourceRequest> _proceduralResources;
     
@@ -29,7 +28,6 @@ internal sealed partial class BuildSession {
         }).ToFrozenDictionary();
         Results = new();
         _outputRegistries = [];
-        _overrideProceduralSchematic = new();
 
         _proceduralResources = [];
     }
@@ -65,16 +63,6 @@ internal sealed partial class BuildSession {
         }
         
         registry!.Add(address.ResourceId, element);
-    }
-
-    private void AddOverrideProceduralSchematicEdge(ResourceAddress sourceResourceAddress, ProceduralResourceSchematicInfo info) {
-        if (_overrideProceduralSchematic.TryGetValue(sourceResourceAddress.LibraryId, out var librarySchematic)) {
-            librarySchematic.Add(sourceResourceAddress.ResourceId, info);
-        } else {
-            librarySchematic = [];
-            librarySchematic.Add(sourceResourceAddress.ResourceId, info);
-            _overrideProceduralSchematic.Add(sourceResourceAddress.LibraryId, librarySchematic);
-        }
     }
 
     private void SetResult(ResourceAddress address, FailureResult result) {

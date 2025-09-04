@@ -42,11 +42,6 @@ public sealed class BuildEnvironment : IDisposable {
     internal EnvironmentIncrementalInfos IncrementalInfos { get; }
     
     /// <summary>
-    /// Gets the procedural schematic of the resources.
-    /// </summary>
-    internal EnvironmentProceduralSchematic ProceduralSchematic { get; }
-    
-    /// <summary>
     /// Gets and sets the <see cref="ILogger"/> instance used for debugging and reporting purpose.
     /// </summary>
     public ILogger Logger { get; set; }
@@ -68,12 +63,10 @@ public sealed class BuildEnvironment : IDisposable {
         Output = output;
         Libraries = [];
         IncrementalInfos = new();
-        ProceduralSchematic = new();
         Logger = NullLogger.Instance;
         MemoryStreamManager = memoryStreamManager;
         
         Output.CollectIncrementalInfos(IncrementalInfos);
-        Output.CollectProceduralSchematic(ProceduralSchematic);
     }
     
     /// <summary>
@@ -93,16 +86,12 @@ public sealed class BuildEnvironment : IDisposable {
         Output.FlushIncrementalInfos(IncrementalInfos);
     }
 
-    public void FlushProceduralSchematic() {
-        Output.FlushProceduralSchematic(ProceduralSchematic);
-    }
 
     private void Dispose(bool disposing) {
         if (Interlocked.Exchange(ref _disposed, true)) return;
 
         if (disposing) {
             FlushIncrementalInfos();
-            FlushProceduralSchematic();
         }
     }
 

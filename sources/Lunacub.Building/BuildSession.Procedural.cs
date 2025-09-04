@@ -163,7 +163,6 @@ partial class BuildSession {
                 }
                 
                 _session.AddOutputResourceRegistry(resourceAddress, new(null, resource.Tags));
-                _session.AddOverrideProceduralSchematicEdge(new(resourceAddress.LibraryId, sourceResourceId), new(resourceAddress.ResourceId, resource.Tags));
             } finally {
                 _session.ReleaseDependencies(resource.DependencyAddresses);
             }
