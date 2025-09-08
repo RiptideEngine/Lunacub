@@ -2,8 +2,8 @@
 using Caxivitual.Lunacub.Importing.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.IO;
-using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
-using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
+using FileSourceRepository = Caxivitual.Lunacub.Importing.Core.FileSourceRepository;
+using MemorySourceRepository = Caxivitual.Lunacub.Building.Core.MemorySourceRepository;
 
 namespace Caxivitual.Lunacub.Examples.ResourceReferencing;
 
@@ -39,10 +39,10 @@ internal static class Program {
                 new ReferencingResourceSerializerFactory(),
             },
             Libraries = {
-                new(1, new MemorySourceProvider {
+                new(1, new MemorySourceRepository {
                     Sources = {
-                        ["Resource"] = MemorySourceProvider.AsUtf8("""{"Reference":{"LibraryId":1,"ResourceId":2}}""", default),
-                        ["Reference"] = MemorySourceProvider.AsUtf8("""{"Value":1}""", default),
+                        ["Resource"] = MemorySourceRepository.AsUtf8("""{"Reference":{"LibraryId":1,"ResourceId":2}}""", default),
+                        ["Reference"] = MemorySourceRepository.AsUtf8("""{"Value":1}""", default),
                     },
                 }) {
                     Registry = {
@@ -69,7 +69,7 @@ internal static class Program {
         importEnvironment.Deserializers[nameof(SimpleResourceDeserializer)] = new SimpleResourceDeserializer();
         importEnvironment.Deserializers[nameof(ReferencingResourceDeserializer)] = new ReferencingResourceDeserializer();
         importEnvironment.Logger = _logger;
-        importEnvironment.Libraries.Add(new(1, new FileSourceProvider(Path.Combine(resourceDirectory, "1"))) {
+        importEnvironment.Libraries.Add(new(1, new FileSourceRepository(Path.Combine(resourceDirectory, "1"))) {
             Registry = {
                 [1] = new("Resource", []),
                 [2] = new("Reference", []),

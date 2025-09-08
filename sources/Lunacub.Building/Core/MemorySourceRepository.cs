@@ -2,7 +2,7 @@
 
 namespace Caxivitual.Lunacub.Building.Core;
 
-public sealed class MemorySourceProvider : BuildSourceProvider {
+public sealed class MemorySourceRepository : SourceRepository {
     public Dictionary<string, Element> Sources { get; } = [];
 
     protected override Stream? CreateStreamCore(string address) {

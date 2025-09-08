@@ -2,10 +2,10 @@
 
 namespace Caxivitual.Lunacub.Building.Core;
 
-public sealed class FileSourceProvider : BuildSourceProvider {
+public sealed class FileSourceRepository : SourceRepository {
     public string RootDirectory { get; set; }
     
-    public FileSourceProvider(string rootDirectory) {
+    public FileSourceRepository(string rootDirectory) {
         RootDirectory = Path.GetFullPath(rootDirectory);
         
         if (!Directory.Exists(RootDirectory)) {

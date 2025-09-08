@@ -3,7 +3,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.IO;
 using System.Collections.Concurrent;
-using FileSourceProvider = Caxivitual.Lunacub.Building.Core.FileSourceProvider;
+using FileSourceRepository = Caxivitual.Lunacub.Building.Core.FileSourceRepository;
 
 namespace Caxivitual.Lunacub.Tests.Importing;
 
@@ -17,7 +17,7 @@ public class ResourceContainerCachingTests : IClassFixture<ComponentsFixture> {
     }
 
     private ImportEnvironment BuildResources(Action<BuildResourceLibrary> libraryResourceAppender) {
-        BuildResourceLibrary library = new(1, new FileSourceProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources")));
+        BuildResourceLibrary library = new(1, new FileSourceRepository(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources")));
         libraryResourceAppender(library);
 
         MemoryOutputSystem memoryOutput = new();
@@ -25,7 +25,7 @@ public class ResourceContainerCachingTests : IClassFixture<ComponentsFixture> {
 
         ILogger logger = _output.BuildLogger();
         
-        using var environment =new BuildEnvironment(memoryOutput, memStreamManager)
+        using var environment = new BuildEnvironment(memoryOutput, memStreamManager)
             .AddLibrary(library)
             .SetLogger(logger);
 

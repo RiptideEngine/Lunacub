@@ -16,9 +16,9 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
     
     [Fact]
     public void BuildSimpleResource_OutputCorrectBinary() {
-        _environment.Libraries.Add(new(1, new MemorySourceProvider {
+        _environment.Libraries.Add(new(1, new MemorySourceRepository {
             Sources = {
-                ["Resource"] = MemorySourceProvider.AsUtf8("""{"Value":255}""", DateTime.MinValue),
+                ["Resource"] = MemorySourceRepository.AsUtf8("""{"Value":255}""", DateTime.MinValue),
             },
         }) {
             Registry = {
@@ -42,10 +42,10 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
     
     [Fact]
     public unsafe void BuildReferenceResource_OutputCorrectBinary() {
-        _environment.Libraries.Add(new(1, new MemorySourceProvider {
+        _environment.Libraries.Add(new(1, new MemorySourceRepository {
             Sources = {
-                ["Resource"] = MemorySourceProvider.AsUtf8("""{"ReferenceAddress":{"LibraryId":1,"ResourceId":2},"Value":50}""", DateTime.MinValue),
-                ["Reference"] = MemorySourceProvider.AsUtf8("""{"Value":100}""", DateTime.MinValue),
+                ["Resource"] = MemorySourceRepository.AsUtf8("""{"ReferenceAddress":{"LibraryId":1,"ResourceId":2},"Value":50}""", DateTime.MinValue),
+                ["Reference"] = MemorySourceRepository.AsUtf8("""{"Value":100}""", DateTime.MinValue),
             },
         }) {
             Registry = {
@@ -89,9 +89,9 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
     
     [Fact]
     public void BuildConfigurableResource_Json_OutputCorrectBinary() {
-        _environment.Libraries.Add(new(1, new MemorySourceProvider {
+        _environment.Libraries.Add(new(1, new MemorySourceRepository {
             Sources = {
-                ["Resource"] = MemorySourceProvider.AsUtf8("[1,2,3,4,5]", DateTime.MinValue),
+                ["Resource"] = MemorySourceRepository.AsUtf8("[1,2,3,4,5]", DateTime.MinValue),
             },
         }) {
             Registry = {
@@ -115,9 +115,9 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
     
     [Fact]
     public void BuildConfigurableResource_Binary_OutputCorrectBinary() {
-        _environment.Libraries.Add(new(1, new MemorySourceProvider {
+        _environment.Libraries.Add(new(1, new MemorySourceRepository {
             Sources = {
-                ["Resource"] = MemorySourceProvider.AsUtf8("[1,2,3,4,5]", DateTime.MinValue),
+                ["Resource"] = MemorySourceRepository.AsUtf8("[1,2,3,4,5]", DateTime.MinValue),
             },
         }) {
             Registry = {

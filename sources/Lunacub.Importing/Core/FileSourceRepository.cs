@@ -4,10 +4,10 @@ using System.Globalization;
 namespace Caxivitual.Lunacub.Importing.Core;
 
 [ExcludeFromCodeCoverage]
-public sealed class FileSourceProvider : ImportSourceProvider {
+public sealed class FileSourceRepository : SourceRepository {
     public string RootDirectory { get; }
 
-    public FileSourceProvider(string rootDirectory) {
+    public FileSourceRepository(string rootDirectory) {
         RootDirectory = Path.GetFullPath(rootDirectory);
         
         if (!Directory.Exists(RootDirectory)) {

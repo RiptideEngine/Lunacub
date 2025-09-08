@@ -2,7 +2,7 @@
 
 namespace Caxivitual.Lunacub;
 
-public abstract class SourceProvider<T> {
+public abstract class SourceRepository<T> : ISourceRepository<T> {
     public Stream? CreateStream(T address) {
         if (CreateStreamCore(address) is { } stream) {
             if (!stream.CanRead || !stream.CanSeek) {

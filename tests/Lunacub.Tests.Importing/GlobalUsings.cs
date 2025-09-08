@@ -7,8 +7,8 @@ global using Caxivitual.Lunacub.Importing.Core;
 global using Caxivitual.Lunacub.Building.Extensions;
 global using Caxivitual.Lunacub.Importing.Extensions;
 
-global using BuildMemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
-global using ImportMemorySourceProvider = Caxivitual.Lunacub.Importing.Core.MemorySourceProvider;
+global using BuildMemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceRepository;
+global using ImportMemorySourceProvider = Caxivitual.Lunacub.Importing.Core.MemorySourceRepository;
 
 global using FluentAssertions;
 global using FluentAssertions.Extensions;

@@ -3,8 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IO;
 using System.Diagnostics;
 using System.Text.Json;
-using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
-using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
+using FileSourceRepository = Caxivitual.Lunacub.Importing.Core.FileSourceRepository;
 
 namespace Caxivitual.Lunacub.Examples.MergeDependency;
 
@@ -44,12 +43,12 @@ internal static class Program {
                 new MergingResourceSerializerFactory(),
             },
             Libraries = {
-                new(1, new MemorySourceProvider {
+                new(1, new MemorySourceRepository {
                     Sources = {
-                        ["Resource1"] = MemorySourceProvider.AsUtf8("""{"Value":1}""", DateTime.MinValue),
-                        ["Resource2"] = MemorySourceProvider.AsUtf8("""{"Value":2}""", DateTime.MinValue),
-                        ["Resource3"] = MemorySourceProvider.AsUtf8("""{"Value":3}""", DateTime.MinValue),
-                        ["MergingResource"] = MemorySourceProvider.AsUtf8("""{"Dependencies":[{"LibraryId":1,"ResourceId":1},{"LibraryId":1,"ResourceId":2},{"LibraryId":1,"ResourceId":3}]}""", DateTime.MinValue),
+                        ["Resource1"] = MemorySourceRepository.AsUtf8("""{"Value":1}""", DateTime.MinValue),
+                        ["Resource2"] = MemorySourceRepository.AsUtf8("""{"Value":2}""", DateTime.MinValue),
+                        ["Resource3"] = MemorySourceRepository.AsUtf8("""{"Value":3}""", DateTime.MinValue),
+                        ["MergingResource"] = MemorySourceRepository.AsUtf8("""{"Dependencies":[{"LibraryId":1,"ResourceId":1},{"LibraryId":1,"ResourceId":2},{"LibraryId":1,"ResourceId":3}]}""", DateTime.MinValue),
                     },
                 }) {
                     Registry = {
@@ -79,7 +78,7 @@ internal static class Program {
     
     private static async Task ImportResource(string resourceDirectory) {
         string libraryDirectory = Path.Combine(resourceDirectory, "1");
-        ImportResourceLibrary library = new(1, new FileSourceProvider(libraryDirectory));
+        ImportResourceLibrary library = new(1, new FileSourceRepository(libraryDirectory));
 
         using (var registryStream = File.OpenRead(Path.Combine(libraryDirectory, "__registry"))) {
             foreach ((var resourceId, var element) in JsonSerializer.Deserialize<ResourceRegistry<ResourceRegistry.Element>>(registryStream)!) {

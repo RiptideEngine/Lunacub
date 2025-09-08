@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace Caxivitual.Lunacub.Importing.Core;
 
-public sealed class MemorySourceProvider : ImportSourceProvider {
+public sealed class MemorySourceRepository : SourceRepository {
     public Dictionary<ResourceID, ImmutableArray<byte>> Resources { get; } = [];
 
     protected override Stream? CreateStreamCore(ResourceID id) {

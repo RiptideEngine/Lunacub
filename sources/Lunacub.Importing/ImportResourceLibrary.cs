@@ -1,14 +1,14 @@
 ﻿namespace Caxivitual.Lunacub.Importing;
 
 public sealed class ImportResourceLibrary : ResourceLibrary {
-    private readonly ImportSourceProvider _provider;
+    private readonly SourceRepository _provider;
     
     public ResourceRegistry<ResourceRegistry.Element> Registry { get; }
     
-    public ImportResourceLibrary(LibraryID id, ImportSourceProvider sourceProvider) : base(id) {
-        ArgumentNullException.ThrowIfNull(sourceProvider, nameof(sourceProvider));
+    public ImportResourceLibrary(LibraryID id, SourceRepository sourceRepository) : base(id) {
+        ArgumentNullException.ThrowIfNull(sourceRepository, nameof(sourceRepository));
         
-        _provider = sourceProvider;
+        _provider = sourceRepository;
         Registry = [];
     }
 

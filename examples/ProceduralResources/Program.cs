@@ -1,13 +1,9 @@
-﻿using Caxivitual.Lunacub.Building.Collections;
-using Caxivitual.Lunacub.Building.Core;
-using Caxivitual.Lunacub.Importing.Core;
+﻿using Caxivitual.Lunacub.Building.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.IO;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
-using FileSourceProvider = Caxivitual.Lunacub.Importing.Core.FileSourceProvider;
-using MemorySourceProvider = Caxivitual.Lunacub.Building.Core.MemorySourceProvider;
+using FileSourceRepository = Caxivitual.Lunacub.Importing.Core.FileSourceRepository;
+using MemorySourceRepository = Caxivitual.Lunacub.Building.Core.MemorySourceRepository;
 
 namespace Caxivitual.Lunacub.Examples.ProceduralResources;
 
@@ -46,9 +42,9 @@ internal static class Program {
                 new EmittableResourceSerializerFactory(),
             },
             Libraries = {
-                new(1, new MemorySourceProvider {
+                new(1, new MemorySourceRepository {
                     Sources = {
-                        ["Resource"] = MemorySourceProvider.AsUtf8("""{"Value":16}""", DateTime.MinValue),
+                        ["Resource"] = MemorySourceRepository.AsUtf8("""{"Value":16}""", DateTime.MinValue),
                     },
                 }) {
                     Registry = {
@@ -67,7 +63,7 @@ internal static class Program {
     
     private static async Task ImportResource(string resourceDirectory) {
         string libraryDirectory = Path.Combine(resourceDirectory, "1");
-        ImportResourceLibrary library = new(1, new FileSourceProvider(libraryDirectory));
+        ImportResourceLibrary library = new(1, new FileSourceRepository(libraryDirectory));
 
         using (var registryStream = File.OpenRead(Path.Combine(libraryDirectory, "__registry"))) {
             foreach ((var resourceId, var element) in JsonSerializer.Deserialize<ResourceRegistry<ResourceRegistry.Element>>(registryStream)!) {
