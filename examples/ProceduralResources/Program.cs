@@ -29,7 +29,7 @@ internal static class Program {
     private static void BuildResources(string reportDirectory, string outputDirectory) {
         _logger.LogInformation("Building resources...");
         
-        using BuildEnvironment env = new(new FileResourceSink(reportDirectory, outputDirectory), _memoryStreamManager) {
+        using BuildEnvironment env = new(new FileResourceSink(outputDirectory), new FileBuildCacheIO(reportDirectory), _memoryStreamManager) {
             Importers = {
                 [nameof(SimpleResourceImporter)] = new SimpleResourceImporter(),
                 [nameof(EmittableResourceImporter)] = new EmittableResourceImporter(),
