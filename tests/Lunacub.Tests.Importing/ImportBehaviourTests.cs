@@ -11,10 +11,10 @@ public class ImportBehaviourTests : IClassFixture<ComponentsFixture>, IDisposabl
         var buildSourceProvider = new BuildMemorySourceProvider();
         buildSourceProvider.Sources.Add(nameof(SimpleResource), new([.."{\"Value\":1}"u8], DateTime.MinValue));
         
-        MemoryResourceSink _buildOutput = new();
+        MemoryResourceSink _resourceSink = new();
         RecyclableMemoryStreamManager memoryStreamManager = new();
 
-        using BuildEnvironment buildEnv = new BuildEnvironment(_buildOutput, memoryStreamManager)
+        using BuildEnvironment buildEnv = new BuildEnvironment(_resourceSink, VoidBuildCacheSink.Instance, memoryStreamManager)
             .AddLibrary(
                 new BuildResourceLibrary(1, buildSourceProvider).AddRegistryElement(1, new("SimpleResource", [], new() {
                     Addresses = new(nameof(SimpleResource)),
@@ -28,11 +28,11 @@ public class ImportBehaviourTests : IClassFixture<ComponentsFixture>, IDisposabl
         var importSourceProvider = new ImportMemorySourceProvider();
         var importLibrary = new ImportResourceLibrary(1, importSourceProvider);
         
-        foreach ((var resourceId, var compiledBinary) in _buildOutput.Outputs[1].CompiledResources) {
-            importSourceProvider.Resources.Add(resourceId, compiledBinary.Item1);
+        foreach ((var resourceId, var compiledBinary) in _resourceSink.Outputs[1].CompiledResources) {
+            importSourceProvider.Resources.Add(resourceId, compiledBinary);
         }
         
-        foreach ((var resourceId, var registryElement) in _buildOutput.Outputs[1].Registry) {
+        foreach ((var resourceId, var registryElement) in _resourceSink.Outputs[1].Registry) {
             importLibrary.AddRegistryElement(resourceId, registryElement);
         }
         

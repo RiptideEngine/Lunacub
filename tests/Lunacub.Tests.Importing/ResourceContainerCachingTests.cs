@@ -20,12 +20,12 @@ public class ResourceContainerCachingTests : IClassFixture<ComponentsFixture> {
         BuildResourceLibrary library = new(1, new FileSourceRepository(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources")));
         libraryResourceAppender(library);
 
-        MemoryResourceSink memoryOutput = new();
+        MemoryResourceSink resourceSink = new();
         RecyclableMemoryStreamManager memStreamManager = new();
 
         ILogger logger = _output.BuildLogger();
         
-        using var environment = new BuildEnvironment(memoryOutput, memStreamManager)
+        using var environment = new BuildEnvironment(resourceSink, VoidBuildCacheSink.Instance, memStreamManager)
             .AddLibrary(library)
             .SetLogger(logger);
 
@@ -35,11 +35,11 @@ public class ResourceContainerCachingTests : IClassFixture<ComponentsFixture> {
         var importSourceProvider = new ImportMemorySourceProvider();
         var importLibrary = new ImportResourceLibrary(1, importSourceProvider);
 
-        foreach ((var resourceId, var compiledBinary) in memoryOutput.Outputs[1].CompiledResources) {
-            importSourceProvider.Resources.Add(resourceId, compiledBinary.Item1);
+        foreach ((var resourceId, var compiledBinary) in resourceSink.Outputs[1].CompiledResources) {
+            importSourceProvider.Resources.Add(resourceId, compiledBinary);
         }
 
-        foreach ((var resourceId, var registryElement) in memoryOutput.Outputs[1].Registry) {
+        foreach ((var resourceId, var registryElement) in resourceSink.Outputs[1].Registry) {
             importLibrary.AddRegistryElement(resourceId, registryElement);
         }
 
