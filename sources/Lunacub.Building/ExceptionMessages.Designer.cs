@@ -78,6 +78,15 @@ namespace Caxivitual.Lunacub.Building {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Directory not found: Could not find a part of the path &apos;{0}&apos;..
+        /// </summary>
+        internal static string DirectoryNotFound {
+            get {
+                return ResourceManager.GetString("DirectoryNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Trying to insert library with id of {0} but library with same id has already been registered..
         /// </summary>
         internal static string DuplicateLibraryId {

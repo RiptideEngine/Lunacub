@@ -17,7 +17,6 @@ partial class BuildSession {
         Log.FinishBuildingResources(_environment.Logger);
         
         // We're done building every resources.
-        // Now we should postprocess and flush some incremental infos like schematics.
         ProcessPostBuild();
     }
 

@@ -6,9 +6,9 @@ partial class BuildSession {
 
         foreach ((LibraryID libraryId, ResourceRegistry<ResourceRegistry.Element> registry) in _outputRegistries) {
             // Output the registry.
-            _environment.Output.OutputLibraryRegistry(registry, libraryId);
+            _environment.ResourceSink.FlushLibraryRegistry(registry, libraryId);
         }
         
-        _environment.FlushIncrementalInfos();
+        _environment.FlushBuildCaches();
     }
 }

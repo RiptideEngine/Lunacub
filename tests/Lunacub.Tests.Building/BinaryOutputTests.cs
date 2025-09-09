@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 namespace Caxivitual.Lunacub.Tests.Building;
 
 public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClassFixture<MemoryStreamManagerFixture>, IDisposable {
-    private readonly MemoryOutputSystem _buildOutput;
+    private readonly MemoryResourceSink _buildOutput;
     private readonly BuildEnvironment _environment;
 
     public BinaryOutputTests(ComponentsFixture componentsFixture, MemoryStreamManagerFixture memoryStreamFixture) {

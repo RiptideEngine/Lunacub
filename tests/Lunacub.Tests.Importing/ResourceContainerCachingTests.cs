@@ -20,7 +20,7 @@ public class ResourceContainerCachingTests : IClassFixture<ComponentsFixture> {
         BuildResourceLibrary library = new(1, new FileSourceRepository(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources")));
         libraryResourceAppender(library);
 
-        MemoryOutputSystem memoryOutput = new();
+        MemoryResourceSink memoryOutput = new();
         RecyclableMemoryStreamManager memStreamManager = new();
 
         ILogger logger = _output.BuildLogger();

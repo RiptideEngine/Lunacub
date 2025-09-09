@@ -11,7 +11,7 @@ public class ImportBehaviourTests : IClassFixture<ComponentsFixture>, IDisposabl
         var buildSourceProvider = new BuildMemorySourceProvider();
         buildSourceProvider.Sources.Add(nameof(SimpleResource), new([.."{\"Value\":1}"u8], DateTime.MinValue));
         
-        MemoryOutputSystem _buildOutput = new();
+        MemoryResourceSink _buildOutput = new();
         RecyclableMemoryStreamManager memoryStreamManager = new();
 
         using BuildEnvironment buildEnv = new BuildEnvironment(_buildOutput, memoryStreamManager)

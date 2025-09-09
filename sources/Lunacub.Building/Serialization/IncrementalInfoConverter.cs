@@ -4,8 +4,8 @@ using System.Collections.Frozen;
 namespace Caxivitual.Lunacub.Building.Serialization;
 
 [ExcludeFromCodeCoverage]
-internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> {
-    public override IncrementalInfo Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+internal sealed class IncrementalInfoConverter : JsonConverter<BuildCache> {
+    public override BuildCache Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
         if (reader.TokenType != JsonTokenType.StartObject) {
             throw new JsonException();
         }
@@ -28,21 +28,21 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
             reader.Read();
 
             switch (propertyName) {
-                case nameof(IncrementalInfo.SourcesInfo):
+                case nameof(BuildCache.SourcesInfo):
                     sourcesInfo = JsonSerializer.Deserialize<SourcesInfo>(ref reader, options);
                     break;
                     
-                case nameof(IncrementalInfo.Options):
+                case nameof(BuildCache.Options):
                     buildingOptions = JsonSerializer.Deserialize<BuildingOptions>(ref reader, options);
                     break;
                 
-                case nameof(IncrementalInfo.DependencyAddresses):
+                case nameof(BuildCache.DependencyAddresses):
                     dependencies = JsonSerializer.Deserialize<HashSet<ResourceAddress>>(ref reader, options) is { } set ?
                         set.ToFrozenSet() :
                         FrozenSet<ResourceAddress>.Empty;
                     break;
                 
-                case nameof(IncrementalInfo.ComponentVersions):
+                case nameof(BuildCache.ComponentVersions):
                     componentVersions = JsonSerializer.Deserialize<ComponentVersions>(ref reader, options);
                     break;
                 
@@ -55,19 +55,19 @@ internal sealed class IncrementalInfoConverter : JsonConverter<IncrementalInfo> 
         throw new JsonException();
     }
     
-    public override void Write(Utf8JsonWriter writer, IncrementalInfo info, JsonSerializerOptions options) {
+    public override void Write(Utf8JsonWriter writer, BuildCache info, JsonSerializerOptions options) {
         writer.WriteStartObject();
         
-        writer.WritePropertyName(nameof(IncrementalInfo.SourcesInfo));
+        writer.WritePropertyName(nameof(BuildCache.SourcesInfo));
         JsonSerializer.Serialize(writer, info.SourcesInfo, options);
         
-        writer.WritePropertyName(nameof(IncrementalInfo.Options));
+        writer.WritePropertyName(nameof(BuildCache.Options));
         JsonSerializer.Serialize(writer, info.Options, options);
         
-        writer.WritePropertyName(nameof(IncrementalInfo.DependencyAddresses));
+        writer.WritePropertyName(nameof(BuildCache.DependencyAddresses));
         JsonSerializer.Serialize(writer, info.DependencyAddresses, options);
         
-        writer.WritePropertyName(nameof(IncrementalInfo.ComponentVersions));
+        writer.WritePropertyName(nameof(BuildCache.ComponentVersions));
         JsonSerializer.Serialize(writer, info.ComponentVersions, options);
         
         writer.WriteEndObject();

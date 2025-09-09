@@ -415,8 +415,8 @@ partial class BuildSession {
                     continue;
                 }
                 
-                if (!rebuild && _environment.IncrementalInfos.TryGetValue(libraryId, out LibraryIncrementalInfos? libraryIncrementalInfos)) {
-                    if (libraryIncrementalInfos.TryGetValue(resourceId, out IncrementalInfo previousIncrementalInfo)) {
+                if (!rebuild && _environment.BuildCache.TryGetValue(libraryId, out LibraryBuildCache? libraryIncrementalInfos)) {
+                    if (libraryIncrementalInfos.TryGetValue(resourceId, out BuildCache previousIncrementalInfo)) {
                         // So we do got the report from the last building session.
                         
                         // Compare the components to early opt-out as soon as possible.
@@ -694,7 +694,7 @@ partial class BuildSession {
                 dependencyIds = validDependencyIds;
             }
             
-            _environment.IncrementalInfos.SetIncrementalInfo(resourceAddress, new(resourceVertex.SourcesInformation, options, dependencyIds, new(importer.Version, resourceVertex.Processor?.Version)));
+            _environment.BuildCache.SetIncrementalInfo(resourceAddress, new(resourceVertex.SourcesInformation, options, dependencyIds, new(importer.Version, resourceVertex.Processor?.Version)));
             AddOutputResourceRegistry(resourceAddress, new(registryElement.Name, registryElement.Tags));
         } finally {
             ReleaseDependencies(resourceVertex.DependencyResourceAddresses);

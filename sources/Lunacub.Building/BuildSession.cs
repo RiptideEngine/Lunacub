@@ -149,7 +149,7 @@ internal sealed partial class BuildSession {
         
         CompileHelpers.Compile(_environment, serializer, ms, tags);
         ms.Position = 0;
-        _environment.Output.CopyCompiledResourceOutput(ms, address);
+        _environment.ResourceSink.FlushCompiledResource(ms, address);
     }
 
     private void AppendProceduralResources(
@@ -161,66 +161,6 @@ internal sealed partial class BuildSession {
             receiver.Add(new(sourceResourceAddress.LibraryId, resourceId), new(sourceResourceAddress.ResourceId, resource));
         }
     }
-
-    // /// <summary>
-    // /// Determines whether a resource should be rebuilt based on timeline, configurations, dependencies from previous build informations.
-    // /// </summary>
-    // /// <param name="address">Resource to determines whether rebuilding needed.</param>
-    // /// <param name="sourceLastWriteTimes">The last write times of resource's sources.</param>
-    // /// <param name="currentOptions">Building options of the resource.</param>
-    // /// <param name="currentDependencies">Dependencies of the resource.</param>
-    // /// <param name="previousIncrementalInfo">
-    // ///     When this method returns, contains the <see cref="IncrementalInfo"/> of the previous building session of the resource. If the
-    // ///     resource hasn't been build before, <see langword="default"/> is returned.
-    // /// </param>
-    // /// <returns><see langword="true"/> if the resource should be rebuilt; otherwise, <see langword="false"/>.</returns>
-    // /// <remarks>The function does not account for the version of building components.</remarks>
-    // private bool IsResourceCacheable(
-    //     ResourceAddress address,
-    //     SourceLastWriteTimes sourceLastWriteTimes,
-    //     BuildingOptions currentOptions,
-    //     IReadOnlySet<ResourceAddress> currentDependencies,
-    //     out IncrementalInfo previousIncrementalInfo
-    // ) {
-    //     if (!_environment.IncrementalInfos.TryGetValue(address.LibraryId, out var libraryIncrementalInfos)) {
-    //         previousIncrementalInfo = default;
-    //         return false;
-    //     }
-    //     
-    //     // If resource has been built before, and have old report, we can begin checking for caching.
-    //     if (_environment.Output.GetResourceLastBuildTime(address) is { } resourceLastBuildTime &&
-    //         libraryIncrementalInfos.TryGetValue(address.ResourceId, out previousIncrementalInfo)) {
-    //         if (CompareLastWriteTimes(previousIncrementalInfo.SourcesLastWriteTime, sourceLastWriteTimes)) {
-    //             // If the options are equal, no need to rebuild.
-    //             if (currentOptions.Equals(previousIncrementalInfo.Options)) {
-    //                 if (previousIncrementalInfo.DependencyAddresses.SequenceEqual(currentDependencies)) {
-    //                     return true;
-    //                 }
-    //             }
-    //         }
-    //
-    //         return false;
-    //     }
-    //
-    //     previousIncrementalInfo = default;
-    //     return false;
-    //
-    //     // Check if resource's last write time is the same as the time stored in report.
-    //     // Check if destination's last write time is later than resource's last write time.
-    //     static bool CompareLastWriteTimes(SourceLastWriteTimes previous, SourceLastWriteTimes current) {
-    //         if (previous.Primary != current.Primary) return false;
-    //         if (previous.Secondaries == null) return current.Secondaries == null;
-    //
-    //         if (current.Secondaries == null) return false;
-    //             
-    //         foreach ((var previousSourceName, var previousSourceLastWriteTime) in previous.Secondaries) {
-    //             if (!current.Secondaries.TryGetValue(previousSourceName, out var curentSourceLastWriteTime)) return false;
-    //             if (previousSourceLastWriteTime != curentSourceLastWriteTime) return false;
-    //         }
-    //
-    //         return true;
-    //     }
-    // }
 
     private sealed class ResourceVertex {
         /// <summary>

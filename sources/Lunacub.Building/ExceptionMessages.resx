@@ -49,4 +49,7 @@
     <data name="CircularResourceDependency" xml:space="preserve">
         <value>Circular resource dependency detected: {0}.</value>
     </data>
+    <data name="DirectoryNotFound" xml:space="preserve">
+        <value>Directory not found: Could not find a part of the path '{0}'.</value>
+    </data>
 </root>

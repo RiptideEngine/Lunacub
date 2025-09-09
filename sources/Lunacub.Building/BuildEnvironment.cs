@@ -1,6 +1,4 @@
-﻿using Caxivitual.Lunacub.Building.Collections;
-using Caxivitual.Lunacub.Building.Incremental;
-using Microsoft.IO;
+﻿using Microsoft.IO;
 
 namespace Caxivitual.Lunacub.Building;
 
@@ -32,14 +30,24 @@ public sealed class BuildEnvironment : IDisposable {
     public ResourceLibraryCollection Libraries { get; }
     
     /// <summary>
-    /// Gets the <see cref="OutputSystem"/> instance.
+    /// Gets the <see cref="IResourceSink"/> instance that associates with this <see cref="BuildEnvironment"/>.
     /// </summary>
-    public OutputSystem Output { get; }
+    public IResourceSink ResourceSink { get; }
     
     /// <summary>
-    /// Gets the collection that stores the <see cref="IncrementalInfo"/>.
+    /// Gets the <see cref="IBuildCacheRepository"/> instance that associates with this <see cref="BuildEnvironment"/>.
     /// </summary>
-    internal EnvironmentIncrementalInfos IncrementalInfos { get; }
+    public IBuildCacheRepository BuildCacheRepository { get; }
+    
+    /// <summary>
+    /// Gets the <see cref="IBuildCacheSink"/> instance that associates with this <see cref="BuildEnvironment"/>.
+    /// </summary>
+    public IBuildCacheSink BuildCacheSink { get; }
+    
+    /// <summary>
+    /// Gets the collection that stores the <see cref="Incremental.BuildCache"/>.
+    /// </summary>
+    internal EnvironmentBuildCache BuildCache { get; }
     
     /// <summary>
     /// Gets and sets the <see cref="ILogger"/> instance used for debugging and reporting purpose.
@@ -51,24 +59,51 @@ public sealed class BuildEnvironment : IDisposable {
     private bool _disposed;
 
     /// <summary>
-    /// Initializes a new instance of <see cref="BuildEnvironment"/> with empty <see cref="Importers"/>,
-    /// <see cref="Processors"/>, <see cref="SerializerFactories"/>, <see cref="Libraries"/> and has the provided
-    /// <see cref="OutputSystem"/> object.
+    /// Initializes a new instance of <see cref="BuildEnvironment"/> with provided parameters.
     /// </summary>
-    /// <param name="output">The <see cref="OutputSystem"/> object for the instance to use.</param>
+    /// <param name="resourceSink">
+    /// The sink endpoint that will be used to flush the compiled binary of resources and
+    /// library registries.
+    /// </param>
+    /// <param name="buildCacheRepository">
+    /// The repository of resources' incremental information.
+    /// </param>
+    /// <param name="buildCacheSink">
+    /// The sink endpoint that will be used to flush resources' incremental information.
+    /// </param>
     /// <param name="memoryStreamManager">
     /// An instance of memory stream manager that used to temporary stores the built resource output.
     /// </param>
-    public BuildEnvironment(OutputSystem output, RecyclableMemoryStreamManager memoryStreamManager) {
-        Output = output;
+    public BuildEnvironment(IResourceSink resourceSink, IBuildCacheRepository buildCacheRepository, IBuildCacheSink buildCacheSink, RecyclableMemoryStreamManager memoryStreamManager) {
         Libraries = [];
-        IncrementalInfos = new();
+        BuildCache = new();
         Logger = NullLogger.Instance;
         MemoryStreamManager = memoryStreamManager;
         
-        Output.CollectIncrementalInfos(IncrementalInfos);
+        ResourceSink = resourceSink;
+        BuildCacheRepository = buildCacheRepository;
+        BuildCacheSink = buildCacheSink;
+        
+        BuildCacheRepository.CollectIncrementalInfos(BuildCache);
     }
-    
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="BuildEnvironment"/> with provided parameters.
+    /// </summary>
+    /// <param name="resourceSink">
+    /// The sink endpoint that will be used to flush the compiled binary of resources and
+    /// library registries.
+    /// </param>
+    /// <param name="buildCacheIO">
+    /// An instance that handle the input/output operation of resources' build cache.
+    /// </param>
+    /// <param name="memoryStreamManager">
+    /// An instance of memory stream manager that used to temporary stores the built resource output.
+    /// </param>
+    public BuildEnvironment(IResourceSink resourceSink, IBuildCacheIO buildCacheIO, RecyclableMemoryStreamManager memoryStreamManager) :
+        this(resourceSink, buildCacheIO, buildCacheIO, memoryStreamManager) {
+    }
+
     /// <summary>
     /// Build all the registered resources from registered resource libraries.
     /// </summary>
@@ -82,16 +117,15 @@ public sealed class BuildEnvironment : IDisposable {
         return new(begin, DateTime.Now, session.Results);
     }
 
-    public void FlushIncrementalInfos() {
-        Output.FlushIncrementalInfos(IncrementalInfos);
+    public void FlushBuildCaches() {
+        BuildCacheSink.FlushBuildCaches(BuildCache);
     }
-
 
     private void Dispose(bool disposing) {
         if (Interlocked.Exchange(ref _disposed, true)) return;
 
         if (disposing) {
-            FlushIncrementalInfos();
+            FlushBuildCaches();
         }
     }
 

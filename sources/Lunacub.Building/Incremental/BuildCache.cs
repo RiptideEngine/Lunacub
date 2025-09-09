@@ -8,7 +8,7 @@ namespace Caxivitual.Lunacub.Building.Incremental;
 /// </summary>
 [JsonConverter(typeof(IncrementalInfoConverter))]
 [ExcludeFromCodeCoverage]
-public readonly struct IncrementalInfo {
+public readonly struct BuildCache {
     /// <summary>
     /// Represents the last write time of the source resource data.
     /// </summary>
@@ -31,7 +31,7 @@ public readonly struct IncrementalInfo {
     public readonly ComponentVersions ComponentVersions;
 
     /// <summary>
-    /// Initializes a new instance of <see cref="IncrementalInfo"/> with empty dependencies, specified source resource
+    /// Initializes a new instance of <see cref="BuildCache"/> with empty dependencies, specified source resource
     /// last write time and options.
     /// </summary>
     /// <param name="sourcesInfo">Incremental information of each resource sources.</param>
@@ -39,11 +39,11 @@ public readonly struct IncrementalInfo {
     /// <param name="componentVersions">
     ///     The version strings of <see cref="Importer"/> and <see cref="Processor"/> that used to import and process the resource.
     /// </param>
-    internal IncrementalInfo(SourcesInfo sourcesInfo, BuildingOptions options, ComponentVersions componentVersions) :
+    internal BuildCache(SourcesInfo sourcesInfo, BuildingOptions options, ComponentVersions componentVersions) :
         this(sourcesInfo, options, FrozenSet<ResourceAddress>.Empty, componentVersions) {}
     
     /// <summary>
-    /// Initializes a new instance of <see cref="IncrementalInfo"/> with a specified source resource last write time, options,
+    /// Initializes a new instance of <see cref="BuildCache"/> with a specified source resource last write time, options,
     /// dependencies and dependents.
     /// </summary>
     /// <param name="sourcesInfo">Incremental information of each resource sources.</param>
@@ -54,7 +54,7 @@ public readonly struct IncrementalInfo {
     /// <param name="componentVersions">
     ///     The version strings of <see cref="Importer"/> and <see cref="Processor"/> that used to import and process the resource
     /// </param>
-    internal IncrementalInfo(
+    internal BuildCache(
         SourcesInfo sourcesInfo,
         BuildingOptions options,
         IReadOnlySet<ResourceAddress> dependencyAddresses,
