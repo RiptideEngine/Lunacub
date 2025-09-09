@@ -33,7 +33,7 @@ public sealed class AutoTimestampVersionGenerator : IIncrementalGenerator {
             x.AttributeClass!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::Caxivitual.Lunacub.Building.Attributes.AutoTimestampVersionAttribute");
 
         if (data.ConstructorArguments[0].Value is not string format) return null;
-
+        
         return new(typedSymbol.ContainingNamespace.ToDisplayString(), containingTypes, typedSymbol, format);
     }
 

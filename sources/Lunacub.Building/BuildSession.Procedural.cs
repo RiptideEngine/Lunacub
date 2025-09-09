@@ -6,6 +6,8 @@ partial class BuildSession {
     private void BuildProceduralResources() {
         if (_proceduralResources.Count != 0) {
             Log.BeginBuildingProceduralResources(_environment.Logger);
+            Log.ProceduralResourcesDetected(_environment.Logger, _proceduralResources.Count);
+            
             new ProceduralResourceBuild(this, _proceduralResources, null).Build();
             
             Debug.Assert(

@@ -6,6 +6,9 @@ internal static partial class Log {
 
     [LoggerMessage(LogLevel.Information, "Finished building environment resources. Now begin building procedural resources.")]
     public static partial void BeginBuildingProceduralResources(ILogger logger);
+
+    [LoggerMessage(LogLevel.Information, "{amount} procedural resource(s) detected.")]
+    public static partial void ProceduralResourcesDetected(ILogger logger, int amount);
     
     [LoggerMessage(LogLevel.Information, "Finish building resources.")]
     public static partial void FinishBuildingResources(ILogger logger);
@@ -24,6 +27,9 @@ internal static partial class Log {
     
     [LoggerMessage(LogLevel.Information, "Step 3: Counting vertex references...")]
     public static partial void CountResourceVertexReferences(ILogger logger);
+    
+    [LoggerMessage(LogLevel.Information, "Step 4: Compile resources...")]
+    public static partial void CompileResources(ILogger logger);
 
     [LoggerMessage(LogLevel.Warning, "Detected a resource cycle after populating graph vertices from resources incremental informations. A fresh rebuild will be executed.")]
     public static partial void WarnGraphCycleDetectedAfterPopulateVerticesFromIncrementalInfos(ILogger logger);

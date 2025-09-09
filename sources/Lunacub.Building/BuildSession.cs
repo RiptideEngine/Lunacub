@@ -45,13 +45,15 @@ internal sealed partial class BuildSession {
             if (!_graph.TryGetValue(dependencyAddress.LibraryId, out var libraryVertices)) continue;
             if (!libraryVertices.Vertices.TryGetValue(dependencyAddress.ResourceId, out ResourceVertex? vertex)) continue;
 
-            ReleaseVertexOutput(vertex);
+            ReleaseVertex(vertex);
         }
     }
 
-    private void ReleaseVertexOutput(ResourceVertex vertex) {
+    private void ReleaseVertex(ResourceVertex vertex) {
         if (vertex.DecrementReference() == 0) {
             vertex.DisposeImportedObject(new(_environment.Logger));
+            
+            ReleaseDependencies(vertex.DependencyResourceAddresses!);
         }
     }
 
