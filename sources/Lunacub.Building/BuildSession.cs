@@ -19,6 +19,10 @@ internal sealed partial class BuildSession {
     
     private readonly Dictionary<ResourceAddress, ProceduralResourceRequest> _proceduralResources;
     
+    // Initialize some variable to use during graph cycle validation.
+    private readonly HashSet<ResourceAddress> _temporaryMarks = [], _permanentMarks = [];
+    private readonly Stack<ResourceAddress> _cyclePath = [];
+    
     public BuildSession(BuildEnvironment environment) {
         _environment = environment;
         _graph = _environment.Libraries.Select(x => {
@@ -102,15 +106,6 @@ internal sealed partial class BuildSession {
         vertex = null;
         return false;
     }
-    
-    private bool TryGetResult(LibraryID libraryId, ResourceID resourceId, out FailureResult result) {
-        if (!Results.TryGetValue(libraryId, out var libraryResults)) {
-            result = default;
-            return false;
-        }
-        
-        return libraryResults.TryGetValue(resourceId, out result);
-    }
 
     private bool TryGetResult(ResourceAddress address, out FailureResult result) {
         if (!Results.TryGetValue(address.LibraryId, out var libraryResults)) {
@@ -161,6 +156,54 @@ internal sealed partial class BuildSession {
     ) {
         foreach ((var resourceId, var resource) in proceduralResources) {
             receiver.Add(new(sourceResourceAddress.LibraryId, resourceId), new(sourceResourceAddress.ResourceId, resource));
+        }
+    }
+    
+    void CheckGraphCycle(Action<IEnumerable<ResourceAddress>> onCycleDetected) {
+        if (_graph.Count == 0) return;
+        
+        try {
+            foreach ((var libraryId, var libraryVertices) in _graph) {
+                foreach ((var resourceId, var resourceVertex) in libraryVertices.Vertices) {
+                    if (Visit(new(libraryId, resourceId), resourceVertex)) {
+                        return;
+                    }
+                }
+            }
+        } finally {
+            _temporaryMarks.Clear();
+            _permanentMarks.Clear();
+            _cyclePath.Clear();
+        }
+        
+        return;
+        
+        bool Visit(
+            ResourceAddress resourceAddress,
+            ResourceVertex resourceVertex
+        ) {
+            if (_permanentMarks.Contains(resourceAddress)) return false;
+        
+            _cyclePath.Push(resourceAddress);
+        
+            if (!_temporaryMarks.Add(resourceAddress)) {
+                onCycleDetected(_cyclePath.Reverse());
+                return true;
+            }
+
+            if (resourceVertex.DependencyResourceAddresses != null) {
+                foreach (var dependencyAddress in resourceVertex.DependencyResourceAddresses) {
+                    if (!TryGetVertex(dependencyAddress, out var dependencyVertex)) continue;
+
+                    if (Visit(dependencyAddress, dependencyVertex)) {
+                        return true;
+                    }
+                }
+            }
+
+            _permanentMarks.Add(resourceAddress);
+            _cyclePath.Pop();
+            return false;
         }
     }
 

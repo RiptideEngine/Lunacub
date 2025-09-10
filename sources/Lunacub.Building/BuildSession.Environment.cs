@@ -5,10 +5,6 @@ partial class BuildSession {
     private void BuildEnvironmentResources(bool rebuild) {
         Log.BeginBuildingEnvironmentResources(_environment.Logger);
         
-        // Initialize some variable to use during graph cycle validation.
-        HashSet<ResourceAddress> temporaryMarks = [], permanentMarks = [];
-        Stack<ResourceAddress> cyclePath = [];
-        
         // Populate the graph vertices.
         CreateGraphVertices(rebuild);
         
@@ -20,6 +16,7 @@ partial class BuildSession {
             cycleDetected = true;
         });
 
+        // Extract all dependencies.
         if (cycleDetected) {
             ExtractAllVerticesDependencies();
         } else {
@@ -71,54 +68,6 @@ partial class BuildSession {
         // We're done building environment resources, begin building procedural resources.
         BuildProceduralResources();
         return;
-        
-        void CheckGraphCycle(Action<IEnumerable<ResourceAddress>> onCycleDetected) {
-            if (_graph.Count == 0) return;
-        
-            try {
-                foreach ((var libraryId, var libraryVertices) in _graph) {
-                    foreach ((var resourceId, var resourceVertex) in libraryVertices.Vertices) {
-                        if (Visit(new(libraryId, resourceId), resourceVertex)) {
-                            return;
-                        }
-                    }
-                }
-            } finally {
-                temporaryMarks.Clear();
-                permanentMarks.Clear();
-                cyclePath.Clear();
-            }
-        
-            return;
-        
-            bool Visit(
-                ResourceAddress resourceAddress,
-                ResourceVertex resourceVertex
-            ) {
-                if (permanentMarks.Contains(resourceAddress)) return false;
-        
-                cyclePath.Push(resourceAddress);
-        
-                if (!temporaryMarks.Add(resourceAddress)) {
-                    onCycleDetected(cyclePath.Reverse());
-                    return true;
-                }
-
-                if (resourceVertex.DependencyResourceAddresses != null) {
-                    foreach (var dependencyAddress in resourceVertex.DependencyResourceAddresses) {
-                        if (!TryGetVertex(dependencyAddress, out var dependencyVertex)) continue;
-
-                        if (Visit(dependencyAddress, dependencyVertex)) {
-                            return true;
-                        }
-                    }
-                }
-
-                permanentMarks.Add(resourceAddress);
-                cyclePath.Pop();
-                return false;
-            }
-        }
     }
 
     /// <summary>
