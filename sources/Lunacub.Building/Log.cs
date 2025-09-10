@@ -33,4 +33,7 @@ internal static partial class Log {
 
     [LoggerMessage(LogLevel.Warning, "Detected a resource cycle after populating graph vertices from resources incremental informations. A fresh rebuild will be executed.")]
     public static partial void WarnGraphCycleDetectedAfterPopulateVerticesFromIncrementalInfos(ILogger logger);
+    
+    [LoggerMessage(LogLevel.Warning, "Detected leaked resources after building envirionment resources. Cleaning up everything...")]
+    public static partial void ReportLeakedAfterBuildEnvironmentResources(ILogger logger);
 }

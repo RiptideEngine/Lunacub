@@ -12,8 +12,6 @@ partial class BuildSession {
         // Populate the graph vertices.
         CreateGraphVertices(rebuild);
         
-        GC.KeepAlive(_graph);
-
         if (Results.Count > 0) return;
 
         bool cycleDetected = false;
@@ -40,16 +38,35 @@ partial class BuildSession {
         
         // Shouldn't cause any error.
         Debug.Assert(Results.Count == 0);
-        
-        GC.KeepAlive(_graph);
-        
-        // Alright everything has been populated, begin building resources.
-        InnerBuildEnvironmentResources();
-        
-        Debug.Assert(
-            _graph.Values.SelectMany(x => x.Vertices.Values).All(x => x.ObjectRepresentation == null), 
-            "Resource leaked after building environment resources."
-        );
+
+        try {
+            // Alright everything has been populated, begin building resources.
+            InnerBuildEnvironmentResources();
+        } finally {
+            bool reported = false;
+
+            foreach ((_, var libraryVertices) in _graph) {
+                foreach ((_, var vertex) in libraryVertices.Vertices) {
+                    if (vertex.ObjectRepresentation != null) {
+                        if (!reported) {
+                            reported = true;
+                            Log.ReportLeakedAfterBuildEnvironmentResources(_environment.Logger);
+                        }
+                        
+                        vertex.DisposeImportedObject(new(_environment.Logger));
+                    } else if (vertex.ReferenceCount > 0) {
+                        if (!reported) {
+                            reported = true;
+                            Log.ReportLeakedAfterBuildEnvironmentResources(_environment.Logger);
+                        }
+                    }
+                }
+                
+                // We don't need these vertices anymore because we've finish building the environment resources.
+                // Await more vertices at procedural resources building stages.
+                libraryVertices.Vertices.Clear();
+            }
+        }
         
         // We're done building environment resources, begin building procedural resources.
         BuildProceduralResources();
