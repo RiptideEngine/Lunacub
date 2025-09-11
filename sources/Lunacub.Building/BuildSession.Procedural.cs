@@ -167,7 +167,7 @@ partial class BuildSession {
                 
                 _session.AddOutputResourceRegistry(resourceAddress, new(null, proceduralResource.Tags));
             } finally {
-                _session.ReleaseDependencies(proceduralResource.DependencyAddresses ?? FrozenSet<ResourceAddress>.Empty);
+                _session.ReleaseDependencies(proceduralResource.DependencyAddresses);
             }
         }
         
