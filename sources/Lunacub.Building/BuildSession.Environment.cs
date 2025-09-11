@@ -57,17 +57,17 @@ partial class BuildSession {
                             Log.ReportLeakedAfterBuildEnvironmentResources(_environment.Logger);
                         }
                     }
+
+                    // Reset reference count so that we can reuse the vertices for the procedural resource building stage.
+                    vertex.ReferenceCount = 0;
                 }
-                
-                // We don't need these vertices anymore because we've finish building the environment resources.
-                // Await more vertices at procedural resources building stages.
-                libraryVertices.Vertices.Clear();
             }
         }
         
+        // TODO: Should we stop here if there are any failure result?
+        
         // We're done building environment resources, begin building procedural resources.
         BuildProceduralResources();
-        return;
     }
 
     /// <summary>

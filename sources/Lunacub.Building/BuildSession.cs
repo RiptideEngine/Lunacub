@@ -17,7 +17,7 @@ internal sealed partial class BuildSession {
     
     private readonly Dictionary<LibraryID, ResourceRegistry<ResourceRegistry.Element>> _outputRegistries;
     
-    private readonly Dictionary<ResourceAddress, ProceduralResourceRequest> _proceduralResources;
+    private readonly Dictionary<ResourceAddress, BuildingProceduralResource> _proceduralResources;
     
     // Initialize some variable to use during graph cycle validation.
     private readonly HashSet<ResourceAddress> _temporaryMarks = [], _permanentMarks = [];
@@ -106,15 +106,6 @@ internal sealed partial class BuildSession {
         vertex = null;
         return false;
     }
-
-    private bool TryGetResult(ResourceAddress address, out FailureResult result) {
-        if (!Results.TryGetValue(address.LibraryId, out var libraryResults)) {
-            result = default;
-            return false;
-        }
-        
-        return libraryResults.TryGetValue(address.ResourceId, out result);
-    }
     
     private void SetResult(LibraryID libraryId, ResourceID resourceId, FailureResult result) {
         if (Results.TryGetValue(libraryId, out var resourceResults)) {
@@ -149,17 +140,17 @@ internal sealed partial class BuildSession {
         _environment.ResourceSink.FlushCompiledResource(ms, address);
     }
 
-    private void AppendProceduralResources(
+    private static void AppendProceduralResources(
         ResourceAddress sourceResourceAddress,
         ProceduralResourceCollection proceduralResources,
-        Dictionary<ResourceAddress, ProceduralResourceRequest> receiver
+        Dictionary<ResourceAddress, BuildingProceduralResource> receiver
     ) {
         foreach ((var resourceId, var resource) in proceduralResources) {
-            receiver.Add(new(sourceResourceAddress.LibraryId, resourceId), new(sourceResourceAddress.ResourceId, resource));
+            receiver.Add(new(sourceResourceAddress.LibraryId, resourceId), resource);
         }
     }
     
-    void CheckGraphCycle(Action<IEnumerable<ResourceAddress>> onCycleDetected) {
+    private void CheckGraphCycle(Action<IEnumerable<ResourceAddress>> onCycleDetected) {
         if (_graph.Count == 0) return;
         
         try {
@@ -276,8 +267,6 @@ internal sealed partial class BuildSession {
             ObjectRepresentation = null;
         }
     }
-
-    private readonly record struct ProceduralResourceRequest(ResourceID SourceResourceId, BuildingProceduralResource Resource);
-
+    
     private readonly record struct LibraryGraphVertices(BuildResourceLibrary Library, Dictionary<ResourceID, ResourceVertex> Vertices);
 }
