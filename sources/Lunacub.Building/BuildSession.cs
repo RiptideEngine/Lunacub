@@ -149,54 +149,6 @@ internal sealed partial class BuildSession {
             receiver.Add(new(sourceResourceAddress.LibraryId, resourceId), resource);
         }
     }
-    
-    private void CheckGraphCycle(Action<IEnumerable<ResourceAddress>> onCycleDetected) {
-        if (_graph.Count == 0) return;
-        
-        try {
-            foreach ((var libraryId, var libraryVertices) in _graph) {
-                foreach ((var resourceId, var resourceVertex) in libraryVertices.Vertices) {
-                    if (Visit(new(libraryId, resourceId), resourceVertex)) {
-                        return;
-                    }
-                }
-            }
-        } finally {
-            _temporaryMarks.Clear();
-            _permanentMarks.Clear();
-            _cyclePath.Clear();
-        }
-        
-        return;
-        
-        bool Visit(
-            ResourceAddress resourceAddress,
-            ResourceVertex resourceVertex
-        ) {
-            if (_permanentMarks.Contains(resourceAddress)) return false;
-        
-            _cyclePath.Push(resourceAddress);
-        
-            if (!_temporaryMarks.Add(resourceAddress)) {
-                onCycleDetected(_cyclePath.Reverse());
-                return true;
-            }
-
-            if (resourceVertex.DependencyResourceAddresses != null) {
-                foreach (var dependencyAddress in resourceVertex.DependencyResourceAddresses) {
-                    if (!TryGetVertex(dependencyAddress, out var dependencyVertex)) continue;
-
-                    if (Visit(dependencyAddress, dependencyVertex)) {
-                        return true;
-                    }
-                }
-            }
-
-            _permanentMarks.Add(resourceAddress);
-            _cyclePath.Pop();
-            return false;
-        }
-    }
 
     private sealed class ResourceVertex {
         /// <summary>

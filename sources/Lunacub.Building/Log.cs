@@ -16,20 +16,32 @@ internal static partial class Log {
     [LoggerMessage(LogLevel.Information, "Flushing resources' incremental informations...")]
     public static partial void FlushingIncrementalInformations(ILogger logger);
     
-    [LoggerMessage(LogLevel.Information, "Step 1: Creating resource vertices...")]
+    [LoggerMessage(LogLevel.Information, "Step 1: Create resource vertices...")]
     public static partial void CreateVertices(ILogger logger);
 
-    [LoggerMessage(LogLevel.Information, "Step 2: Extracting dependencies for modified resources...")]
+    [LoggerMessage(LogLevel.Information, "Step 2: Extract dependencies for modified resources...")]
     public static partial void ExtractVerticesDependenciesForModified(ILogger logger);
     
-    [LoggerMessage(LogLevel.Information, "Step 2: Extracting dependencies for all resources...")]
+    [LoggerMessage(LogLevel.Information, "Step 2: Extract dependencies for all resources...")]
     public static partial void ExtractVerticesDependenciesForAll(ILogger logger);
     
-    [LoggerMessage(LogLevel.Information, "Step 3: Counting vertex references...")]
+    [LoggerMessage(LogLevel.Information, "Step 3: Count vertex references...")]
     public static partial void CountResourceVertexReferences(ILogger logger);
     
-    [LoggerMessage(LogLevel.Information, "Step 4: Compile resources...")]
-    public static partial void CompileResources(ILogger logger);
+    [LoggerMessage(LogLevel.Information, "Step 4: Compile environment resources...")]
+    public static partial void CompileEnvironmentResources(ILogger logger);
+    
+    [LoggerMessage(LogLevel.Information, "Begin building procedural resources layer {layer}.")]
+    public static partial void BeginBuildingProceduralResources(ILogger logger, int layer);
+    
+    [LoggerMessage(LogLevel.Information, "Step 1: Validate dependency graph.")]
+    public static partial void ValidatingDependencyGraph(ILogger logger);
+    
+    [LoggerMessage(LogLevel.Information, "Step 2: Count environment resources reference count.")]
+    public static partial void CountEnvironmentResourcesReferenceCount(ILogger logger);
+    
+    [LoggerMessage(LogLevel.Information, "Step 3: Compile procedural resources...")]
+    public static partial void CompileProceduralResources(ILogger logger);
 
     [LoggerMessage(LogLevel.Warning, "Detected a resource cycle after populating graph vertices from resources incremental informations. A fresh rebuild will be executed.")]
     public static partial void WarnGraphCycleDetectedAfterPopulateVerticesFromIncrementalInfos(ILogger logger);

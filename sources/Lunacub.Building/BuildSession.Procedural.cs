@@ -8,7 +8,7 @@ partial class BuildSession {
             Log.BeginBuildingProceduralResources(_environment.Logger);
             Log.ProceduralResourcesDetected(_environment.Logger, _proceduralResources.Count);
             
-            new ProceduralResourceBuild(this, _proceduralResources, null).Build();
+            new ProceduralResourceBuild(this, _proceduralResources, null, 0).Build();
         }
 
         Log.FinishBuildingResources(_environment.Logger);
@@ -22,22 +22,32 @@ partial class BuildSession {
         private readonly Dictionary<ResourceAddress, BuildingProceduralResource> _current;
         private readonly Dictionary<ResourceAddress, BuildingProceduralResource> _next;
         private readonly ProceduralResourceBuild? _previous;
+        private readonly int _layer;
 
         public ProceduralResourceBuild(
             BuildSession session,
             Dictionary<ResourceAddress, BuildingProceduralResource> current,
-            ProceduralResourceBuild? previous
+            ProceduralResourceBuild? previous,
+            int layer
         ) {
             _session = session;
             _current = current;
             _next = [];
             _previous = previous;
+            _layer = layer;
         }
 
         public ProceduralResourceBuild Build() {
             Debug.Assert(_current.Count > 0);
+
+            ILogger logger = _session._environment.Logger;
             
-            ValidateProceduralResources();
+            Log.BeginBuildingProceduralResources(logger, _layer);
+            Log.ValidatingDependencyGraph(logger);
+            
+            CheckCycle();
+            
+            Log.CountEnvironmentResourcesReferenceCount(logger);
             
             // Increment reference counts for environment vertices.
             foreach ((_, var proceduralResource) in _current) {
@@ -51,6 +61,8 @@ partial class BuildSession {
                 }
             }
             
+            Log.CompileProceduralResources(logger);
+            
             foreach ((var resourceAddress, var proceduralResource) in _current) {
                 BuildProceduralResource(resourceAddress, proceduralResource);
             }
@@ -58,7 +70,7 @@ partial class BuildSession {
             try {
                 if (_next.Count == 0) return this;
             
-                return new ProceduralResourceBuild(_session, _next, this).Build();
+                return new ProceduralResourceBuild(_session, _next, this, _layer + 1).Build();
             } finally {
                 foreach ((_, var proceduralResource) in _current) {
                     proceduralResource.Disposer?.Invoke(proceduralResource.Object);
@@ -66,7 +78,7 @@ partial class BuildSession {
             }
         }
 
-        private void ValidateProceduralResources() {
+        private void CheckCycle() {
             // Only have to validate _current for cyclic dependency.
 
             HashSet<ResourceAddress> temporaryMarks = [], permanentMarks = [];

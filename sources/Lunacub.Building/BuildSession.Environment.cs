@@ -68,6 +68,53 @@ partial class BuildSession {
         
         // We're done building environment resources, begin building procedural resources.
         BuildProceduralResources();
+        return;
+        
+        void CheckGraphCycle(Action<IEnumerable<ResourceAddress>> onCycleDetected) {
+            if (_graph.Count == 0) return;
+        
+            try {
+                foreach ((var libraryId, var vertices) in _graph) {
+                    foreach ((var resourceId, var vertex) in vertices.Vertices) {
+                        if (Visit(new(libraryId, resourceId), vertex)) return;
+                    }
+                }
+            } finally {
+                _temporaryMarks.Clear();
+                _permanentMarks.Clear();
+                _cyclePath.Clear();
+            }
+        
+            return;
+        
+            bool Visit(
+                ResourceAddress resourceAddress,
+                ResourceVertex resourceVertex
+            ) {
+                if (_permanentMarks.Contains(resourceAddress)) return false;
+        
+                _cyclePath.Push(resourceAddress);
+        
+                if (!_temporaryMarks.Add(resourceAddress)) {
+                    onCycleDetected(_cyclePath.Reverse());
+                    return true;
+                }
+
+                if (resourceVertex.DependencyResourceAddresses != null) {
+                    foreach (var dependencyAddress in resourceVertex.DependencyResourceAddresses) {
+                        if (!TryGetVertex(dependencyAddress, out var dependencyVertex)) continue;
+
+                        if (Visit(dependencyAddress, dependencyVertex)) {
+                            return true;
+                        }
+                    }
+                }
+
+                _permanentMarks.Add(resourceAddress);
+                _cyclePath.Pop();
+                return false;
+            }
+        }
     }
 
     /// <summary>
@@ -298,7 +345,7 @@ partial class BuildSession {
     }
 
     private void InnerBuildEnvironmentResources() {
-        Log.CompileResources(_environment.Logger);
+        Log.CompileEnvironmentResources(_environment.Logger);
         
         foreach ((var libraryId, (BuildResourceLibrary library, var vertexDictionary)) in _graph) {
             foreach ((var resourceId, _) in library.Registry) {
