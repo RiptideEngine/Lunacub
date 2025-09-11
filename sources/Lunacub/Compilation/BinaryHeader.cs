@@ -52,7 +52,7 @@ public readonly struct BinaryHeader {
         ushort minor = BinaryPrimitives.ReadUInt16LittleEndian(header.Slice(6, 2));
         int chunkCount = BinaryPrimitives.ReadInt32LittleEndian(header.Slice(8, 4));
 
-        KeyValuePair<uint, uint>[]? rentedArray = null;
+        KeyValuePair<uint, uint>[] rentedArray = [];
         Span<KeyValuePair<uint, uint>> span = chunkCount <= 16 ?
             stackalloc KeyValuePair<uint, uint>[chunkCount] :
             (rentedArray = ArrayPool<KeyValuePair<uint, uint>>.Shared.Rent(chunkCount)).AsSpan()[..chunkCount];
@@ -68,9 +68,7 @@ public readonly struct BinaryHeader {
             
             return new(major, minor, builder.MoveToImmutable());
         } finally {
-            if (rentedArray != null) {
-                ArrayPool<KeyValuePair<uint, uint>>.Shared.Return(rentedArray);
-            }
+            ArrayPool<KeyValuePair<uint, uint>>.Shared.Return(rentedArray);
         }
 
         static unsafe void ValidateChunkInformations(
