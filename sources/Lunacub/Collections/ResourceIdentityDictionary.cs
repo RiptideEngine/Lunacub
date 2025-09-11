@@ -1,5 +1,9 @@
 ﻿namespace Caxivitual.Lunacub.Collections;
 
+/// <summary>
+/// Represents a <see cref="Dictionary{TKey, TValue}"/> that uses <see cref="ResourceID"/> as key.
+/// </summary>
+/// <typeparam name="T">The type of the values in the dictionary.</typeparam>
 public class ResourceIdentityDictionary<T> : IDictionary<ResourceID, T>, IReadOnlyDictionary<ResourceID, T> {
     protected readonly Dictionary<ResourceID, T> _dict = [];
     

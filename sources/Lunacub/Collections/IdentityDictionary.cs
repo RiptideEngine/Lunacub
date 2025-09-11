@@ -1,4 +1,6 @@
-﻿namespace Caxivitual.Lunacub.Collections;
+﻿// ReSharper disable SuspiciousTypeConversion.Global
+
+namespace Caxivitual.Lunacub.Collections;
 
 /// <summary>
 /// Represents a <see cref="Dictionary{TKey, TValue}"/> that uses <see cref="string"/> as key.
@@ -6,7 +8,7 @@
 /// <typeparam name="T">The type of the values in the dictionary.</typeparam>
 [ExcludeFromCodeCoverage]
 public class IdentityDictionary<T> : IDictionary<string, T> {
-    protected readonly Dictionary<string, T> _dict;
+    private readonly Dictionary<string, T> _dict;
     
     public int Count => _dict.Count;
     
