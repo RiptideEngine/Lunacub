@@ -1,14 +1,15 @@
 ﻿// ReSharper disable AccessToDisposedClosure
 
 using Caxivitual.Lunacub.Exceptions;
+using Caxivitual.Lunacub.Helpers;
 using System.Buffers.Binary;
 
 namespace Caxivitual.Lunacub.Tests;
 
-public class BinaryHeaderTests {
+public class HeaderTests {
     [Fact]
     public void TryGetChunkInformation_RegisteredTag_ReturnsStoredValue() {
-        BinaryHeader layout = new(1, 0, [
+        Header layout = new(1, 0, [
             new(BinaryPrimitives.ReadUInt32LittleEndian("ABCD"u8), 4, 0),
             new(BinaryPrimitives.ReadUInt32LittleEndian("EFGH"u8), 8, 4),
             new(BinaryPrimitives.ReadUInt32LittleEndian("IJKL"u8), 12, 12),
@@ -16,12 +17,12 @@ public class BinaryHeaderTests {
         ]);
         
         layout.TryGetChunkInformation("IJKL"u8, out var info).Should().BeTrue();
-        info.Should().Be(new ChunkInformation(BinaryPrimitives.ReadUInt32LittleEndian("IJKL"u8), 12, 12));
+        info.Should().Be(new ChunkPositionalInformation(BinaryPrimitives.ReadUInt32LittleEndian("IJKL"u8), 12, 12));
     }
 
     [Fact]
     public void TryGetChunkInformation_UnregisteredTag_ReturnsFalseAndOutputDefault() {
-        BinaryHeader layout = new(1, 0, [
+        Header layout = new(1, 0, [
             new(BinaryPrimitives.ReadUInt32LittleEndian("ABCD"u8), 4, 0),
             new(BinaryPrimitives.ReadUInt32LittleEndian("EFGH"u8), 8, 4),
             new(BinaryPrimitives.ReadUInt32LittleEndian("IJKL"u8), 12, 12),
@@ -29,7 +30,7 @@ public class BinaryHeaderTests {
         ]);
         
         layout.TryGetChunkInformation("QRST"u8, out var output).Should().BeFalse();
-        output.Should().Be(new ChunkInformation(0, 0, 0));
+        output.Should().Be(new ChunkPositionalInformation(0, 0, 0));
     }
 
     public static TheoryData<byte[]> InvalidTags => new() {
@@ -39,12 +40,12 @@ public class BinaryHeaderTests {
 
     [Theory, MemberData(nameof(InvalidTags))]
     public void TryGetChunkInformation_InvalidTag_ReturnsFalseAndOutputDefault(byte[] tag) {
-        BinaryHeader layout = new(1, 0, [
+        Header layout = new(1, 0, [
             new(BinaryPrimitives.ReadUInt32LittleEndian("ABCD"u8), 4, 0),
         ]);
 
         layout.TryGetChunkInformation(tag, out var output).Should().BeFalse();
-        output.Should().Be(new ChunkInformation(0, 0, 0));
+        output.Should().Be(new ChunkPositionalInformation(0, 0, 0));
     }
     
     [Fact]
@@ -65,13 +66,13 @@ public class BinaryHeaderTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(ms))
+        Header layout = new Func<Header>(() => Header.Extract(ms))
             .Should().NotThrow().Which;
         
         layout.MajorVersion.Should().Be(1);
         layout.MinorVersion.Should().Be(0);
         layout.Chunks.Should().ContainSingle();
-        layout.Chunks[0].Should().Be(new ChunkInformation(BinaryPrimitives.ReadUInt32LittleEndian("FAKE"u8), 16, 28));
+        layout.Chunks[0].Should().Be(new ChunkPositionalInformation(BinaryPrimitives.ReadUInt32LittleEndian("FAKE"u8), 16, 28));
     }
 
     [Fact]
@@ -92,13 +93,13 @@ public class BinaryHeaderTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(ms))
+        Header layout = new Func<Header>(() => Header.Extract(ms))
             .Should().NotThrow().Which;
         
         layout.MajorVersion.Should().Be(1);
         layout.MinorVersion.Should().Be(0);
         layout.Chunks.Should().ContainSingle();
-        layout.Chunks[0].Should().Be(new ChunkInformation(BinaryPrimitives.ReadUInt32LittleEndian("FAKE"u8), 16, 28));
+        layout.Chunks[0].Should().Be(new ChunkPositionalInformation(BinaryPrimitives.ReadUInt32LittleEndian("FAKE"u8), 16, 28));
     }
     
     [Fact]
@@ -106,14 +107,14 @@ public class BinaryHeaderTests {
         MemoryStream ms = new MemoryStream([]);
         ms.Dispose();
 
-        new Func<BinaryHeader>(() => BinaryHeader.Extract(ms))
+        new Func<Header>(() => Header.Extract(ms))
             .Should().Throw<ArgumentException>().WithMessage("*Stream*readable*");
     }
 
     [Fact]
     public void Extract_InvalidMagic_ThrowsCorruptedFormatException() {
         using MemoryStream ms = new MemoryStream("\0\0\0\0\0\0\0\0\0\0\0\0"u8.ToArray());
-        new Func<BinaryHeader>(() => BinaryHeader.Extract(ms))
+        new Func<Header>(() => Header.Extract(ms))
             .Should().Throw<CorruptedBinaryException>().WithMessage("*magic*");
     }
     
@@ -129,7 +130,7 @@ public class BinaryHeaderTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        new Func<BinaryHeader>(() => BinaryHeader.Extract(ms))
+        new Func<Header>(() => Header.Extract(ms))
             .Should().Throw<CorruptedBinaryException>().WithMessage("*not*sufficient*read*header*");
     }
 
@@ -148,7 +149,7 @@ public class BinaryHeaderTests {
 
         ms.Seek(0, SeekOrigin.Begin);
         
-        new Func<BinaryHeader>(() => BinaryHeader.Extract(ms))
+        new Func<Header>(() => Header.Extract(ms))
             .Should().Throw<CorruptedBinaryException>().WithMessage("*surpassed*length*");
     }
     
@@ -169,7 +170,7 @@ public class BinaryHeaderTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        new Func<BinaryHeader>(() => BinaryHeader.Extract(ms))
+        new Func<Header>(() => Header.Extract(ms))
             .Should().Throw<CorruptedBinaryException>().WithMessage("*Expected*chunk tag*position*");
     }
     
@@ -190,7 +191,7 @@ public class BinaryHeaderTests {
 
         ms.Seek(0, SeekOrigin.Begin);
 
-        new Func<BinaryHeader>(() => BinaryHeader.Extract(ms))
+        new Func<Header>(() => Header.Extract(ms))
             .Should().Throw<CorruptedBinaryException>().WithMessage("*content*length*surpassed*");
     }
 }

@@ -69,15 +69,6 @@ namespace Caxivitual.Lunacub {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Chunk {0} has position surpassed stream&apos;s length..
-        /// </summary>
-        internal static string ChunkPositionSurpassedStreamLength {
-            get {
-                return ResourceManager.GetString("ChunkPositionSurpassedStreamLength", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Tag cannot be null, empty or consists of only white space characters..
         /// </summary>
         internal static string DisallowNullEmptyOrWhiteSpaceTag {
@@ -105,20 +96,92 @@ namespace Caxivitual.Lunacub {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Expected chunk tag {0} at position {1}..
+        ///   Looks up a localized string similar to Expected 4 characters tag name..
         /// </summary>
-        internal static string ExpectedChunkAtPosition {
+        internal static string Expected4CharactersTagName {
             get {
-                return ResourceManager.GetString("ExpectedChunkAtPosition", resourceCulture);
+                return ResourceManager.GetString("Expected4CharactersTagName", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Stream does not contain sufficient data to read header for chunk {0}..
+        ///   Looks up a localized string similar to Expected tag 0x{0} at position {1}, got 0x{2}..
         /// </summary>
-        internal static string FailedToReadChunkHeader {
+        internal static string ExpectedTagAtPosition {
             get {
-                return ResourceManager.GetString("FailedToReadChunkHeader", resourceCulture);
+                return ResourceManager.GetString("ExpectedTagAtPosition", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Expected header magic number, got 0x{0}..
+        /// </summary>
+        internal static string ExpectHeaderMagic {
+            get {
+                return ResourceManager.GetString("ExpectHeaderMagic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot read chunk amount due to insufficient Stream data..
+        /// </summary>
+        internal static string InsufficientStream_ChunkAmount {
+            get {
+                return ResourceManager.GetString("InsufficientStream_ChunkAmount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot read chunk length due to insufficient Stream data..
+        /// </summary>
+        internal static string InsufficientStream_ChunkLength {
+            get {
+                return ResourceManager.GetString("InsufficientStream_ChunkLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot read chunk offsets due to insufficient Stream data..
+        /// </summary>
+        internal static string InsufficientStream_ChunkOffsets {
+            get {
+                return ResourceManager.GetString("InsufficientStream_ChunkOffsets", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Length of chunk 0x{0} surpassed Stream..
+        /// </summary>
+        internal static string InsufficientStream_LengthSurpassedStream {
+            get {
+                return ResourceManager.GetString("InsufficientStream_LengthSurpassedStream", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot read magic number due to insufficient Stream data..
+        /// </summary>
+        internal static string InsufficientStream_MagicNumber {
+            get {
+                return ResourceManager.GetString("InsufficientStream_MagicNumber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Offset of chunk 0x{0} surpassed Stream..
+        /// </summary>
+        internal static string InsufficientStream_OffsetSurpassedStream {
+            get {
+                return ResourceManager.GetString("InsufficientStream_OffsetSurpassedStream", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot read version due to insufficient Stream data..
+        /// </summary>
+        internal static string InsufficientStream_Version {
+            get {
+                return ResourceManager.GetString("InsufficientStream_Version", resourceCulture);
             }
         }
         
@@ -137,6 +200,15 @@ namespace Caxivitual.Lunacub {
         internal static string LibraryIDMustBeNotNull {
             get {
                 return ResourceManager.GetString("LibraryIDMustBeNotNull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Spans length mismatched, destination span has less elements than source span..
+        /// </summary>
+        internal static string MismatchLength_DestinationSpanHasLessElement {
+            get {
+                return ResourceManager.GetString("MismatchLength_DestinationSpanHasLessElement", resourceCulture);
             }
         }
         
@@ -182,6 +254,24 @@ namespace Caxivitual.Lunacub {
         internal static string SourceStreamMustNotBeWritable {
             get {
                 return ResourceManager.GetString("SourceStreamMustNotBeWritable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Stream is neither readable nor seekable..
+        /// </summary>
+        internal static string StreamNotReaderOrNotSeekable {
+            get {
+                return ResourceManager.GetString("StreamNotReaderOrNotSeekable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Header version {0}.{1} is unsupported..
+        /// </summary>
+        internal static string UnsupportedHeaderVersion {
+            get {
+                return ResourceManager.GetString("UnsupportedHeaderVersion", resourceCulture);
             }
         }
     }

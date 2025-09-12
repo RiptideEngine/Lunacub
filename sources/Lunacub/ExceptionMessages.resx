@@ -21,14 +21,14 @@
     <data name="RequiresComparerImplementsAlternateLookup" xml:space="preserve">
         <value>The comparer must implement IAlternateEqualityComparer&lt;{0}, {1}&gt;</value>
     </data>
-    <data name="ChunkPositionSurpassedStreamLength" xml:space="preserve">
-        <value>Chunk {0} has position surpassed stream's length.</value>
+    <data name="InsufficientStream_OffsetSurpassedStream" xml:space="preserve">
+        <value>Offset of chunk 0x{0} surpassed Stream.</value>
     </data>
-    <data name="FailedToReadChunkHeader" xml:space="preserve">
-        <value>Stream does not contain sufficient data to read header for chunk {0}.</value>
+    <data name="InsufficientStream_LengthSurpassedStream" xml:space="preserve">
+        <value>Length of chunk 0x{0} surpassed Stream.</value>
     </data>
-    <data name="ExpectedChunkAtPosition" xml:space="preserve">
-        <value>Expected chunk tag {0} at position {1}.</value>
+    <data name="ExpectedTagAtPosition" xml:space="preserve">
+        <value>Expected tag 0x{0} at position {1}, got 0x{2}.</value>
     </data>
     <data name="ChunkContentLengthOverflow" xml:space="preserve">
         <value>Chunk {0} has content length surpassed Stream's length.</value>
@@ -59,5 +59,35 @@
     </data>
     <data name="EmptyOrWhitespaceKey" xml:space="preserve">
         <value>Key cannot be empty or consist of only whitespace characters.</value>
+    </data>
+    <data name="ExpectHeaderMagic" xml:space="preserve">
+        <value>Expected header magic number, got 0x{0}.</value>
+    </data>
+    <data name="StreamNotReaderOrNotSeekable" xml:space="preserve">
+        <value>Stream is neither readable nor seekable.</value>
+    </data>
+    <data name="UnsupportedHeaderVersion" xml:space="preserve">
+        <value>Header version {0}.{1} is unsupported.</value>
+    </data>
+    <data name="InsufficientStream_MagicNumber" xml:space="preserve">
+        <value>Cannot read magic number due to insufficient Stream data.</value>
+    </data>
+    <data name="InsufficientStream_Version" xml:space="preserve">
+        <value>Cannot read version due to insufficient Stream data.</value>
+    </data>
+    <data name="InsufficientStream_ChunkAmount" xml:space="preserve">
+        <value>Cannot read chunk amount due to insufficient Stream data.</value>
+    </data>
+    <data name="InsufficientStream_ChunkOffsets" xml:space="preserve">
+        <value>Cannot read chunk offsets due to insufficient Stream data.</value>
+    </data>
+    <data name="MismatchLength_DestinationSpanHasLessElement" xml:space="preserve">
+        <value>Spans length mismatched, destination span has less elements than source span.</value>
+    </data>
+    <data name="InsufficientStream_ChunkLength" xml:space="preserve">
+        <value>Cannot read chunk length due to insufficient Stream data.</value>
+    </data>
+    <data name="Expected4CharactersTagName" xml:space="preserve">
+        <value>Expected 4 characters tag name.</value>
     </data>
 </root>

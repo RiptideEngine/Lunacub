@@ -11,7 +11,9 @@
 // ReSharper disable VariableHidesOuterVariable
 
 using Caxivitual.Lunacub.Compilation;
+using Caxivitual.Lunacub.Helpers;
 using Microsoft.Extensions.Logging;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.ObjectModel;
@@ -303,26 +305,39 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
                 throw new InvalidOperationException(message);
             }
 
-            BinaryHeader header;
-
             try {
-                header = BinaryHeader.Extract(stream);
-            } catch {
+                Header header;
+
+                try {
+                    header = HeaderHelpers.Extract(stream);
+                } catch {
+                    await stream.DisposeAsync();
+                    throw;
+                }
+
+                ChunkPositionalInformation[] rentedArray =
+                    ArrayPool<ChunkPositionalInformation>.Shared.Rent(header.ChunkOffsets.Length);
+
+                try {
+                    HeaderHelpers.ValidateChunkOffsets(header.ChunkOffsets.AsSpan(0, header.ChunkOffsets.Length), stream, rentedArray.AsSpan(0, header.ChunkOffsets.Length));
+                    
+                    switch (header.MajorVersion) {
+                        case 1:
+                            return await ResourceImporterVersion1.ImportVessel(_environment, stream, header, rentedArray.AsMemory(0, header.ChunkOffsets.Length), container.CancellationToken);
+
+                        default:
+                            string message = string.Format(
+                                ExceptionMessages.UnsupportedCompiledResourceVersion,
+                                header.MajorVersion,
+                                header.MinorVersion
+                            );
+                            throw new ArgumentException(message);
+                    }
+                } finally {
+                    ArrayPool<ChunkPositionalInformation>.Shared.Return(rentedArray);
+                }
+            } finally {
                 await stream.DisposeAsync();
-                throw;
-            }
-
-            switch (header.MajorVersion) {
-                case 1:
-                    return await ResourceImporterVersion1.ImportVessel(_environment, stream, header, container.CancellationToken);
-
-                default:
-                    string message = string.Format(
-                        ExceptionMessages.UnsupportedCompiledResourceVersion,
-                        header.MajorVersion,
-                        header.MinorVersion
-                    );
-                    throw new ArgumentException(message);
             }
         } catch (OperationCanceledException) {
             Log.CancelImport(_environment.Logger, container.Address.LibraryId, container.Address.ResourceId);

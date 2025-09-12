@@ -32,7 +32,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
         new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.FailureResults.Should().BeEmpty();
 
         ImmutableArray<byte> compiledBinary = new Func<ImmutableArray<byte>>(() => _resourceSink.Outputs[1].CompiledResources[1]).Should().NotThrow().Which;
-        BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
+        Header layout = new Func<Header>(() => Header.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
 
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
         dataChunkInfo.Length.Should().Be(4);
@@ -63,7 +63,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
         new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.FailureResults.Should().BeEmpty();
 
         ImmutableArray<byte> compiledBinary = new Func<ImmutableArray<byte>>(() => _resourceSink.Outputs[1].CompiledResources[1]).Should().NotThrow().Which;
-        BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
+        Header layout = new Func<Header>(() => Header.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
 
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
         dataChunkInfo.Length.Should().Be((uint)(sizeof(ResourceAddress) + sizeof(int)));
@@ -75,7 +75,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
         ]);
 
         compiledBinary = new Func<ImmutableArray<byte>>(() => _resourceSink.Outputs[1].CompiledResources[2]).Should().NotThrow().Which;
-        layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
+        layout = new Func<Header>(() => Header.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
 
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out dataChunkInfo).Should().BeTrue();
         dataChunkInfo.Length.Should().Be((uint)(sizeof(ResourceAddress) + sizeof(int)));
@@ -105,7 +105,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
         new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.FailureResults.Should().BeEmpty();
 
         ImmutableArray<byte> compiledBinary = new Func<ImmutableArray<byte>>(() => _resourceSink.Outputs[1].CompiledResources[1]).Should().NotThrow().Which;
-        BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
+        Header layout = new Func<Header>(() => Header.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
 
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
         dataChunkInfo.Length.Should().Be(11);
@@ -131,7 +131,7 @@ public sealed class BinaryOutputTests : IClassFixture<ComponentsFixture>, IClass
         new Func<BuildingResult>(() => _environment.BuildResources()).Should().NotThrow().Which.FailureResults.Should().BeEmpty();
 
         ImmutableArray<byte> compiledBinary = new Func<ImmutableArray<byte>>(() => _resourceSink.Outputs[1].CompiledResources[1]).Should().NotThrow().Which;
-        BinaryHeader layout = new Func<BinaryHeader>(() => BinaryHeader.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
+        Header layout = new Func<Header>(() => Header.Extract(compiledBinary.AsSpan())).Should().NotThrow().Which;
 
         layout.TryGetChunkInformation(CompilingConstants.ResourceDataChunkTag, out var dataChunkInfo).Should().BeTrue();
         dataChunkInfo.Length.Should().Be(20);

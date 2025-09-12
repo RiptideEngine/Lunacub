@@ -13,28 +13,28 @@ internal static class CompileHelpers {
         bwriter.Write(3);
         
         long chunkLocationPosition = bwriter.BaseStream.Position;
-        Span<KeyValuePair<uint, int>> chunks = stackalloc KeyValuePair<uint, int>[3];
+        Span<ChunkOffset> chunks = stackalloc ChunkOffset[3];
         int chunkIndex = 0;
 
         bwriter.Seek(sizeof(KeyValuePair<uint, int>) * chunks.Length, SeekOrigin.Current);
         
-        int chunkStart = (int)outputStream.Position;
+        uint chunkStart = (uint)outputStream.Position;
         WriteDataChunk(environment.MemoryStreamManager, bwriter, serializer);
-        chunks[chunkIndex++] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.ResourceDataChunkTag), chunkStart);
+        chunks[chunkIndex++] = new(CompilingConstants.ResourceDataChunkTag, chunkStart);
 
-        chunkStart = (int)outputStream.Position;
+        chunkStart = (uint)outputStream.Position;
         WriteOptionsChunk(environment.MemoryStreamManager, bwriter, serializer);
-        chunks[chunkIndex++] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.ImportOptionsChunkTag), chunkStart);
+        chunks[chunkIndex++] = new(CompilingConstants.ImportOptionsChunkTag, chunkStart);
         
-        chunkStart = (int)outputStream.Position;
+        chunkStart = (uint)outputStream.Position;
         WriteDeserializerChunk(bwriter, serializer);
-        chunks[chunkIndex++] = new(BinaryPrimitives.ReadUInt32LittleEndian(CompilingConstants.DeserializationChunkTag), chunkStart);
+        chunks[chunkIndex++] = new(CompilingConstants.DeserializationChunkTag, chunkStart);
         
         outputStream.Seek(chunkLocationPosition, SeekOrigin.Begin);
         
-        foreach ((uint chunkIdentifier, int chunkSize) in chunks) {
-            bwriter.Write(chunkIdentifier);
-            bwriter.Write(chunkSize);
+        foreach (ChunkOffset offset in chunks) {
+            bwriter.Write(offset.Tag.AsSpan);
+            bwriter.Write(offset.Tag.AsSpan);
         }
     }
     
