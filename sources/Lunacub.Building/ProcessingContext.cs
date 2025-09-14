@@ -8,11 +8,6 @@ namespace Caxivitual.Lunacub.Building;
 [ExcludeFromCodeCoverage]
 public readonly struct ProcessingContext {
     /// <summary>
-    /// Gets the <see cref="BuildEnvironment"/> instance responsible for the processing process.
-    /// </summary>
-    public BuildEnvironment Environment { get; }
-    
-    /// <summary>
     /// Gets the address of the currently processing resource.
     /// </summary>
     public ResourceAddress ResourceAddress { get; }
@@ -34,23 +29,28 @@ public readonly struct ProcessingContext {
     /// </summary>
     public ProceduralResourceCollection ProceduralResources { get; }
     
+    private readonly BuildEnvironment _environment;
+
     /// <summary>
-    /// Gets the <see cref="ILogger"/> instance used for debugging and reporting.
+    /// Gets the logger used for debugging and logging purpose.
     /// </summary>
-    public ILogger Logger { get; }
+    public ILogger Logger => _environment.Logger;
+    
+    /// <summary>
+    /// Gets the dictionary of environment variables associates with the build environment.
+    /// </summary>
+    public IReadOnlyDictionary<object, object> EnvironmentVariables => _environment.EnvironmentVariables;
     
     internal ProcessingContext(
         BuildEnvironment environment,
         ResourceAddress resourceAddress,
         IImportOptions? options,
-        IReadOnlyDictionary<ResourceAddress, object> dependencies,
-        ILogger logger
+        IReadOnlyDictionary<ResourceAddress, object> dependencies
     ) {
-        Environment = environment;
         ResourceAddress = resourceAddress;
         Options = options;
         Dependencies = dependencies;
         ProceduralResources = new(resourceAddress.LibraryId);
-        Logger = logger;
+        _environment = environment;
     }
 }

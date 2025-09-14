@@ -54,6 +54,11 @@ public sealed class BuildEnvironment : IDisposable {
     /// </summary>
     public ILogger Logger { get; set; }
     
+    /// <summary>
+    /// Gets the dictionary that contains dynamic environment variables.
+    /// </summary>
+    public Dictionary<object, object> EnvironmentVariables { get; }
+    
     internal RecyclableMemoryStreamManager MemoryStreamManager { get; }
     
     private bool _disposed;
@@ -79,6 +84,7 @@ public sealed class BuildEnvironment : IDisposable {
         BuildCache = new();
         Logger = NullLogger.Instance;
         MemoryStreamManager = memoryStreamManager;
+        EnvironmentVariables = [];
         
         ResourceSink = resourceSink;
         BuildCacheRepository = buildCacheRepository;

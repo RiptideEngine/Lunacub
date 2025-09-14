@@ -7,7 +7,7 @@
 [ExcludeFromCodeCoverage]
 public readonly struct DisposingContext {
     /// <summary>
-    /// Gets the logger used for debugging and printing purpose.
+    /// Gets the logger used for debugging and logging purpose.
     /// </summary>
     public ILogger Logger { get; }
     

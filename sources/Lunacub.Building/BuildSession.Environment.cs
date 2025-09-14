@@ -419,7 +419,7 @@ partial class BuildSession {
                 ProcessingContext processingContext;
                 
                 try {
-                    processingContext = new(_environment, resourceAddress, options.Options, dependencies, _environment.Logger);
+                    processingContext = new(_environment, resourceAddress, options.Options, dependencies);
                     processed = processor.Process(resourceVertex.ObjectRepresentation, processingContext);
                 } catch (Exception e) {
                     SetResult(resourceAddress, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
@@ -512,7 +512,7 @@ partial class BuildSession {
             }
             
             try {
-                ImportingContext context = new(options, _environment.Logger);
+                ImportingContext context = new(address, options, _environment);
                 imported = importer.ImportObject(streams, context);
                 
                 failureResult = default;

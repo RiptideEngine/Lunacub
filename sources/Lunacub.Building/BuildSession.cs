@@ -133,7 +133,7 @@ internal sealed partial class BuildSession {
 
         using RecyclableMemoryStream ms = _environment.MemoryStreamManager.GetStream($"BuildOutput L{address.LibraryId}-R{address.ResourceId}");
 
-        var serializer = factory.InternalCreateSerializer(processed, new(options, _environment.Logger, _environment.MemoryStreamManager));
+        var serializer = factory.InternalCreateSerializer(processed, new(options, _environment));
         
         CompileHelpers.Compile(_environment, serializer, ms, tags);
         ms.Position = 0;

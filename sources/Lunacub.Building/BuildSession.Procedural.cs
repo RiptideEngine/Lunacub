@@ -144,7 +144,7 @@ partial class BuildSession {
                     ProcessingContext processingContext;
                     
                     try {
-                        processingContext = new(environment, resourceAddress, proceduralResource.Options, dependencies, environment.Logger);
+                        processingContext = new(environment, resourceAddress, proceduralResource.Options, dependencies);
                         processed = processor.Process(proceduralResource.Object, processingContext);
                     } catch (Exception e) {
                         _session.SetResult(resourceAddress, new(BuildStatus.ProcessingFailed, ExceptionDispatchInfo.Capture(e)));
