@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-namespace Caxivitual.Lunacub.Compilation;
+﻿namespace Caxivitual.Lunacub.Compilation;
 
 public readonly record struct Tag {
     private readonly uint _value;
@@ -23,13 +21,10 @@ public readonly record struct Tag {
         }
     }
 
+    [DebuggerHidden]
     public ReadOnlySpan<byte> AsSpan => MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in this, 1));
 
     public uint AsUInt32LittleEndian => BitConverter.IsLittleEndian ? _value : BinaryPrimitives.ReverseEndianness(_value);
-    
-    public Tag(uint value) {
-        _value = value;
-    }
 
     public Tag(ReadOnlySpan<byte> name) {
         if (name.Length != 4) {
@@ -39,5 +34,5 @@ public readonly record struct Tag {
         _value = MemoryMarshal.Read<uint>(name);
     }
     
-    public static implicit operator uint(Tag value) => value._value;
+    public static implicit operator Tag(ReadOnlySpan<byte> name) => new(name);
 }

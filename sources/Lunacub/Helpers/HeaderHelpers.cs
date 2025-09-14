@@ -2,12 +2,11 @@
 using Caxivitual.Lunacub.Exceptions;
 using System.Buffers;
 using System.Collections.Immutable;
-using System.Text;
 
 namespace Caxivitual.Lunacub.Helpers;
 
 public static class HeaderHelpers {
-    public static void ValidateChunkOffsets(ReadOnlySpan<ChunkOffset> offsets, Stream stream, Span<ChunkPositionalInformation> outputs) {
+    public static void ExtractChunkPositionalInfo(ReadOnlySpan<ChunkOffset> offsets, Stream stream, Span<ChunkPositionalInformation> outputs) {
         if (offsets.Length > outputs.Length) {
             throw new ArgumentException(ExceptionMessages.MismatchLength_DestinationSpanHasLessElement, nameof(offsets));
         }
@@ -64,34 +63,34 @@ public static class HeaderHelpers {
     private static void ReadMagicNumber(Stream stream) {
         Span<byte> span = stackalloc byte[4];
         if (stream.Read(span) < 4) {
-            throw new ArgumentException(ExceptionMessages.InsufficientStream_MagicNumber, nameof(stream));
+            throw new EndOfStreamException(ExceptionMessages.InsufficientStream_MagicNumber);
         }
         
         if (!span.StartsWith(CompilingConstants.MagicIdentifier.AsSpan)) {
             string message = string.Format(ExceptionMessages.ExpectHeaderMagic, Convert.ToHexString(span));
-            throw new CorruptedBinaryException(message);
+            throw new InvalidDataException(message);
         }
     }
 
-    private  static (ushort Major, ushort Minor) ReadVersionNumbers(Stream stream) {
+    private static (ushort Major, ushort Minor) ReadVersionNumbers(Stream stream) {
         Span<ushort> span = stackalloc ushort[2];
         if (stream.Read(MemoryMarshal.AsBytes(span)) < 4) {
-            throw new ArgumentException(ExceptionMessages.InsufficientStream_Version, nameof(stream));
+            throw new EndOfStreamException(ExceptionMessages.InsufficientStream_Version);
         }
         
         // TODO: Detect version dynamically.
         if (span[0] != 1 && span[1] != 0) {
             string message = string.Format(ExceptionMessages.UnsupportedHeaderVersion, span[0], span[1]);
-            throw new CorruptedBinaryException(message);
+            throw new InvalidDataException(message);
         }
-        
+
         return (span[0], span[1]);
     }
 
     private unsafe static ImmutableArray<ChunkOffset> ReadChunkOffsets(Stream stream) {
         int chunkAmount;
         if (stream.Read(new(&chunkAmount, sizeof(int))) < 4) {
-            throw new ArgumentException(ExceptionMessages.InsufficientStream_ChunkAmount, nameof(stream));
+            throw new EndOfStreamException(ExceptionMessages.InsufficientStream_ChunkAmount);
         }
 
         ChunkOffset[] rentedArray = [];
@@ -99,7 +98,7 @@ public static class HeaderHelpers {
 
         try {
             if (stream.Read(MemoryMarshal.AsBytes(span[..chunkAmount])) < sizeof(ChunkOffset) * chunkAmount) {
-                throw new ArgumentException(ExceptionMessages.InsufficientStream_ChunkOffsets, nameof(stream));
+                throw new EndOfStreamException(ExceptionMessages.InsufficientStream_ChunkOffsets);
             }
 
             return [..span[..chunkAmount]];
@@ -112,10 +111,42 @@ public static class HeaderHelpers {
         ChunkLength length;
 
         if (stream.Read(new(&length, sizeof(ChunkLength))) < sizeof(ChunkLength)) {
-            throw new ArgumentException(ExceptionMessages.InsufficientStream_ChunkLength, nameof(stream));
+            throw new EndOfStreamException(ExceptionMessages.InsufficientStream_ChunkLength);
         }
 
         return length;
+    }
+    
+    public static bool TryGet(this ReadOnlyMemory<ChunkOffset> memory, Tag tag, out ChunkOffset output) {
+        return TryGet(memory.Span, tag, out output);
+    }
+
+    public static bool TryGet(this ReadOnlySpan<ChunkOffset> span, Tag tag, out ChunkOffset output) {
+        foreach (var information in span) {
+            if (information.Tag == tag) {
+                output = information;
+                return true;
+            }
+        }
+        
+        output = default;
+        return false;
+    }
+    
+    public static bool TryGet(this ReadOnlyMemory<ChunkLength> memory, Tag tag, out ChunkLength output) {
+        return TryGet(memory.Span, tag, out output);
+    }
+
+    public static bool TryGet(this ReadOnlySpan<ChunkLength> span, Tag tag, out ChunkLength output) {
+        foreach (var information in span) {
+            if (information.Tag == tag) {
+                output = information;
+                return true;
+            }
+        }
+        
+        output = default;
+        return false;
     }
     
     public static bool TryGet(this ReadOnlyMemory<ChunkPositionalInformation> memory, Tag tag, out ChunkPositionalInformation output) {

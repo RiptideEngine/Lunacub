@@ -5,7 +5,7 @@ namespace Caxivitual.Lunacub.Building;
 internal static class CompileHelpers {
     public static unsafe void Compile(BuildEnvironment environment, Serializer serializer, Stream outputStream, IReadOnlyCollection<string> tags) {
         using BinaryWriter bwriter = new(outputStream, Encoding.UTF8, true);
-        bwriter.Write(CompilingConstants.MagicIdentifier);
+        bwriter.Write(CompilingConstants.MagicIdentifier.AsSpan);
         bwriter.Write((ushort)1);
         bwriter.Write((ushort)0);
         
@@ -16,7 +16,7 @@ internal static class CompileHelpers {
         Span<ChunkOffset> chunks = stackalloc ChunkOffset[3];
         int chunkIndex = 0;
 
-        bwriter.Seek(sizeof(KeyValuePair<uint, int>) * chunks.Length, SeekOrigin.Current);
+        bwriter.Seek(sizeof(ChunkOffset) * chunks.Length, SeekOrigin.Current);
         
         uint chunkStart = (uint)outputStream.Position;
         WriteDataChunk(environment.MemoryStreamManager, bwriter, serializer);
@@ -34,7 +34,7 @@ internal static class CompileHelpers {
         
         foreach (ChunkOffset offset in chunks) {
             bwriter.Write(offset.Tag.AsSpan);
-            bwriter.Write(offset.Tag.AsSpan);
+            bwriter.Write(offset.Offset);
         }
     }
     
@@ -42,7 +42,7 @@ internal static class CompileHelpers {
         using (var dataStream = memoryStreamManager.GetStream("DataStream", 0, false)) {
             serializer.SerializeObject(dataStream);
             
-            writer.Write(CompilingConstants.ResourceDataChunkTag);
+            writer.Write(CompilingConstants.ResourceDataChunkTag.AsSpan);
             {
                 writer.Write((int)dataStream.Length);
                 dataStream.Seek(0, SeekOrigin.Begin);
@@ -55,7 +55,7 @@ internal static class CompileHelpers {
         using (var optionStream = memoryStreamManager.GetStream("OptionStream", 0, false)) {
             serializer.SerializeOptions(optionStream);
             
-            writer.Write(CompilingConstants.ImportOptionsChunkTag);
+            writer.Write(CompilingConstants.ImportOptionsChunkTag.AsSpan);
             {
                 writer.Write((int)optionStream.Length);
                 optionStream.Seek(0, SeekOrigin.Begin);
@@ -67,7 +67,8 @@ internal static class CompileHelpers {
     private static void WriteDeserializerChunk(BinaryWriter writer, Serializer serializer) {
         Stream outputStream = writer.BaseStream;
 
-        writer.Write(CompilingConstants.DeserializationChunkTag); {
+        writer.Write(CompilingConstants.DeserializationChunkTag.AsSpan);
+        {
             var chunkLenPosition = (int)outputStream.Position;
         
             writer.Seek(4, SeekOrigin.Current);

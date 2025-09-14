@@ -319,7 +319,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
                     ArrayPool<ChunkPositionalInformation>.Shared.Rent(header.ChunkOffsets.Length);
 
                 try {
-                    HeaderHelpers.ValidateChunkOffsets(header.ChunkOffsets.AsSpan(0, header.ChunkOffsets.Length), stream, rentedArray.AsSpan(0, header.ChunkOffsets.Length));
+                    HeaderHelpers.ExtractChunkPositionalInfo(header.ChunkOffsets.AsSpan(0, header.ChunkOffsets.Length), stream, rentedArray.AsSpan(0, header.ChunkOffsets.Length));
                     
                     switch (header.MajorVersion) {
                         case 1:
@@ -460,7 +460,7 @@ internal sealed partial class ResourceImportDispatcher : IDisposable {
 
                 break;
             
-            case ImportingStatus.Failed: throw new UnreachableException();
+            case ImportingStatus.Failed: break; // Might get raced-condition to this point, so do nothing.
         }
     }
 

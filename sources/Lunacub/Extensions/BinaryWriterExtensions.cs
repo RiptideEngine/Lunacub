@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using Caxivitual.Lunacub.Compilation;
+using System.Numerics;
 
 namespace Caxivitual.Lunacub.Extensions;
 
@@ -14,6 +15,7 @@ public static class BinaryWriterExtensions {
     public static void Write(this BinaryWriter writer, LibraryID libraryId) => writer.WriteReinterpret(libraryId);
     public static void Write(this BinaryWriter writer, ResourceID resourceId) => writer.WriteReinterpret(resourceId);
     public static void Write(this BinaryWriter writer, ResourceAddress address) => writer.WriteReinterpret(address);
+    public static void Write(this BinaryWriter writer, Tag tag) => writer.WriteReinterpret(tag);
     
     public static void WriteReinterpret<T>(this BinaryWriter writer, T value) where T : unmanaged {
         unsafe {

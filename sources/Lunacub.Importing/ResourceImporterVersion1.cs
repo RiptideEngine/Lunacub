@@ -24,7 +24,7 @@ internal static class ResourceImporterVersion1 {
                 ExceptionMessages.ResourceMissingChunk,
                 CompilingConstants.ResourceDataChunkTag.AsAsciiString
             );
-            throw new CorruptedBinaryException(message);
+            throw new InvalidDataException(message);
         }
 
         if (!chunkPositionalInfos.TryGet(CompilingConstants.DeserializationChunkTag, out ChunkPositionalInformation deserializationChunk)) {
@@ -32,7 +32,7 @@ internal static class ResourceImporterVersion1 {
                 ExceptionMessages.ResourceMissingChunk,
                 CompilingConstants.DeserializationChunkTag.AsAsciiString
             );
-            throw new CorruptedBinaryException(message);
+            throw new InvalidDataException(message);
         }
 
         resourceStream.Seek(deserializationChunk.ContentOffset, SeekOrigin.Begin);
