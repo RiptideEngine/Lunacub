@@ -6,7 +6,7 @@ namespace Caxivitual.Lunacub.Building;
 /// Represents the environment that stores all the components needed to build resources.
 /// </summary>
 /// <remarks>This class is not thread-safe.</remarks>
-public sealed class BuildEnvironment : IDisposable {
+public sealed partial class BuildEnvironment : IDisposable {
     /// <summary>
     /// Gets the dictionary of <see cref="Importer"/> that compiling resources request.
     /// </summary>
@@ -53,11 +53,6 @@ public sealed class BuildEnvironment : IDisposable {
     /// Gets and sets the <see cref="ILogger"/> instance used for debugging and reporting purpose.
     /// </summary>
     public ILogger Logger { get; set; }
-    
-    /// <summary>
-    /// Gets the dictionary that contains dynamic environment variables.
-    /// </summary>
-    public Dictionary<object, object> EnvironmentVariables { get; }
     
     internal RecyclableMemoryStreamManager MemoryStreamManager { get; }
     
