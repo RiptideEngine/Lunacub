@@ -5,7 +5,7 @@
 /// request building references.
 /// </summary>
 [ExcludeFromCodeCoverage]
-public readonly struct DisposingContext {
+public readonly struct DisposalContext {
     private readonly BuildEnvironment _environment;
 
     /// <summary>
@@ -18,7 +18,7 @@ public readonly struct DisposingContext {
     /// </summary>
     public IReadOnlyDictionary<object, object> EnvironmentVariables => _environment.EnvironmentVariables;
     
-    internal DisposingContext(BuildEnvironment environment) {
+    internal DisposalContext(BuildEnvironment environment) {
         _environment = environment;
     }
 }

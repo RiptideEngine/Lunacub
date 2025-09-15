@@ -210,7 +210,7 @@ internal sealed partial class BuildSession {
             // return Interlocked.Decrement(ref ReferenceCount);
         }
     
-        public void DisposeImportedObject(DisposingContext context) {
+        public void DisposeImportedObject(DisposalContext context) {
             if (ObjectRepresentation == null) return;
             
             Debug.Assert(ReferenceCount == 0);
