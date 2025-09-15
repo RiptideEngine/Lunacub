@@ -55,7 +55,7 @@ internal sealed partial class BuildSession {
 
     private void ReleaseVertex(ResourceVertex vertex) {
         if (vertex.DecrementReference() == 0) {
-            vertex.DisposeImportedObject(new(_environment.Logger));
+            vertex.DisposeImportedObject(new(_environment));
             
             ReleaseDependencies(vertex.DependencyResourceAddresses!);
         }

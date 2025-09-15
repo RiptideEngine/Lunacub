@@ -158,7 +158,7 @@ partial class BuildSession {
                         return;
                     } finally {
                         if (!ReferenceEquals(proceduralResource.Object, processed)) {
-                            processor.Dispose(processed, new(_session._environment.Logger));
+                            processor.Dispose(processed, new(_session._environment));
                         }
                     }
                     

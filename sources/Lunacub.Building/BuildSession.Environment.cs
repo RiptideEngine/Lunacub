@@ -50,7 +50,7 @@ partial class BuildSession {
                             Log.ReportLeakedAfterBuildEnvironmentResources(_environment.Logger);
                         }
                         
-                        vertex.DisposeImportedObject(new(_environment.Logger));
+                        vertex.DisposeImportedObject(new(_environment));
                     } else if (vertex.ReferenceCount > 0) {
                         if (!reported) {
                             reported = true;
@@ -433,7 +433,7 @@ partial class BuildSession {
                     return;
                 } finally {
                     if (!ReferenceEquals(resourceVertex.ObjectRepresentation, processed)) {
-                        processor.Dispose(processed, new(_environment.Logger));
+                        processor.Dispose(processed, new(_environment));
                     }
                 }
                 
