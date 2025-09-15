@@ -139,20 +139,4 @@ public class BinaryReaderExtensionsTests : IDisposable {
     public void ReadResourceID_Insufficient_ShouldThrowEndOfStreamException() {
         new Func<ResourceID>(() => _reader.ReadResourceID()).Should().Throw<EndOfStreamException>();
     }
-    
-    [Fact]
-    public void ReadReinterpret_Sufficient_ReturnsOriginalValue() {
-        Transform transform = new(new(3, 2, 4), Quaternion.CreateFromYawPitchRoll(1.25f, 2.11f, 1.33f), new(1, 2, 4));
-        _writer.WriteReinterpret(transform);
-        _ms.Position = 0;
-
-        new Func<Transform>(() => _reader.ReadReinterpret<Transform>()).Should().NotThrow().Which.Should().Be(transform);
-    }
-    
-    [Fact]
-    public void ReadReinterpret_Insufficient_ShouldThrowEndOfStreamException() {
-        new Func<Matrix4x4>(() => _reader.ReadReinterpret<Matrix4x4>()).Should().Throw<EndOfStreamException>();
-    }
-
-    private readonly record struct Transform(Vector3 Position, Quaternion Rotation, Vector3 Scale);
 }

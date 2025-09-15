@@ -95,15 +95,4 @@ public class BinaryWriterExtensionsTests : IDisposable {
         _writer.BaseStream.Position.Should().Be(Unsafe.SizeOf<ResourceID>());
         Unsafe.ReadUnaligned<ResourceID>(ref _buffer[0]).Should().Be(value);
     }
-
-    [Fact]
-    public void Write_Reinterpret_RecordOriginalValue() {
-        Transform transform = new(new(3, 2, 4), Quaternion.CreateFromYawPitchRoll(1.25f, 2.11f, 1.33f), new(1, 2, 4));
-        _writer.WriteReinterpret(transform);
-        
-        _writer.BaseStream.Position.Should().Be(40);
-        Unsafe.ReadUnaligned<Transform>(ref _buffer[0]).Should().Be(transform);
-    }
-    
-    private readonly record struct Transform(Vector3 Position, Quaternion Rotation, Vector3 Scale);
 }

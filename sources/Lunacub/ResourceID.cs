@@ -18,14 +18,15 @@ public readonly struct ResourceID :
     IUtf8SpanParsable<ResourceID>,
     IComparable<ResourceID>
 {
-    // Prevent using UInt128 due to it's alignment.    
+    // Avoiding alignment, those 8 bytes of previous memory adds up alright?
     [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _lower;
     [DebuggerBrowsable(DebuggerBrowsableState.Never)] private readonly ulong _upper;
 
     /// <summary>
-    /// Gets the 128-bit unsigned integer that is reinterpreted from the id.
+    /// Gets the 128-bit unsigned integer that represents the ID.
     /// </summary>
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)] public UInt128 Value => Unsafe.BitCast<ResourceID, UInt128>(this);
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    public UInt128 Value => new(_upper, _lower);
     
     /// <summary>
     /// Creates a new instance of <see cref="ResourceID"/> with the specified 128-bit unsigned integer value.

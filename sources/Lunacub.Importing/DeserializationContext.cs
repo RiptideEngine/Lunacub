@@ -8,6 +8,9 @@ namespace Caxivitual.Lunacub.Importing;
 /// </summary>
 [ExcludeFromCodeCoverage]
 public readonly struct DeserializationContext {
+    /// <summary>
+    /// Gets the collection that stores all the requesting reference resources to build next.
+    /// </summary>
     public RequestingReferences RequestingReferences { get; }
     
     /// <summary>
